@@ -6,8 +6,12 @@ from app.services.ai.orchestrator import AIOrchestrator
 router = APIRouter()
 
 @router.post("/chat", response_model=APIResponse)
-async def chat(question: str, orchestrator: AIOrchestrator = Depends(get_ai_orchestrator)):
-    result = await orchestrator.chat(question)
+async def chat(
+    user_id: str,
+    question: str,
+    orchestrator: AIOrchestrator = Depends(get_ai_orchestrator),
+):
+    result = await orchestrator.chat(user_id=user_id, question=question)
 
     return APIResponse(
         success=True,
