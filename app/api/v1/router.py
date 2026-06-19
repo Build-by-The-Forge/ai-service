@@ -6,6 +6,8 @@ from app.api.v1.ai.tree import router as tree_router
 from app.api.v1.ai.read import router as read_router
 from app.api.v1.ai.explain import router as explain_router
 from app.api.v1.ai.generate_questions import router as questions_router
+from app.api.v1.ai.exam import router as exam_router
+from app.api.v1.ai.exam_submit import router as exam_submit_router
 
 api_router = APIRouter()
 
@@ -16,3 +18,5 @@ api_router.include_router(tree_router, prefix="/ai/tree", tags=["Tree"])
 api_router.include_router(read_router, prefix="/ai/read", tags=["Read Mode"])
 api_router.include_router(explain_router, prefix="/ai", tags=["Explain"])
 api_router.include_router(questions_router, prefix="/ai", tags=["Generation"])
+api_router.include_router(exam_router, prefix="/ai/exam", tags=["Exam"])
+api_router.include_router(exam_submit_router, prefix="/ai/exam", tags=["Exam"])
