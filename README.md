@@ -60,3 +60,36 @@ black app/
 # Lint
 ruff check app/
 ```
+
+## Deployment
+
+This repository includes production-ready container and proxy configuration.
+
+### Build and run locally
+
+```bash
+make up
+```
+
+### Health checks
+
+- `http://localhost/api/v1/system/health`
+- `http://localhost/api/v1/system/ready`
+
+### Stop the stack
+
+```bash
+make down
+```
+
+### Logs
+
+```bash
+make logs
+```
+
+### Run migrations
+
+```bash
+make migrate
+```

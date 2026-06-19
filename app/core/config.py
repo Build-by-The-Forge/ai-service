@@ -1,7 +1,10 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=[".env", ".env.prod"],
+        extra="ignore",
+    )
 
     APP_NAME: str = "ai-service"
     ENV: str = "development"
@@ -12,6 +15,7 @@ class Settings(BaseSettings):
 
     VECTOR_DB_TYPE: str = "faiss"
 
+    REDIS_URL: str | None = None
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
 
