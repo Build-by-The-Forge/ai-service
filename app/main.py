@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.api.v1.router import api_router
+from app.core.middleware.tenant import TenantMiddleware
 from app.db.session import engine
 from app.db.base import Base
 
@@ -15,6 +16,7 @@ def create_app() -> FastAPI:
         description="AI engine for CBT + Learning Platform",
     )
 
+    app.add_middleware(TenantMiddleware)
     app.include_router(api_router, prefix="/api/v1")
 
     @app.on_event("startup")

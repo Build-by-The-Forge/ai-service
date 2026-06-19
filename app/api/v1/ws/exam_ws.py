@@ -2,6 +2,7 @@ import asyncio
 import json
 import time
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from app.core.tenant import set_school_id
 from app.services.exam.redis_session_store import RedisSessionStore
 from app.services.exam.redis_timer import RedisExamTimer
 from app.services.exam.anti_cheat import AntiCheatEngine
@@ -46,12 +47,20 @@ async def websocket_sync_handler(session_id: str, payload: dict):
 
 @router.websocket("/ws/exam/{session_id}")
 async def exam_websocket(websocket: WebSocket, session_id: str):
-    await manager.connect(websocket, session_id)
+    school_id = websocket.headers.get("x-school-id")
+    if not school_id:
+        await websocket.close(code=1008)
+        return
+
+    set_school_id(int(school_id))
+    scoped_session_id = f"{school_id}:{session_id}"
+
+    await manager.connect(websocket, scoped_session_id)
 
     async def subscribe_to_session():
         await sync_bridge.pubsub.subscribe(
-            channel=f"exam:{session_id}",
-            handler=lambda message: websocket_sync_handler(session_id, message),
+            channel=f"exam:{school_id}:{session_id}",
+            handler=lambda message: websocket_sync_handler(scoped_session_id, message),
         )
 
     sub_task = asyncio.create_task(subscribe_to_session())
@@ -63,70 +72,71 @@ async def exam_websocket(websocket: WebSocket, session_id: str):
             event = payload.get("event")
 
             if event == "init_session":
-                await store.create_session(session_id, {
+                await store.create_session(scoped_session_id, {
                     "user_id": payload.get("user_id"),
                     "answers": {},
                     "start_time": time.time(),
                 })
-                await timer.start(session_id, 30)
+                await timer.start(scoped_session_id, 30)
 
-                await manager.send(session_id, {
+                await manager.send(scoped_session_id, {
                     "event": "session_initialized",
                     "session_id": session_id,
+                    "school_id": int(school_id),
                 })
 
             elif event == "answer":
                 await store.update_answer(
-                    session_id=session_id,
+                    session_id=scoped_session_id,
                     question_id=payload.get("question_id"),
                     answer=payload.get("answer"),
                 )
-                await sync_bridge.broadcast_answer(session_id, {
+                await sync_bridge.broadcast_answer(scoped_session_id, {
                     "question_id": payload.get("question_id"),
                     "answer": payload.get("answer"),
                     "user_id": payload.get("user_id"),
                     "timestamp": time.time(),
                 })
 
-                await manager.send(session_id, {
+                await manager.send(scoped_session_id, {
                     "event": "answer_saved",
                     "question_id": payload.get("question_id"),
                 })
 
             elif event == "start_timer":
-                await timer.start(session_id, duration=payload.get("duration", 30))
-                await manager.send(session_id, {
+                await timer.start(scoped_session_id, duration=payload.get("duration", 30))
+                await manager.send(scoped_session_id, {
                     "event": "timer_started",
                     "duration_minutes": payload.get("duration", 30),
                 })
 
             elif event == "get_time":
-                remaining_seconds = await timer.remaining(session_id)
-                await manager.send(session_id, {
+                remaining_seconds = await timer.remaining(scoped_session_id)
+                await manager.send(scoped_session_id, {
                     "event": "time_update",
                     "remaining_seconds": remaining_seconds,
                 })
 
             elif event == "check_behavior":
-                session_data = await store.get_session(session_id)
+                session_data = await store.get_session(scoped_session_id)
                 flags = anti_cheat.detect_abnormal_activity(session_data)
-                await manager.send(session_id, {
+                await manager.send(scoped_session_id, {
                     "event": "anti_cheat_report",
                     "flags": flags,
                 })
 
             elif event == "ping":
-                await manager.send(session_id, {
+                await manager.send(scoped_session_id, {
                     "event": "pong",
                     "timestamp": time.time(),
                 })
 
             else:
-                await manager.send(session_id, {
+                await manager.send(scoped_session_id, {
                     "event": "error",
                     "message": f"Unsupported event: {event}",
                 })
 
     except WebSocketDisconnect:
-        manager.disconnect(session_id)
+        manager.disconnect(scoped_session_id)
         sub_task.cancel()

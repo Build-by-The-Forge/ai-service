@@ -5,3 +5,4 @@ from app.db.models.exam import Exam
 from app.db.models.exam_session import ExamSession
 from app.db.models.question_bank import Question
 from app.db.models.answer_sheet import AnswerSheet
+from app.db.models.school import School

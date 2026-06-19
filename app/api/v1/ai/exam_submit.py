@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.dependencies import get_db
+from app.core.auth import require_student
 from app.schemas.common import APIResponse
 from app.services.exam.scoring import ScoringEngine
 
@@ -11,6 +12,7 @@ scoring = ScoringEngine()
 async def submit_answer(
     correct_answer: str,
     user_answer: str,
+    role: str = Depends(require_student),
     db: AsyncSession = Depends(get_db),
 ):
     is_correct = scoring.grade(correct_answer, user_answer)

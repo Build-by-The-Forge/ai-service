@@ -1,6 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.db.models.learning_memory import LearningMemory
+from app.core.tenant import get_school_id
 
 
 class MemoryService:
@@ -9,17 +10,23 @@ class MemoryService:
         self.db = db
 
     async def get_user_memory(self, user_id: str):
+        school_id = get_school_id()
         result = await self.db.execute(
-            select(LearningMemory).where(LearningMemory.user_id == user_id)
+            select(LearningMemory).where(
+                LearningMemory.user_id == user_id,
+                LearningMemory.school_id == school_id,
+            )
         )
 
         return result.scalars().all()
 
     async def update_mastery(self, user_id: str, topic: str, delta: float):
+        school_id = get_school_id()
         result = await self.db.execute(
             select(LearningMemory).where(
                 LearningMemory.user_id == user_id,
                 LearningMemory.topic == topic,
+                LearningMemory.school_id == school_id,
             )
         )
 
@@ -27,6 +34,7 @@ class MemoryService:
 
         if not record:
             record = LearningMemory(
+                school_id=school_id,
                 user_id=user_id,
                 topic=topic,
                 mastery_score=0.0,

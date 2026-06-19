@@ -8,9 +8,12 @@ class QuestionService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_questions(self, course: str):
+    async def get_questions(self, course: str, school_id: int):
         result = await self.db.execute(
-            select(Question).where(Question.course == course)
+            select(Question).where(
+                Question.course == course,
+                Question.school_id == school_id,
+            )
         )
 
         return result.scalars().all()
