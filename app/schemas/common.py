@@ -1,6 +1,8 @@
 from pydantic import BaseModel
+from typing import Any, Optional
 
-class BaseResponse(BaseModel):
-    success: bool
-    message: str
-    data: dict | None = None
+
+class APIResponse(BaseModel):
+    success: bool = True
+    data: Any = None
+    message: str = ""

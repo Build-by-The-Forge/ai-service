@@ -1,6 +1,8 @@
-class LLMService:
-    def __init__(self, api_key: str | None = None):
-        self.api_key = api_key
+from abc import ABC, abstractmethod
 
-    def generate(self, prompt: str) -> str:
-        return """LLM response placeholder."""
+
+class LLMProvider(ABC):
+
+    @abstractmethod
+    async def generate(self, prompt: str) -> str:
+        pass

@@ -1,3 +1,3 @@
 class RetrievalService:
-    def retrieve(self, query: str) -> list[dict]:
+    async def retrieve(self, query: str) -> list[dict]:
         return []
