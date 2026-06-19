@@ -1,1 +1,1 @@
-# Package initialization for DB models
+from app.db.models.user import User
