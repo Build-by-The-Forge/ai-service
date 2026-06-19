@@ -12,6 +12,9 @@ class Settings(BaseSettings):
 
     VECTOR_DB_TYPE: str = "faiss"
 
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+
     LOG_LEVEL: str = "INFO"
 
 settings = Settings()
