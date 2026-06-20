@@ -1,8 +1,11 @@
 from fastapi import FastAPI
 from app.core.config import settings
 from app.core.logging import setup_logging
-from app.api.v1.router import api_router
+from app.core.metrics import setup_metrics
+from app.core.errors import app_exception_handler
 from app.core.middleware.tenant import TenantMiddleware
+from app.core.middleware.request_id import RequestIDMiddleware
+from app.api.v1.router import api_router
 from app.db.session import engine
 from app.db.base import Base
 
@@ -16,7 +19,17 @@ def create_app() -> FastAPI:
         description="AI engine for CBT + Learning Platform",
     )
 
+    # Middleware stack (order matters)
+    app.add_middleware(RequestIDMiddleware)
     app.add_middleware(TenantMiddleware)
+
+    # Setup metrics
+    setup_metrics(app)
+
+    # Exception handlers
+    app.add_exception_handler(Exception, app_exception_handler)
+
+    # Routes
     app.include_router(api_router, prefix="/api/v1")
 
     @app.on_event("startup")

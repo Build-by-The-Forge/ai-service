@@ -10,3 +10,6 @@ logs:
 migrate:
 	docker compose exec ai-service \
 	alembic upgrade head
+
+integration:
+	pytest tests/integration -q

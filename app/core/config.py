@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
 
+    JWT_PUBLIC_KEY: str | None = None
+    JWT_ALGORITHM: str = "RS256"
+    JWT_AUDIENCE: str | None = None
+
     LOG_LEVEL: str = "INFO"
 
 settings = Settings()
