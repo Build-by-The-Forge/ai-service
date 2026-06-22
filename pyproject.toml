@@ -16,6 +16,8 @@ dependencies = [
     "sqlalchemy==2.0.23",
     "asyncpg==0.29.0",
     "python-dotenv==1.0.0",
+    "python-jose==3.3.0",
+    "passlib[bcrypt]==1.7.4",
 ]
 
 [project.optional-dependencies]
@@ -27,6 +29,10 @@ dev = [
     "ruff==0.1.8",
     "mypy==1.7.1",
 ]
+
+[tool.pytest.ini_options]
+addopts = "-v"
+asyncio_mode = "auto"
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]

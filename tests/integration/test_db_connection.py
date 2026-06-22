@@ -1,13 +1,7 @@
 import pytest
-import os
-
-from app.db.session import test_connection
+from app.db.session import verify_connection
 
 
-@pytest.mark.asyncio
-async def test_db_connection_or_skip():
-    if not os.environ.get("DATABASE_URL"):
-        pytest.skip("DATABASE_URL not set; skipping DB integration test")
-
-    await test_connection()
+async def test_db_connection():
+    await verify_connection()
     assert True

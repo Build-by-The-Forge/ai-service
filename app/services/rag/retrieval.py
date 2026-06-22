@@ -1,9 +1,9 @@
-from app.core.tenant import get_school_id
+from app.core import tenant
 
 
 class RetrievalService:
     async def retrieve(self, query: str) -> list[dict]:
-        school_id = get_school_id()
+        school_id = tenant.get_school_id()
 
         # Tenant-aware retrieval placeholder.
         # Replace with a real vector search that filters by school_id.

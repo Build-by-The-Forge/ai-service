@@ -18,6 +18,6 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
-async def test_connection():
+async def verify_connection():
     async with engine.begin() as conn:
         await conn.run_sync(lambda _: None)

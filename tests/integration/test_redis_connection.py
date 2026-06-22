@@ -1,13 +1,12 @@
 import pytest
-import os
-
-from app.core.redis import redis_client
+from redis.asyncio import Redis
 
 
 @pytest.mark.asyncio
-async def test_redis_ping_or_skip():
-    if not os.environ.get("REDIS_URL"):
-        pytest.skip("REDIS_URL not set; skipping Redis integration test")
+async def test_redis_ping():
+    client = Redis(host="localhost", port=6379, decode_responses=True)
 
-    res = await redis_client.ping()
-    assert res is True
+    try:
+        assert await client.ping() is True
+    finally:
+        await client.close()

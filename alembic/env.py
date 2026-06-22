@@ -1,8 +1,18 @@
 import asyncio
 from logging.config import fileConfig
 from sqlalchemy import pool
-from sqlalchemy import create_engine
 from alembic import context
+
+from pathlib import Path
+import sys
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+
+if str(ROOT_DIR) not in sys.path:
+    sys.path.insert(0, str(ROOT_DIR))
+
+print("ALEMBIC ROOT:", ROOT_DIR)
+print("PYTHON PATH:", sys.path)
 
 from app.core.config import settings
 from app.db.base import Base
