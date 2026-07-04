@@ -4,8 +4,8 @@ Revision ID: dc098a53f378
 Revises: 1e7f696eae09
 Create Date: 2026-06-22 17:50:00.000000
 """
-from alembic import op
 
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "dc098a53f378"

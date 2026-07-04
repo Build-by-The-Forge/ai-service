@@ -7,6 +7,7 @@ router = APIRouter()
 
 service = LearningPathService()
 
+
 @router.get("/start", response_model=APIResponse)
 async def start_reading(root: TreeNode):
     path = service.generate_path(root)

@@ -1,4 +1,3 @@
-from app.core.tenant import get_school_id
 from app.services.rag.retrieval import RetrievalService
 
 

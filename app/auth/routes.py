@@ -23,13 +23,19 @@ async def login(email: str, password: str, db: AsyncSession = Depends(get_db)):
         )
 
     token = create_jwt(subject=str(user.id), school_id=user.school_id, role=user.role)
-    return APIResponse(success=True, data={"access_token": token, "token_type": "bearer"}, message="Logged in")
+    return APIResponse(
+        success=True, data={"access_token": token, "token_type": "bearer"}, message="Logged in"
+    )
 
 
 @router.post("/refresh", response_model=APIResponse)
 async def refresh(user: dict = Depends(require_authenticated_user)):
     token = create_jwt(subject=str(user["sub"]), school_id=user["school_id"], role=user["role"])
-    return APIResponse(success=True, data={"access_token": token, "token_type": "bearer"}, message="Token refreshed")
+    return APIResponse(
+        success=True,
+        data={"access_token": token, "token_type": "bearer"},
+        message="Token refreshed",
+    )
 
 
 @router.get("/me", response_model=APIResponse)

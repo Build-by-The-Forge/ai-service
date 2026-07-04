@@ -5,8 +5,11 @@ from app.services.ai.orchestrator import AIOrchestrator
 
 router = APIRouter()
 
+
 @router.get("/generate-questions", response_model=APIResponse)
-async def generate_questions(topic: str, orchestrator: AIOrchestrator = Depends(get_ai_orchestrator)):
+async def generate_questions(
+    topic: str, orchestrator: AIOrchestrator = Depends(get_ai_orchestrator)
+):
     result = await orchestrator.generate_questions(topic)
 
     return APIResponse(

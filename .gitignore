@@ -19,6 +19,7 @@ dist/
 
 # Pytest
 .pytest_cache/
+*.xml
 
 # MyPy
 .mypy_cache/

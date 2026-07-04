@@ -37,3 +37,7 @@ asyncio_default_fixture_loop_scope = "function"
 
 [tool.hatch.build.targets.wheel]
 packages = ["app"]
+
+[tool.black]
+target-version = ["py312"]
+line-length = 100

@@ -12,6 +12,7 @@ from app.services.memory.memory_service import MemoryService
 
 router = APIRouter()
 
+
 @router.post("/generate", response_model=APIResponse)
 async def generate_ai_exam(
     user_id: str,

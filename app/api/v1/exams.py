@@ -6,7 +6,11 @@ from sqlalchemy import select, delete
 from sqlalchemy.exc import IntegrityError
 
 from app.core.dependencies import get_db
-from app.auth.dependencies import require_teacher_or_admin, require_admin, require_authenticated_user
+from app.auth.dependencies import (
+    require_teacher_or_admin,
+    require_admin,
+    require_authenticated_user,
+)
 from app.db.models.exam import Exam
 from app.schemas.common import APIResponse
 from app.schemas.exam import ExamResponse
@@ -47,7 +51,9 @@ async def create_exam(
             detail="Exam already exists for this school",
         ) from exc
 
-    return APIResponse(success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam created")
+    return APIResponse(
+        success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam created"
+    )
 
 
 @router.get("/", response_model=APIResponse)
@@ -61,10 +67,7 @@ async def list_exams(
     offset = (page - 1) * page_size
 
     result = await db.execute(
-        select(Exam)
-        .where(Exam.school_id == school_id)
-        .offset(offset)
-        .limit(page_size)
+        select(Exam).where(Exam.school_id == school_id).offset(offset).limit(page_size)
     )
     exams = result.scalars().all()
     data = [ExamResponse.from_orm(exam).dict() for exam in exams]
@@ -78,13 +81,13 @@ async def get_exam(
     db: AsyncSession = Depends(get_db),
 ):
     school_id = user["school_id"]
-    result = await db.execute(
-        select(Exam).where(Exam.id == exam_id, Exam.school_id == school_id)
-    )
+    result = await db.execute(select(Exam).where(Exam.id == exam_id, Exam.school_id == school_id))
     exam = result.scalar_one_or_none()
     if not exam:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found")
-    return APIResponse(success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam retrieved")
+    return APIResponse(
+        success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam retrieved"
+    )
 
 
 @router.patch("/{exam_id}", response_model=APIResponse)
@@ -112,10 +115,7 @@ async def update_exam(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No fields to update")
 
     update_data["updated_by"] = int(user["sub"])
-    stmt = (
-        select(Exam)
-        .where(Exam.id == exam_id, Exam.school_id == school_id)
-    )
+    stmt = select(Exam).where(Exam.id == exam_id, Exam.school_id == school_id)
     result = await db.execute(stmt)
     exam = result.scalar_one_or_none()
     if not exam:
@@ -134,7 +134,9 @@ async def update_exam(
             detail="Unable to update exam",
         ) from exc
 
-    return APIResponse(success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam updated")
+    return APIResponse(
+        success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam updated"
+    )
 
 
 @router.delete("/{exam_id}", response_model=APIResponse)

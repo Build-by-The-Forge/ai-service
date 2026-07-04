@@ -1,9 +1,10 @@
 """add exam uniqueness
 
 Revision ID: 1e7f696eae09
-Revises: 
+Revises:
 Create Date: 2026-06-22 17:20:32.092338
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -29,4 +30,3 @@ def downgrade() -> None:
         "exams",
         type_="unique",
     )
-

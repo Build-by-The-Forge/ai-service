@@ -16,3 +16,7 @@ pytest
 pytest-asyncio
 pytest-cov
 httpx
+mypy
+ruff
+lint
+black

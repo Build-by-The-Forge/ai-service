@@ -5,6 +5,7 @@ from app.services.ai.orchestrator import AIOrchestrator
 
 router = APIRouter()
 
+
 @router.get("/explain", response_model=APIResponse)
 async def explain(subject: str, orchestrator: AIOrchestrator = Depends(get_ai_orchestrator)):
     result = await orchestrator.explain(subject)

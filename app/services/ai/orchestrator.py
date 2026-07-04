@@ -15,10 +15,7 @@ class AIOrchestrator:
     async def chat(self, user_id: str, question: str):
         user_memory = await self.memory.get_user_memory(user_id)
 
-        memory_text = "\n".join(
-            f"{m.topic}: mastery={m.mastery_score}"
-            for m in user_memory
-        )
+        memory_text = "\n".join(f"{m.topic}: mastery={m.mastery_score}" for m in user_memory)
 
         context_docs = await self.retriever.retrieve(question)
 
@@ -31,9 +28,7 @@ class AIOrchestrator:
             memory=memory_text,
         )
 
-        answer = await self.llm.generate(
-            prompt["system"] + "\n" + prompt["user"]
-        )
+        answer = await self.llm.generate(prompt["system"] + "\n" + prompt["user"])
 
         return {
             "answer": answer,

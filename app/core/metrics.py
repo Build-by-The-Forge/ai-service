@@ -1,5 +1,6 @@
 """Prometheus metrics setup."""
 
+
 def setup_metrics(app):
     """
     Setup Prometheus metrics for FastAPI.

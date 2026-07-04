@@ -1,22 +1,20 @@
 import asyncio
-from logging.config import fileConfig
-from sqlalchemy import pool
-from alembic import context
-
-from pathlib import Path
 import sys
+from logging.config import fileConfig
+from pathlib import Path
+
+from alembic import context
+from sqlalchemy import pool
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-print("ALEMBIC ROOT:", ROOT_DIR)
-print("PYTHON PATH:", sys.path)
+from app.core.config import settings  # noqa: E402
+from app.db.base import Base  # noqa: E402
 
-from app.core.config import settings
-from app.db.base import Base
-import app.db.models  # noqa: F401 - import all models so metadata is populated
+import app.db.models  # noqa: F401,E402 - import all models so metadata is populated
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -27,14 +25,14 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # set sqlalchemy.url from settings
-config.set_main_option('sqlalchemy.url', settings.DATABASE_URL)
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 # add your model's MetaData object here
 target_metadata = Base.metadata
 
 
 def run_migrations_offline():
-    url = config.get_main_option('sqlalchemy.url')
+    url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
         target_metadata=target_metadata,
@@ -57,7 +55,7 @@ async def run_migrations_online():
     from sqlalchemy.ext.asyncio import create_async_engine
 
     connectable = create_async_engine(
-        config.get_main_option('sqlalchemy.url'),
+        config.get_main_option("sqlalchemy.url"),
         poolclass=pool.NullPool,
     )
 

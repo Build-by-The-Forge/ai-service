@@ -7,9 +7,7 @@ from app.db.base import Base
 
 class Exam(Base):
     __tablename__ = "exams"
-    __table_args__ = (
-        UniqueConstraint("title", "school_id", name="uq_exam_title_school"),
-    )
+    __table_args__ = (UniqueConstraint("title", "school_id", name="uq_exam_title_school"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     school_id: Mapped[int] = mapped_column(Integer, ForeignKey("schools.id"), index=True)

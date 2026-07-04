@@ -2,6 +2,7 @@ from typing import Any
 from fastapi import HTTPException, status
 from app.core.config import settings
 
+
 class TokenVerifier:
     """JWT token verification (integration with external auth service)."""
 

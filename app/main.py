@@ -59,9 +59,6 @@ app = create_app()
 def root():
     return {
         "success": True,
-        "data": {
-            "service": "ai-service",
-            "status": "running"
-        },
-        "message": "AI Service is live"
+        "data": {"service": "ai-service", "status": "running"},
+        "message": "AI Service is live",
     }

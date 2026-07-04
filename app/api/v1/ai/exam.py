@@ -7,6 +7,7 @@ from app.services.exam.exam_engine import ExamEngine
 
 router = APIRouter()
 
+
 @router.post("/start", response_model=APIResponse)
 async def start_exam(
     exam_id: int,

@@ -6,6 +6,7 @@ router = APIRouter()
 
 generator = TreeGeneratorService()
 
+
 @router.post("/generate", response_model=APIResponse)
 async def generate_tree(course_title: str, topics: list[str]):
     tree = generator.generate_base_tree(course_title, topics)

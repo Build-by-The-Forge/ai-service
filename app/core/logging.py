@@ -3,6 +3,7 @@ import sys
 import json
 from app.core.config import settings
 
+
 class JsonFormatter(logging.Formatter):
     def format(self, record):
         log_obj = {
@@ -12,6 +13,7 @@ class JsonFormatter(logging.Formatter):
             "timestamp": self.formatTime(record),
         }
         return json.dumps(log_obj)
+
 
 def setup_logging():
     logger = logging.getLogger()
@@ -24,5 +26,6 @@ def setup_logging():
 
     logging.getLogger("uvicorn").setLevel(logging.WARNING)
     logging.getLogger("fastapi").setLevel(logging.INFO)
+
 
 logger = logging.getLogger(__name__)

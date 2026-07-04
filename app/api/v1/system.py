@@ -5,6 +5,7 @@ from app.core.logging import logger
 
 router = APIRouter()
 
+
 @router.get("/health")
 async def health():
     return {
@@ -12,6 +13,7 @@ async def health():
         "data": {"status": "ok"},
         "message": "healthy",
     }
+
 
 @router.get("/ready")
 async def readiness():

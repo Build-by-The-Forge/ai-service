@@ -57,13 +57,9 @@ async def initialize_database() -> None:
             await asyncio.sleep(delay)
             delay = min(5.0, delay * 2)
 
-    # Dispose the engine after initialization to avoid holding sockets
-    # tied to the current event loop (important on Windows pytest runs).
-    await eng.dispose()
-    # Reset globals so a fresh engine will be built for the next event loop.
-    global engine, AsyncSessionLocal
-    engine = None
-    AsyncSessionLocal = None
+    # Keep the engine alive for the application lifespan so request-scoped
+    # sessions can reuse the same pool instead of rebuilding it on each init.
+    # Disposal happens explicitly during shutdown/reset.
 
 
 async def verify_connection() -> None:
@@ -75,6 +71,9 @@ async def verify_connection() -> None:
 async def reset_engine() -> None:
     global engine, AsyncSessionLocal
     if engine is not None:
-        await engine.dispose()
+        try:
+            await engine.dispose()
+        except Exception as exc:
+            logging.warning("Failed to dispose SQLAlchemy engine cleanly: %s", exc)
     engine = None
     AsyncSessionLocal = None

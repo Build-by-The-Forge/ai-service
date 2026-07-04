@@ -8,6 +8,7 @@ from app.services.exam.scoring import ScoringEngine
 router = APIRouter()
 scoring = ScoringEngine()
 
+
 @router.post("/submit", response_model=APIResponse)
 async def submit_answer(
     correct_answer: str,

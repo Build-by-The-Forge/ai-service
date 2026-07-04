@@ -27,7 +27,12 @@ async def client(app):
         yield ac
 
 
-async def seed_user(email: str = "student@demo.edu", password: str = "changeme", school_id: int = 1, role: str = "student") -> tuple[User, bool]:
+async def seed_user(
+    email: str = "student@demo.edu",
+    password: str = "changeme",
+    school_id: int = 1,
+    role: str = "student",
+) -> tuple[User, bool]:
     session_factory = get_async_session_local()
     async with session_factory() as db:
         result = await db.execute(select(User).where(User.email == email))

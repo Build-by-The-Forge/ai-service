@@ -4,7 +4,9 @@ from app.auth.token import decode_jwt
 from app.core.tenant import set_school_id
 
 
-def get_authorization_header(authorization: str | None = Header(None, alias="Authorization")) -> str:
+def get_authorization_header(
+    authorization: str | None = Header(None, alias="Authorization")
+) -> str:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

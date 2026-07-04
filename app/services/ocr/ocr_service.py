@@ -26,9 +26,6 @@ class OCRService:
     def process_pdf(self, pdf_path: str):
         pages = self.pdf_parser.extract_pages(pdf_path)
 
-        cleaned_pages = [
-            self.cleaner.clean(page)
-            for page in pages
-        ]
+        cleaned_pages = [self.cleaner.clean(page) for page in pages]
 
         return cleaned_pages

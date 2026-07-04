@@ -1,9 +1,13 @@
 from app.auth.dependencies import (
+    require_admin,
     require_authenticated_user,
     require_student,
     require_teacher_or_admin,
-    require_admin,
 )
-from app.auth.permissions import rbac
 
-# Backward compatibility: old imports from app.core.auth still work.
+__all__ = [
+    "require_admin",
+    "require_authenticated_user",
+    "require_student",
+    "require_teacher_or_admin",
+]

@@ -1,6 +1,7 @@
 import uuid
 from starlette.middleware.base import BaseHTTPMiddleware
 
+
 class RequestIDMiddleware(BaseHTTPMiddleware):
     """Attach a unique request ID to each request for tracing."""
 

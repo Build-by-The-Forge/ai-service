@@ -1,5 +1,4 @@
 from passlib.hash import pbkdf2_sha256
-from passlib.hash import pbkdf2_sha256
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.dialects.postgresql import insert
@@ -32,20 +31,22 @@ async def run_seeds():
 
             await session.execute(
                 insert(User)
-                .values([
-                    {
-                        "school_id": 1,
-                        "email": "admin@demo.edu",
-                        "hashed_password": pbkdf2_sha256.hash("adminpass"),
-                        "role": "admin",
-                    },
-                    {
-                        "school_id": 1,
-                        "email": "student@demo.edu",
-                        "hashed_password": pbkdf2_sha256.hash("studentpass"),
-                        "role": "student",
-                    },
-                ])
+                .values(
+                    [
+                        {
+                            "school_id": 1,
+                            "email": "admin@demo.edu",
+                            "hashed_password": pbkdf2_sha256.hash("adminpass"),
+                            "role": "admin",
+                        },
+                        {
+                            "school_id": 1,
+                            "email": "student@demo.edu",
+                            "hashed_password": pbkdf2_sha256.hash("studentpass"),
+                            "role": "student",
+                        },
+                    ]
+                )
                 .on_conflict_do_nothing(index_elements=["email"])
             )
 
