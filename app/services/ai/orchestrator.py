@@ -15,7 +15,16 @@ class AIOrchestrator:
     async def chat(self, user_id: str, question: str):
         user_memory = await self.memory.get_user_memory(user_id)
 
-        memory_text = "\n".join(f"{m.topic}: mastery={m.mastery_score}" for m in user_memory)
+        memory_items = []
+        for memory in user_memory:
+            if hasattr(memory, "topic") and hasattr(memory, "mastery_score"):
+                memory_items.append(f"{memory.topic}: mastery={memory.mastery_score}")
+            elif isinstance(memory, dict):
+                topic = memory.get("topic", "unknown")
+                mastery_score = memory.get("mastery_score", 0.0)
+                memory_items.append(f"{topic}: mastery={mastery_score}")
+
+        memory_text = "\n".join(memory_items)
 
         context_docs = await self.retriever.retrieve(question)
 

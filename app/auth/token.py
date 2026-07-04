@@ -21,7 +21,7 @@ def create_jwt(subject: str, school_id: int, role: str, expires_minutes: int = 6
 
 def decode_jwt(token: str) -> dict[str, Any]:
     try:
-        decode_kwargs = {
+        decode_kwargs: dict[str, Any] = {
             "key": settings.JWT_SECRET,
             "algorithms": [settings.JWT_ALGORITHM],
         }

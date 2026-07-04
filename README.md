@@ -85,7 +85,32 @@ make down
 
 # Run migrations
 make migrate
+
+# Seed database
+make seed
+
+# Run linting and type checks
+make lint
+
+# Run tests
+make test
+
+# Run coverage report
+make coverage
+
+# Install git pre-commit hooks
+make precommit
 ```
+
+### Pre-commit
+
+Install the repo hooks locally with:
+
+```bash
+make precommit
+```
+
+This runs `ruff --fix`, `black`, and `mypy` automatically on every commit.
 
 ## API Endpoints
 

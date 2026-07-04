@@ -9,6 +9,8 @@ __pycache__/
 venv/
 ENV/
 env/
+.venv-linux/
+.venv-windows/
 
 # Distribution / packaging
 build/
@@ -17,19 +19,21 @@ dist/
 .eggs/
 *.whl
 
-# Pytest
+# Test and coverage artifacts
 .pytest_cache/
-*.xml
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
 
-# MyPy
+# Type checking and linting
 .mypy_cache/
 .dmypy.json
-
-# ruff
 .ruff_cache/
 
-# VS Code
+# IDE / editor
 .vscode/
+.idea/
 
 # Logs
 *.log
@@ -38,8 +42,9 @@ dist/
 .env
 .env.*
 
-# Redis and DB sockets
+# Docker / local runtime artifacts
 *.sock
+*.pid
 
 # OS files
 .DS_Store

@@ -53,7 +53,7 @@ async def require_teacher_or_admin(user: dict = Depends(require_authenticated_us
 
 
 async def require_admin(user: dict = Depends(require_authenticated_user)) -> dict:
-    if not rbac.is_admin(user["role"]):
+    if not rbac.can_manage_users(user["role"]):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin role required",

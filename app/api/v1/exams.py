@@ -101,7 +101,7 @@ async def update_exam(
     db: AsyncSession = Depends(get_db),
 ):
     school_id = user["school_id"]
-    update_data = {}
+    update_data: dict[str, object] = {}
     if title is not None:
         update_data["title"] = title
     if course is not None:

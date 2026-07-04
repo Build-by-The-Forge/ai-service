@@ -25,6 +25,5 @@ class Exam(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
-        server_onupdate=func.now(),
         nullable=False,
     )

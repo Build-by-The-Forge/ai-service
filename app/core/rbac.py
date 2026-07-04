@@ -8,3 +8,6 @@ class RBAC:
 
     def can_view_results(self, role: str) -> bool:
         return role in ["teacher", "admin"]
+
+    def can_manage_users(self, role: str) -> bool:
+        return role == "admin"

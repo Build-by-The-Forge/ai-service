@@ -1,8 +1,10 @@
+from typing import Any
+
 from app.core import tenant
 
 
 class RetrievalService:
-    async def retrieve(self, query: str) -> list[dict]:
+    async def retrieve(self, query: str) -> list[dict[str, Any]]:
         school_id = tenant.get_school_id()
 
         # Tenant-aware retrieval placeholder.
