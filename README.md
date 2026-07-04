@@ -236,27 +236,57 @@ README.md
 
 ## Development
 
-### Tests
-```bash
-pytest
-pytest --cov=app tests/
-```
+### Local quality checks
+Run the fast-fail quality gates first:
 
-### Linting
 ```bash
-ruff check app/
-black app/ --check
-```
-
-### Type Checking
-```bash
+ruff check .
+black --check .
 mypy app/
 ```
 
-### Code Formatting
+### Local tests
+Run unit and integration tests locally:
+
+```bash
+pytest tests/integration -q -rA
+pytest tests/contracts -q -rA
+```
+
+### Coverage
+```bash
+pytest --cov=app --cov-report=xml tests/integration tests/contracts
+```
+
+### Code formatting
 ```bash
 black app/
 ```
+
+### CI workflow
+The repository uses GitHub Actions to enforce the following stages:
+
+1. Quality
+   - `ruff check .`
+   - `black --check .`
+   - `mypy app`
+2. Security
+   - `pip-audit`
+   - `bandit -r app -ll`
+3. Infrastructure
+   - Start PostgreSQL and Redis
+   - `python scripts/wait_for_services.py`
+4. Database
+   - `alembic upgrade head`
+5. Tests
+   - integration tests
+   - contract tests
+6. Coverage
+   - enforce `--cov-fail-under=80`
+7. Docker
+   - `docker build .`
+
+These stages are intentionally ordered so fast failures happen first, and infrastructure-heavy checks only run after code quality and security.
 
 ## Deployment
 
