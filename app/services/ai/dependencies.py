@@ -4,11 +4,12 @@ from app.services.ai.openai import OpenAILLM
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
 from app.services.memory.memory_service import MemoryService
-from app.db.session import AsyncSessionLocal
+from app.db.session import get_async_session_local
 
 
 async def get_db_session():
-    async with AsyncSessionLocal() as session:
+    session_factory = get_async_session_local()
+    async with session_factory() as session:
         yield session
 
 

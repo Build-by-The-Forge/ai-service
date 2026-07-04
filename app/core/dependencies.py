@@ -1,9 +1,11 @@
-from app.db.session import AsyncSessionLocal
 from typing import AsyncGenerator
+
+from app.db.session import get_async_session_local
 
 
 async def get_db() -> AsyncGenerator:
-    async with AsyncSessionLocal() as session:
+    session_factory = get_async_session_local()
+    async with session_factory() as session:
         try:
             yield session
         except Exception:

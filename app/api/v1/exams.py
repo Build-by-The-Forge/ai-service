@@ -2,7 +2,8 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, delete
+from sqlalchemy.exc import IntegrityError
 
 from app.core.dependencies import get_db
 from app.auth.dependencies import require_teacher_or_admin, require_admin, require_authenticated_user
@@ -25,7 +26,7 @@ async def create_exam(
     school_id = user["school_id"]
     created_by = int(user["sub"])
 
-    insert_stmt = Exam.__table__.insert().values(
+    exam = Exam(
         school_id=school_id,
         title=title,
         course=course,
@@ -33,16 +34,17 @@ async def create_exam(
         is_active=is_active,
         created_by=created_by,
         updated_by=created_by,
-    ).returning(Exam)
+    )
+    db.add(exam)
 
     try:
-        result = await db.execute(insert_stmt)
-        exam = result.scalar_one()
         await db.commit()
-    except Exception as exc:
+        await db.refresh(exam)
+    except IntegrityError as exc:
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(exc),
+            detail="Exam already exists for this school",
         ) from exc
 
     return APIResponse(success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam created")
@@ -111,16 +113,27 @@ async def update_exam(
 
     update_data["updated_by"] = int(user["sub"])
     stmt = (
-        update(Exam)
+        select(Exam)
         .where(Exam.id == exam_id, Exam.school_id == school_id)
-        .values(**update_data)
-        .returning(Exam)
     )
     result = await db.execute(stmt)
     exam = result.scalar_one_or_none()
     if not exam:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found")
-    await db.commit()
+
+    for key, value in update_data.items():
+        setattr(exam, key, value)
+
+    try:
+        await db.commit()
+        await db.refresh(exam)
+    except IntegrityError as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unable to update exam",
+        ) from exc
+
     return APIResponse(success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam updated")
 
 

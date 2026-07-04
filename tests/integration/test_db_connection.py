@@ -1,7 +1,10 @@
 import pytest
-from app.db.session import verify_connection
+from sqlalchemy import text
 
-
+@pytest.mark.asyncio
 async def test_db_connection():
-    await verify_connection()
-    assert True
+    from app.db.session import get_async_session_local
+    session_factory = get_async_session_local()
+    async with session_factory() as db:
+        result = await db.execute(text("SELECT 1"))
+        assert result.scalar() == 1

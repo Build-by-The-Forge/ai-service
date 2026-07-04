@@ -5,6 +5,7 @@ __pycache__/
 
 # Virtual environments
 .venv/
+.venv*/
 venv/
 ENV/
 env/
@@ -34,6 +35,7 @@ dist/
 
 # Environment variables
 .env
+.env.*
 
 # Redis and DB sockets
 *.sock

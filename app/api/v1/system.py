@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.db.session import engine
+from app.db.session import get_engine
 from app.core.redis import redis_client
 from app.core.logging import logger
 
@@ -22,7 +22,8 @@ async def readiness():
     }
 
     try:
-        async with engine.connect() as conn:
+        eng = get_engine()
+        async with eng.connect() as conn:
             await conn.run_sync(lambda c: None)
         checks["database"] = True
     except Exception as exc:

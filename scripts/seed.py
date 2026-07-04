@@ -1,4 +1,5 @@
 from passlib.hash import pbkdf2_sha256
+from passlib.hash import pbkdf2_sha256
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.dialects.postgresql import insert
@@ -35,13 +36,13 @@ async def run_seeds():
                     {
                         "school_id": 1,
                         "email": "admin@demo.edu",
-                        "hashed_password": "pbkdf2:sha256:150000$dummy$abc",
+                        "hashed_password": pbkdf2_sha256.hash("adminpass"),
                         "role": "admin",
                     },
                     {
                         "school_id": 1,
                         "email": "student@demo.edu",
-                        "hashed_password": "pbkdf2:sha256:150000$dummy$xyz",
+                        "hashed_password": pbkdf2_sha256.hash("studentpass"),
                         "role": "student",
                     },
                 ])
