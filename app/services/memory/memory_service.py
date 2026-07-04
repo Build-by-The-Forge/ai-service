@@ -5,7 +5,6 @@ from app.core.tenant import get_school_id
 
 
 class MemoryService:
-
     def __init__(self, db: AsyncSession):
         self.db = db
 

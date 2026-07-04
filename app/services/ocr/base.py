@@ -3,7 +3,6 @@ from typing import List, Dict
 
 
 class OCRProvider(ABC):
-
     @abstractmethod
     async def extract_text_from_image(self, image_path: str) -> List[Dict]:
         """

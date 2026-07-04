@@ -112,6 +112,8 @@ make precommit
 
 This runs `ruff --fix`, `black`, and `mypy` automatically on every commit.
 
+> Note: the repo uses the same tool versions as `pyproject.toml` and `requirements.txt` to avoid version drift.
+
 ## API Endpoints
 
 ### System
@@ -265,18 +267,18 @@ README.md
 Run the fast-fail quality gates first:
 
 ```bash
-ruff check .
-black --check .
-mypy app/
+make lint
 ```
 
 ### Local tests
 Run unit and integration tests locally:
 
 ```bash
-pytest tests/integration -q -rA
-pytest tests/contracts -q -rA
+make test
 ```
+
+### Developer experience docs
+For full workflow and tooling guidance, see `docs/developer-experience.md`.
 
 ### Coverage
 ```bash

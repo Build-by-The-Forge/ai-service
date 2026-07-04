@@ -2,7 +2,6 @@ from app.services.memory.memory_service import MemoryService
 
 
 class AdaptiveDifficultyEngine:
-
     def __init__(self, memory: MemoryService):
         self.memory = memory
 

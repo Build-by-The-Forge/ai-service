@@ -4,7 +4,6 @@ from app.services.rag.retrieval import RetrievalService
 
 
 class TenantAwareRetrievalService(RetrievalService):
-
     def __init__(self, retriever: RetrievalService | None = None):
         self.retriever = retriever or RetrievalService()
 

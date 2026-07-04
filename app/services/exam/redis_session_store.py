@@ -4,7 +4,6 @@ from app.core.redis import redis_client
 
 
 class RedisSessionStore:
-
     def _key(self, session_id: str) -> str:
         return f"exam_session:{session_id}"
 

@@ -1,7 +1,9 @@
-class AntiCheatEngine:
+from typing import Any
 
-    def detect_abnormal_activity(self, session_data):
-        flags = []
+
+class AntiCheatEngine:
+    def detect_abnormal_activity(self, session_data: Any) -> list[str]:
+        flags: list[str] = []
 
         if not session_data:
             return flags

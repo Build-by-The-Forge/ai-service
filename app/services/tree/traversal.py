@@ -3,7 +3,6 @@ from app.schemas.tree import TreeNode
 
 
 class TreeTraversalService:
-
     def find_node(self, root: TreeNode, node_id: str) -> Optional[TreeNode]:
         if root.id == node_id:
             return root

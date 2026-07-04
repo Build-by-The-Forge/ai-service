@@ -4,7 +4,6 @@ from app.services.tree.traversal import TreeTraversalService
 
 
 class LearningPathService:
-
     def __init__(self):
         self.traversal = TreeTraversalService()
 

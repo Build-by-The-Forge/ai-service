@@ -4,7 +4,6 @@ from app.services.ai.llm import LLMProvider
 
 
 class OpenAILLM(LLMProvider):
-
     def __init__(self):
         self.client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
 
@@ -17,4 +16,7 @@ class OpenAILLM(LLMProvider):
             ],
         )
 
-        return res.choices[0].message.content
+        content = res.choices[0].message.content
+        if content is None:
+            raise ValueError("OpenAI response content was empty")
+        return content

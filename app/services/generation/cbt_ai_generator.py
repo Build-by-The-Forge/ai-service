@@ -4,7 +4,6 @@ from app.services.rag.retrieval import RetrievalService
 
 
 class CBTAIGenerator:
-
     def __init__(self, llm: LLMProvider, retriever: RetrievalService):
         self.llm = llm
         self.retriever = retriever

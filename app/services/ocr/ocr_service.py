@@ -4,7 +4,6 @@ from app.services.ocr.pdf_parser import PDFParser
 
 
 class OCRService:
-
     def __init__(self):
         self.ocr = PaddleOCRService()
         self.cleaner = TextCleaner()

@@ -1,5 +1,4 @@
 class RBAC:
-
     def can_create_exam(self, role: str) -> bool:
         return role in ["teacher", "admin"]
 

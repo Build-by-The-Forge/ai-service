@@ -2,7 +2,6 @@ from app.services.realtime.pubsub import RedisPubSub
 
 
 class SyncBridge:
-
     def __init__(self):
         self.pubsub = RedisPubSub()
 

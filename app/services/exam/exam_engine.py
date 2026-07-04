@@ -5,7 +5,6 @@ from app.core.tenant import get_school_id
 
 
 class ExamEngine:
-
     def __init__(self, db):
         self.session_service = ExamSessionService(db)
         self.question_service = QuestionService(db)

@@ -4,7 +4,6 @@ from app.db.models.question_bank import Question
 
 
 class QuestionService:
-
     def __init__(self, db: AsyncSession):
         self.db = db
 

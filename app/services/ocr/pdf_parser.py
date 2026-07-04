@@ -7,7 +7,6 @@ except ImportError:  # pragma: no cover - dependency optional in some environmen
 
 
 class PDFParser:
-
     def extract_pages(self, pdf_path: str) -> List[str]:
         if fitz is None:
             raise RuntimeError("PyMuPDF is required to extract PDF text")

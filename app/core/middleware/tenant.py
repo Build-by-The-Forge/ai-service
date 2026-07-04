@@ -4,7 +4,6 @@ from app.core.tenant import set_school_id
 
 
 class TenantMiddleware(BaseHTTPMiddleware):
-
     async def dispatch(self, request: Request, call_next):
         school_id = request.headers.get("X-School-ID")
 

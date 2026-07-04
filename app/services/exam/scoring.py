@@ -1,5 +1,4 @@
 class ScoringEngine:
-
     def grade(self, correct_answer: str, user_answer: str) -> bool:
         return correct_answer.strip().lower() == user_answer.strip().lower()
 

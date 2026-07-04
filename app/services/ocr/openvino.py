@@ -3,7 +3,6 @@ from app.services.ocr.base import OCRProvider
 
 
 class OpenVINOService(OCRProvider):
-
     def __init__(self):
         self.model = None
 

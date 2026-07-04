@@ -2,7 +2,6 @@ from typing import Dict, Any
 
 
 class PromptBuilder:
-
     def build(self, name: str, **kwargs: Any) -> Dict[str, str]:
         if name == "chat_tutor":
             return {

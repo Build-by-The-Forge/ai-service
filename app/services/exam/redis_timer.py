@@ -3,7 +3,6 @@ from app.core.redis import redis_client
 
 
 class RedisExamTimer:
-
     def _key(self, session_id: str) -> str:
         return f"exam_timer:{session_id}"
 

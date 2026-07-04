@@ -3,7 +3,6 @@ from app.core.redis import redis_client
 
 
 class RedisPubSub:
-
     async def publish(self, channel: str, message: dict):
         await redis_client.publish(channel, json.dumps(message))
 

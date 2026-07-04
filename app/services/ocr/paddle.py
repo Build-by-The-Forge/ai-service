@@ -3,7 +3,6 @@ from app.services.ocr.base import OCRProvider
 
 
 class PaddleOCRService(OCRProvider):
-
     def __init__(self):
         # In production, replace this placeholder with a real PaddleOCR instance.
         # from paddleocr import PaddleOCR

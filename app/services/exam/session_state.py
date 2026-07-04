@@ -20,7 +20,7 @@ class ExamSessionState:
     answer_log: List[AnswerRecord] = field(default_factory=list)
     last_activity: float = field(default_factory=time.time)
 
-    def update_answer(self, question_id: str, answer: str):
+    def update_answer(self, question_id: str, answer: str) -> None:
         self.answers[question_id] = answer
         self.answer_log.append(AnswerRecord(question_id=question_id, answer=answer))
         self.last_activity = time.time()
@@ -35,28 +35,27 @@ class ExamSessionState:
 
 
 class SessionStore:
-
     def __init__(self):
         self.sessions: dict[str, ExamSessionState] = {}
         self.timers: dict[str, ExamTimer] = {}
 
-    def get(self, session_id: str):
+    def get(self, session_id: str) -> ExamSessionState | None:
         return self.sessions.get(session_id)
 
-    def create(self, session_id: str, duration_minutes: int = 30):
+    def create(self, session_id: str, duration_minutes: int = 30) -> ExamSessionState:
         session = ExamSessionState(session_id=session_id)
         self.sessions[session_id] = session
         self.timers[session_id] = ExamTimer(duration_minutes=duration_minutes)
         return session
 
-    def get_timer(self, session_id: str):
+    def get_timer(self, session_id: str) -> ExamTimer | None:
         return self.timers.get(session_id)
 
     def get_remaining_time(self, session_id: str) -> float:
         timer = self.get_timer(session_id)
         return timer.remaining_time() if timer else 0.0
 
-    def update_answer(self, session_id: str, qid: str, answer: str):
+    def update_answer(self, session_id: str, qid: str, answer: str) -> None:
         session = self.sessions.get(session_id)
         if session:
             session.update_answer(qid, answer)

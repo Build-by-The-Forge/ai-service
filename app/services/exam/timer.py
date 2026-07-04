@@ -2,7 +2,6 @@ import time
 
 
 class ExamTimer:
-
     def __init__(self, duration_minutes: int):
         self.duration = duration_minutes * 60
         self.start_time = time.time()

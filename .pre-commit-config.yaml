@@ -1,15 +1,21 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.6.9
+    rev: v0.1.8
     hooks:
       - id: ruff
         args: [--fix]
   - repo: https://github.com/psf/black
-    rev: 24.10.0
+    rev: 23.12.0
     hooks:
       - id: black
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.10.0
+    rev: v1.7.1
     hooks:
       - id: mypy
-        args: [--config-file, mypy.ini, app]
+        pass_filenames: false
+        additional_dependencies:
+          - types-redis==4.6.0.20241004
+          - types-python-jose==3.5.0.20260408
+          - types-passlib==1.7.7.20260211
+          - types-pyasn1==0.6.0.20260408
+        args: [--config-file, mypy.ini, --install-types, --non-interactive, app]

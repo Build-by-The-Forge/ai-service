@@ -3,7 +3,6 @@ from app.services.exam.adaptive_engine import AdaptiveDifficultyEngine
 
 
 class CBTFusionEngine:
-
     def __init__(self, ai_generator: CBTAIGenerator, adaptive_engine: AdaptiveDifficultyEngine):
         self.ai_generator = ai_generator
         self.adaptive_engine = adaptive_engine

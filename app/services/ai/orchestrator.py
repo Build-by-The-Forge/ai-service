@@ -5,7 +5,6 @@ from app.services.memory.memory_service import MemoryService
 
 
 class AIOrchestrator:
-
     def __init__(self, llm: LLMProvider, retriever: RetrievalService, memory: MemoryService):
         self.llm = llm
         self.retriever = retriever
