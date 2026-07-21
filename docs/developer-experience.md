@@ -35,6 +35,16 @@ The repository exposes developer workflows through `Makefile` targets.
 - `make migrate` - apply Alembic migrations inside the container
 - `make seed` - seed the database with sample data
 
+> Windows note: If `make` is not installed on your machine, use the equivalent PowerShell commands with the repository virtual environment.
+>
+> ```powershell
+> .\.venv\Scripts\activate.ps1
+> .\.venv\Scripts\python.exe -m pre_commit install
+> .\.venv\Scripts\python.exe -m pre_commit run --all-files
+> .\.venv\Scripts\python.exe -m pytest tests/unit tests/integration tests/contracts -q
+> .\.venv\Scripts\python.exe -m pytest tests/unit tests/integration tests/contracts --cov=app --cov-report=term-missing
+> ```
+
 ## Pre-commit Hooks
 
 The repository uses pre-commit to enforce the following checks on every commit:
@@ -71,6 +81,17 @@ If `make coverage` is too slow during local development, run the targeted suites
 .venv\Scripts\python.exe -m pytest tests/unit -q
 .venv\Scripts\python.exe -m pytest tests/integration -q
 ```
+
+## CI Workflow Alignment
+
+The local workflow is intentionally aligned with CI. The same checks should be exercised both locally and in GitHub Actions:
+
+- `make lint` runs `ruff`, `black --check`, and `mypy app`
+- `make precommit` installs hooks and runs `pre_commit` across all files
+- `make test` runs unit, integration, and contract tests
+- `make coverage` runs the same tests with coverage reporting
+
+On GitHub Actions, the pipeline runs these checks in the same order and adds security scanning and Docker build validation.
 
 ## Recommended Workflow
 

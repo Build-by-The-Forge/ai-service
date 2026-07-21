@@ -1,3 +1,5 @@
+import pytest
+
 from app.auth.token import create_jwt, decode_jwt
 from app.core.rbac import RBAC
 
@@ -19,3 +21,8 @@ def test_rbac_permissions():
     assert rbac.can_take_exam("student") is True
     assert rbac.can_manage_users("admin") is True
     assert rbac.can_manage_users("teacher") is False
+
+
+def test_decode_jwt_raises_for_invalid_token():
+    with pytest.raises(ValueError, match="Invalid JWT token"):
+        decode_jwt("invalid.token.value")
