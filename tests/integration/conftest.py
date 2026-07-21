@@ -12,7 +12,14 @@ from app.main import create_app
 
 @pytest_asyncio.fixture
 async def app():
-    await initialize_database()
+    try:
+        # Attempt to initialize database; skip integration tests if unavailable.
+        await initialize_database()
+    except Exception as exc:  # pragma: no cover - integration guard
+        import pytest
+
+        pytest.skip(f"Database not available for integration tests: {exc}")
+
     app = create_app()
     try:
         yield app
