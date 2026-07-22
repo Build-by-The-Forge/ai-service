@@ -1,0 +1,45 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-7.4.3, pluggy-1.6.0 -- C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service
+configfile: pyproject.toml
+plugins: anyio-3.7.1, asyncio-0.21.1, cov-4.1.0
+asyncio: mode=Mode.AUTO
+collecting ... collected 12 items
+
+tests/unit/test_extra_coverage.py::test_submit_answer_route_grades_correct_and_incorrect_answers PASSED
+tests/unit/test_extra_coverage.py::test_generate_ai_exam_route_uses_engine_and_returns_payload PASSED
+tests/unit/test_extra_coverage.py::test_ocr_route_placeholder_returns_success PASSED
+tests/unit/test_extra_coverage.py::test_retrieve_route_returns_api_response_with_dummy_retriever PASSED
+tests/unit/test_extra_coverage.py::test_start_reading_route_generates_path PASSED
+tests/unit/test_extra_coverage.py::test_setup_metrics_instrumentator_is_used PASSED
+tests/unit/test_extra_coverage.py::test_redis_session_store_create_get_and_update_answer PASSED
+tests/unit/test_extra_coverage.py::test_redis_session_store_update_answer_returns_none_when_missing FAILED
+
+================================== FAILURES ===================================
+______ test_redis_session_store_update_answer_returns_none_when_missing _______
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000203C54BA3F0>
+
+    @pytest.mark.asyncio
+    async def test_redis_session_store_update_answer_returns_none_when_missing(monkeypatch):
+        dummy_client = DummyRedisClient()
+>       monkeypatch.setattr(
+            "app.services.exam.redis_session_store",
+            "redis_client",
+            dummy_client,
+        )
+E       AttributeError: 'app.services.exam.redis_session_store' has no attribute 'redis_client'
+
+tests\unit\test_extra_coverage.py:218: AttributeError
+============================== warnings summary ===============================
+.venv\Lib\site-packages\_pytest\config\__init__.py:1373
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\.venv\Lib\site-packages\_pytest\config\__init__.py:1373: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/test_extra_coverage.py::test_redis_session_store_update_answer_returns_none_when_missing
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+=================== 1 failed, 7 passed, 1 warning in 9.33s ====================

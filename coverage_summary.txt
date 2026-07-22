@@ -1,0 +1,216 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.10, pytest-7.4.3, pluggy-1.6.0
+rootdir: C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service
+configfile: pyproject.toml
+plugins: anyio-3.7.1, asyncio-0.21.1, cov-4.1.0
+asyncio: mode=Mode.AUTO
+collected 85 items / 3 skipped
+
+tests\integration\test_auth_exam.py .                                    [  1%]
+tests\integration\test_db_connection.py .                                [  2%]
+tests\integration\test_db_lifecycle.py ..                                [  4%]
+tests\integration\test_health.py ..                                      [  7%]
+tests\integration\test_rag_pipeline.py .                                 [  8%]
+tests\integration\test_redis_connection.py .                             [  9%]
+tests\unit\test_adaptive_memory.py ..                                    [ 11%]
+tests\unit\test_ai_orchestrator.py ...                                   [ 15%]
+tests\unit\test_api_and_auth_coverage.py .................               [ 35%]
+tests\unit\test_core_config.py ...                                       [ 38%]
+tests\unit\test_core_errors.py .                                         [ 40%]
+tests\unit\test_core_token_verifier.py ..                                [ 42%]
+tests\unit\test_exam_engine.py .                                         [ 43%]
+tests\unit\test_exam_helpers.py ......                                   [ 50%]
+tests\unit\test_extra_coverage.py ............                           [ 64%]
+tests\unit\test_fusion_engine.py .                                       [ 65%]
+tests\unit\test_logging_setup.py .                                       [ 67%]
+tests\unit\test_ocr_service.py ..                                        [ 69%]
+tests\unit\test_openai_llm.py .                                          [ 70%]
+tests\unit\test_prompt_builder.py ..                                     [ 72%]
+tests\unit\test_rbac_and_jwt.py ...                                      [ 76%]
+tests\unit\test_retrieval.py .                                           [ 77%]
+tests\unit\test_retrieval_service.py .                                   [ 78%]
+tests\unit\test_service_stubs.py .................                       [ 98%]
+tests\unit\test_tenant.py .                                              [100%]
+
+============================== warnings summary ===============================
+.venv\Lib\site-packages\_pytest\config\__init__.py:1373
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\.venv\Lib\site-packages\_pytest\config\__init__.py:1373: PytestConfigWarning: Unknown config option: asyncio_default_fixture_loop_scope
+  
+    self._warn_or_fail_if_strict(f"Unknown config option: {key}\n")
+
+tests/unit/test_api_and_auth_coverage.py::test_create_exam_route_returns_api_response
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\app\api\v1\exams.py:55: PydanticDeprecatedSince20: The `from_orm` method is deprecated; set `model_config['from_attributes']=True` and use `model_validate` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam created"
+
+tests/unit/test_api_and_auth_coverage.py::test_create_exam_route_returns_api_response
+tests/unit/test_api_and_auth_coverage.py::test_list_exams_route_returns_data
+tests/unit/test_api_and_auth_coverage.py::test_get_exam_route_returns_api_response
+tests/unit/test_api_and_auth_coverage.py::test_update_exam_route_updates_exam
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\.venv\Lib\site-packages\pydantic\main.py:1120: PydanticDeprecatedSince20: The `from_orm` method is deprecated; set `model_config["from_attributes"]=True` and use `model_validate` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    warnings.warn(
+
+tests/unit/test_api_and_auth_coverage.py::test_create_exam_route_returns_api_response
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\app\api\v1\exams.py:55: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam created"
+
+tests/unit/test_api_and_auth_coverage.py::test_create_exam_route_returns_api_response
+tests/unit/test_api_and_auth_coverage.py::test_list_exams_route_returns_data
+tests/unit/test_api_and_auth_coverage.py::test_get_exam_route_returns_api_response
+tests/unit/test_api_and_auth_coverage.py::test_update_exam_route_updates_exam
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\.venv\Lib\site-packages\pydantic\main.py:979: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    warnings.warn('The `dict` method is deprecated; use `model_dump` instead.', DeprecationWarning)
+
+tests/unit/test_api_and_auth_coverage.py::test_list_exams_route_returns_data
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\app\api\v1\exams.py:73: PydanticDeprecatedSince20: The `from_orm` method is deprecated; set `model_config['from_attributes']=True` and use `model_validate` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    data = [ExamResponse.from_orm(exam).dict() for exam in exams]
+
+tests/unit/test_api_and_auth_coverage.py::test_list_exams_route_returns_data
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\app\api\v1\exams.py:73: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    data = [ExamResponse.from_orm(exam).dict() for exam in exams]
+
+tests/unit/test_api_and_auth_coverage.py::test_get_exam_route_returns_api_response
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\app\api\v1\exams.py:89: PydanticDeprecatedSince20: The `from_orm` method is deprecated; set `model_config['from_attributes']=True` and use `model_validate` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam retrieved"
+
+tests/unit/test_api_and_auth_coverage.py::test_get_exam_route_returns_api_response
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\app\api\v1\exams.py:89: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam retrieved"
+
+tests/unit/test_api_and_auth_coverage.py::test_update_exam_route_updates_exam
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\app\api\v1\exams.py:138: PydanticDeprecatedSince20: The `from_orm` method is deprecated; set `model_config['from_attributes']=True` and use `model_validate` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam updated"
+
+tests/unit/test_api_and_auth_coverage.py::test_update_exam_route_updates_exam
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\app\api\v1\exams.py:138: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.5/migration/
+    success=True, data=ExamResponse.from_orm(exam).dict(), message="Exam updated"
+
+tests/unit/test_rbac_and_jwt.py::test_create_and_decode_jwt_round_trip
+  C:\Users\midef\OneDrive\Desktop\Projects\Build\ai-service\.venv\Lib\site-packages\jose\jwt.py:311: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = timegm(datetime.utcnow().utctimetuple())
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+
+---------- coverage: platform win32, python 3.12.10-final-0 ----------
+Name                                          Stmts   Miss  Cover   Missing
+---------------------------------------------------------------------------
+app\__init__.py                                   0      0   100%
+app\api\v1\__init__.py                            0      0   100%
+app\api\v1\ai\__init__.py                         2      0   100%
+app\api\v1\ai\chat.py                             9      0   100%
+app\api\v1\ai\exam.py                            12      0   100%
+app\api\v1\ai\exam_submit.py                     12      0   100%
+app\api\v1\ai\explain.py                          9      0   100%
+app\api\v1\ai\fusion_exam.py                     19      0   100%
+app\api\v1\ai\generate.py                         5      0   100%
+app\api\v1\ai\generate_questions.py               9      0   100%
+app\api\v1\ai\ocr.py                              5      0   100%
+app\api\v1\ai\read.py                            10      0   100%
+app\api\v1\ai\retrieve.py                        10      1    90%   9
+app\api\v1\ai\tree.py                             9      0   100%
+app\api\v1\exams.py                              78     13    83%   47-49, 87, 108, 110, 112, 115, 122, 130-132, 152
+app\api\v1\health.py                              5      1    80%   8
+app\api\v1\router.py                             28      0   100%
+app\api\v1\system.py                             25      4    84%   31-32, 37-38
+app\api\v1\ws\__init__.py                         0      0   100%
+app\api\v1\ws\exam_ws.py                         76     51    33%   19-20, 23-24, 27-29, 32-33, 44-46, 57-176
+app\auth\__init__.py                              0      0   100%
+app\auth\dependencies.py                         29      6    79%   21-22, 28, 39, 48, 57
+app\auth\permissions.py                           2      0   100%
+app\auth\routes.py                               28      5    82%   20, 33-34, 43, 48
+app\auth\token.py                                19      2    89%   18, 29
+app\core\__init__.py                              0      0   100%
+app\core\auth.py                                  2      0   100%
+app\core\config.py                               43      1    98%   15
+app\core\dependencies.py                         14      5    64%   11-13, 19-21
+app\core\errors.py                                6      0   100%
+app\core\exceptions.py                            2      2     0%   1-2
+app\core\logging.py                              18      2    89%   9-15
+app\core\metrics.py                               6      2    67%   13-15
+app\core\middleware\__init__.py                   0      0   100%
+app\core\middleware\request_id.py                 8      0   100%
+app\core\middleware\tenant.py                    10      1    90%   11
+app\core\prompt_builder.py                        8      1    88%   66
+app\core\prompts.py                               2      0   100%
+app\core\rate_limit.py                            6      2    67%   8-10
+app\core\rbac.py                                  9      1    89%   9
+app\core\redis.py                                 4      0   100%
+app\core\tenant.py                                6      0   100%
+app\core\token_verifier.py                       12      2    83%   30-31
+app\db\__init__.py                                0      0   100%
+app\db\base.py                                    4      0   100%
+app\db\models\__init__.py                         9      0   100%
+app\db\models\answer_sheet.py                    11      0   100%
+app\db\models\exam.py                            17      0   100%
+app\db\models\exam_session.py                    12      0   100%
+app\db\models\learning_memory.py                 12      0   100%
+app\db\models\question_bank.py                   10      0   100%
+app\db\models\school.py                           8      0   100%
+app\db\models\session_memory.py                  11      0   100%
+app\db\models\user.py                            10      0   100%
+app\db\session.py                                46      9    80%   53-58, 66-68
+app\main.py                                      33      6    82%   19-26, 60
+app\rag\__init__.py                               0      0   100%
+app\rag\pipeline.py                               3      3     0%   1-3
+app\schemas\__init__.py                           0      0   100%
+app\schemas\chat.py                               7      7     0%   1-11
+app\schemas\common.py                             6      0   100%
+app\schemas\exam.py                              21      0   100%
+app\schemas\ocr.py                                7      7     0%   1-11
+app\schemas\rag.py                                7      7     0%   1-11
+app\schemas\tree.py                              11      0   100%
+app\services\__init__.py                          0      0   100%
+app\services\ai\__init__.py                       0      0   100%
+app\services\ai\dependencies.py                  13      3    77%   11-13
+app\services\ai\llm.py                            5      1    80%   7
+app\services\ai\openai.py                        12      1    92%   22
+app\services\ai\orchestrator.py                  34      1    97%   20
+app\services\ai\prompts.py                        2      0   100%
+app\services\ai\router.py                         9      0   100%
+app\services\ai\tenanted_retriever.py             7      0   100%
+app\services\exam\__init__.py                     0      0   100%
+app\services\exam\adaptive_engine.py             15      3    80%   17-20
+app\services\exam\anti_cheat.py                  11      1    91%   9
+app\services\exam\exam_engine.py                 14      0   100%
+app\services\exam\fusion_engine.py               10      0   100%
+app\services\exam\question_service.py             9      3    67%   8, 11-18
+app\services\exam\redis_session_store.py         20      0   100%
+app\services\exam\redis_timer.py                 14      7    50%   7, 10, 16-21, 24
+app\services\exam\scoring.py                      7      0   100%
+app\services\exam\session_service.py             19      0   100%
+app\services\exam\session_state.py               46      2    96%   55-56
+app\services\exam\timer.py                       10      0   100%
+app\services\generation\__init__.py               0      0   100%
+app\services\generation\cbt_ai_generator.py      14      0   100%
+app\services\generation\explain.py                3      0   100%
+app\services\generation\question_gen.py           3      0   100%
+app\services\memory\__init__.py                   0      0   100%
+app\services\memory\memory_service.py            22      0   100%
+app\services\memory\reward.py                     5      0   100%
+app\services\ocr\__init__.py                      0      0   100%
+app\services\ocr\base.py                          6      1    83%   18
+app\services\ocr\cleaner.py                       7      0   100%
+app\services\ocr\image_parser.py                  3      3     0%   1-3
+app\services\ocr\ocr_service.py                  16      0   100%
+app\services\ocr\openvino.py                      7      0   100%
+app\services\ocr\paddle.py                        7      0   100%
+app\services\ocr\pdf_parser.py                   13      6    54%   14-21
+app\services\rag\__init__.py                      0      0   100%
+app\services\rag\chunker.py                       3      0   100%
+app\services\rag\embedder.py                      3      0   100%
+app\services\rag\retrieval.py                     6      0   100%
+app\services\rag\vector_store.py                  5      0   100%
+app\services\realtime\__init__.py                 0      0   100%
+app\services\realtime\pubsub.py                  15      1    93%   15
+app\services\realtime\sync_bridge.py              6      1    83%   9
+app\services\tree\__init__.py                     0      0   100%
+app\services\tree\generator.py                   10      0   100%
+app\services\tree\learning_path.py               17      5    71%   22-28
+app\services\tree\traversal.py                   24      2    92%   15, 21
+app\utils\__init__.py                             0      0   100%
+app\utils\id.py                                   3      3     0%   1-5
+app\utils\text.py                                 2      0   100%
+app\utils\time.py                                 3      0   100%
+---------------------------------------------------------------------------
+TOTAL                                          1262    185    85%
+
+================= 85 passed, 3 skipped, 18 warnings in 32.47s =================
