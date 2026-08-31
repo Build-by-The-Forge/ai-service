@@ -12,6 +12,7 @@ from app.schemas.ingest import (
     IngestDispatchRequest,
     IngestDispatchResponse,
 )
+from app.services.tasks.dispatcher import TaskDispatcher, get_task_dispatcher
 
 router = APIRouter()
 
@@ -23,13 +24,14 @@ router = APIRouter()
     summary="Dispatch Content Ingestion Task",
     description=(
         "Authenticated service-to-service endpoint for dispatching content ingestion jobs. "
-        "Guarantees idempotency and enforces authenticated service claims."
+        "Guarantees idempotency, validates authenticated service claims, and enqueues to the TaskDispatcher."
     ),
 )
 async def dispatch_ingest_task(
     payload: IngestDispatchRequest,
     service_ctx: AuthenticatedServiceContext = Depends(verify_service_authentication),
     idempotency_store: IdempotencyStore = Depends(get_idempotency_store),
+    dispatcher: TaskDispatcher = Depends(get_task_dispatcher),
 ) -> IngestDispatchResponse:
     # 1. Set tenant context from authenticated claim
     try:
@@ -61,7 +63,19 @@ async def dispatch_ingest_task(
             },
         )
 
-    # 3. Fresh task accepted
+    # 3. Publish to Execution Platform via TaskDispatcher
+    await dispatcher.dispatch_ingest(
+        job_id=payload.job_id,
+        asset_id=payload.asset_id,
+        tenant_id=payload.tenant_id,
+        correlation_id=payload.correlation_id,
+        payload=payload.model_dump(),
+        run_number=payload.run_number,
+        attempt_count=payload.attempt_count,
+        external_task_id=candidate_task_id,
+    )
+
+    # 4. Fresh task accepted
     return IngestDispatchResponse(
         success=True,
         external_task_id=candidate_task_id,

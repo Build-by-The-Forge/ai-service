@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     ALLOWED_SERVICE_IDENTITIES: list[str] = ["build-backend"]
     SERVICE_AUTH_MAX_SKEW_SECONDS: int = 300
 
+    CALLBACK_TIMEOUT_SECONDS: float = 10.0
+    CALLBACK_MAX_ATTEMPTS: int = 3
+    CALLBACK_INITIAL_BACKOFF_SECONDS: float = 0.5
+    CALLBACK_MAX_BACKOFF_SECONDS: float = 5.0
+    CALLBACK_JITTER: bool = True
+
     LOG_LEVEL: str = "INFO"
 
     def __init__(self, **values):
