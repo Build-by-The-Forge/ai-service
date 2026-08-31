@@ -81,6 +81,9 @@ class ModelGateway:
             model_name = "gpt-4o-mini"
 
         provider_name = policy.preferred_provider
+        if provider_name not in self._providers and self._providers:
+            provider_name = next(iter(self._providers.keys()))
+
         max_tokens = request.max_tokens or policy.max_tokens
         timeout_seconds = policy.timeout_seconds
         max_retries = policy.max_retries
@@ -116,6 +119,9 @@ class ModelGateway:
         candidate_providers = [decision.provider] + [
             p for p in decision.fallback_providers if p != decision.provider
         ]
+        for p in self._providers.keys():
+            if p not in candidate_providers:
+                candidate_providers.append(p)
 
         last_error: Optional[Exception] = None
 
