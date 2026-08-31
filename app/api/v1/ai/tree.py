@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from app.schemas.common import APIResponse
 from app.services.tree.generator import TreeGeneratorService
 

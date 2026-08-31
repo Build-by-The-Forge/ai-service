@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 from app.core.models.contracts import ModelUsage
 from app.core.models.errors import BudgetExceededError
@@ -7,9 +6,9 @@ from app.core.models.errors import BudgetExceededError
 
 @dataclass
 class BudgetLimits:
-    max_tokens: Optional[int] = None
-    max_cost_usd: Optional[float] = None
-    max_model_calls: Optional[int] = None
+    max_tokens: int | None = None
+    max_cost_usd: float | None = None
+    max_model_calls: int | None = None
 
 
 @dataclass
@@ -26,8 +25,8 @@ class BudgetTracker:
     """
 
     def __init__(self):
-        self._limits: Dict[str, BudgetLimits] = {}
-        self._usage: Dict[str, ExecutionBudgetUsage] = {}
+        self._limits: dict[str, BudgetLimits] = {}
+        self._usage: dict[str, ExecutionBudgetUsage] = {}
 
     def set_budget(self, scope_key: str, limits: BudgetLimits) -> None:
         self._limits[scope_key] = limits
@@ -79,7 +78,7 @@ class BudgetTracker:
     def get_usage(self, scope_key: str) -> ExecutionBudgetUsage:
         return self._usage.get(scope_key, ExecutionBudgetUsage())
 
-    def reset(self, scope_key: Optional[str] = None) -> None:
+    def reset(self, scope_key: str | None = None) -> None:
         if scope_key:
             self._limits.pop(scope_key, None)
             self._usage.pop(scope_key, None)

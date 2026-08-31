@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 from passlib.hash import pbkdf2_sha256
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.dependencies import require_authenticated_user
+from app.auth.token import create_jwt
 from app.core.dependencies import get_db
 from app.db.models.user import User
-from app.auth.token import create_jwt
-from app.auth.dependencies import require_authenticated_user
 from app.schemas.common import APIResponse
 
 router = APIRouter()

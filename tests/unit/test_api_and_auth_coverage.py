@@ -1,14 +1,15 @@
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 from fastapi import HTTPException
 
-from app.api.v1.ai import chat as chat_route
-from app.api.v1.ai import retrieve as retrieve_route
-from app.api.v1.ai import explain as explain_route
-from app.api.v1.ai import generate_questions as generate_questions_route
-from app.api.v1.ai import generate as generate_route
-from app.api.v1.ai import tree as tree_route
 from app.api.v1 import exams as exams_route
+from app.api.v1.ai import chat as chat_route
+from app.api.v1.ai import explain as explain_route
+from app.api.v1.ai import generate as generate_route
+from app.api.v1.ai import generate_questions as generate_questions_route
+from app.api.v1.ai import retrieve as retrieve_route
+from app.api.v1.ai import tree as tree_route
 from app.auth import dependencies as auth_dependencies
 from app.core import metrics as core_metrics
 from app.schemas.common import APIResponse
@@ -81,7 +82,7 @@ class DummyExamModel:
         self.is_active = is_active
         self.created_by = created_by
         self.updated_by = updated_by
-        self.created_at = datetime(2025, 1, 1, tzinfo=timezone.utc)
+        self.created_at = datetime(2025, 1, 1, tzinfo=UTC)
         self.updated_at = self.created_at
 
 

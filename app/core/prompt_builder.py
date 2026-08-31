@@ -1,8 +1,8 @@
-from typing import Dict, Any
+from typing import Any
 
 
 class PromptBuilder:
-    def build(self, name: str, **kwargs: Any) -> Dict[str, str]:
+    def build(self, name: str, **kwargs: Any) -> dict[str, str]:
         if name == "chat_tutor":
             return {
                 "system": """

@@ -1,7 +1,8 @@
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from app.db.models.learning_memory import LearningMemory
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.core.tenant import get_school_id
+from app.db.models.learning_memory import LearningMemory
 
 
 class MemoryService:

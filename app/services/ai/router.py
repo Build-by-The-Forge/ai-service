@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from app.api.v1.ai import chat, read, tree, retrieve, generate, ocr
+
+from app.api.v1.ai import chat, generate, ocr, read, retrieve, tree
 
 ai_router = APIRouter()
 

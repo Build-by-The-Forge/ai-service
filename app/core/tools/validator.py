@@ -1,5 +1,5 @@
 import json
-from typing import Any, Optional
+from typing import Any
 
 from app.core.tools.contracts import (
     ToolDefinition,
@@ -22,7 +22,7 @@ class ToolValidator:
     def validate_input(
         definition: ToolDefinition,
         invocation: ToolInvocation,
-        policy: Optional[ToolExecutionPolicy] = None,
+        policy: ToolExecutionPolicy | None = None,
     ) -> None:
         # 1. Check context liveness & cancellation
         if invocation.context.is_cancelled():
@@ -49,7 +49,7 @@ class ToolValidator:
                     )
             except (TypeError, ValueError) as json_err:
                 raise ToolParameterValidationError(
-                    definition.name, f"Arguments could not be serialized to JSON: {str(json_err)}"
+                    definition.name, f"Arguments could not be serialized to JSON: {json_err!s}"
                 )
 
         # 3. Tenant Boundary Assertion
@@ -78,7 +78,7 @@ class ToolValidator:
     def validate_output(
         tool_name: str,
         data: Any,
-        policy: Optional[ToolExecutionPolicy] = None,
+        policy: ToolExecutionPolicy | None = None,
     ) -> int:
         """
         Validates output payload size and returns byte count.

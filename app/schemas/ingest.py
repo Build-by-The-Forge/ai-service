@@ -1,6 +1,7 @@
 import re
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -47,7 +48,7 @@ class IngestDispatchRequest(BaseModel):
     callback_url: str = Field(
         ..., min_length=1, description="Webhook callback URL for progress/results"
     )
-    metadata: Dict[str, Any] = Field(
+    metadata: dict[str, Any] = Field(
         default_factory=dict, description="Arbitrary course/topic/asset metadata"
     )
 
@@ -73,7 +74,7 @@ class IngestDispatchResponse(BaseModel):
     external_task_id: str
     status: DispatchStatus
     message: str
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
 
 
 class IngestCallbackPayload(BaseModel):
@@ -87,9 +88,9 @@ class IngestCallbackPayload(BaseModel):
     external_task_id: str
     correlation_id: str
     event_type: CallbackEventType
-    progress_pct: Optional[int] = Field(default=None, ge=0, le=100)
-    error_code: Optional[str] = None
-    error_message: Optional[str] = None
-    retryable: Optional[bool] = None
-    extracted_metadata: Optional[Dict[str, Any]] = None
-    chunk_summary: Optional[Dict[str, Any]] = None
+    progress_pct: int | None = Field(default=None, ge=0, le=100)
+    error_code: str | None = None
+    error_message: str | None = None
+    retryable: bool | None = None
+    extracted_metadata: dict[str, Any] | None = None
+    chunk_summary: dict[str, Any] | None = None

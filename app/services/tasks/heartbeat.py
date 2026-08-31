@@ -1,6 +1,5 @@
 import time
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 
 @dataclass
@@ -18,7 +17,7 @@ class HeartbeatManager:
     """
 
     def __init__(self):
-        self._leases: Dict[str, LeaseRecord] = {}
+        self._leases: dict[str, LeaseRecord] = {}
 
     def record_heartbeat(
         self, execution_id: str, worker_id: str, lease_seconds: int = 30
@@ -42,11 +41,11 @@ class HeartbeatManager:
     def release(self, execution_id: str) -> None:
         self._leases.pop(execution_id, None)
 
-    def get_lease(self, execution_id: str) -> Optional[LeaseRecord]:
+    def get_lease(self, execution_id: str) -> LeaseRecord | None:
         return self._leases.get(execution_id)
 
 
-_default_heartbeat_manager: Optional[HeartbeatManager] = None
+_default_heartbeat_manager: HeartbeatManager | None = None
 
 
 def get_heartbeat_manager() -> HeartbeatManager:

@@ -1,7 +1,7 @@
-from dataclasses import dataclass, field
 import time
-from typing import Any, Dict, List, Optional
 import uuid
+from dataclasses import dataclass, field
+from typing import Any
 
 from app.core.documents.enums import (
     DocumentSource,
@@ -28,7 +28,7 @@ class OCRBoundingBox:
     y_min: float
     x_max: float
     y_max: float
-    polygon: Optional[List[List[float]]] = None
+    polygon: list[list[float]] | None = None
 
     def __post_init__(self):
         if self.x_max < self.x_min or self.y_max < self.y_min:
@@ -48,7 +48,7 @@ class OCRBoundingBox:
     def area(self) -> float:
         return self.width * self.height
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "x_min": round(self.x_min, 4),
             "y_min": round(self.y_min, 4),
@@ -71,7 +71,7 @@ class OCRBlock:
     bounding_box: OCRBoundingBox
     block_type: OCRBlockType = OCRBlockType.PARAGRAPH
     reading_order: int = 1
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def create(
@@ -82,7 +82,7 @@ class OCRBlock:
         bounding_box: OCRBoundingBox,
         block_type: OCRBlockType = OCRBlockType.PARAGRAPH,
         reading_order: int = 1,
-        metadata: Optional[Dict[str, Any]] = None,
+        metadata: dict[str, Any] | None = None,
     ) -> "OCRBlock":
         return cls(
             block_id=f"blk_{uuid.uuid4().hex[:12]}",
@@ -104,12 +104,12 @@ class DocumentPage:
 
     page_number: int
     page_type: PageType = PageType.NATIVE_TEXT
-    raw_text: Optional[str] = None
-    width: Optional[int] = None
-    height: Optional[int] = None
+    raw_text: str | None = None
+    width: int | None = None
+    height: int | None = None
     has_native_text: bool = False
-    blocks: List[OCRBlock] = field(default_factory=list)
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    blocks: list[OCRBlock] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -119,10 +119,10 @@ class OCRPage:
     """
 
     page_number: int
-    blocks: List[OCRBlock]
+    blocks: list[OCRBlock]
     confidence: float = 1.0
     full_text: str = ""
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -133,7 +133,7 @@ class OCRDocument:
 
     document_id: str
     tenant_id: str
-    pages: List[OCRPage]
+    pages: list[OCRPage]
     overall_confidence: float = 1.0
     total_blocks: int = 0
     full_text: str = ""
@@ -149,12 +149,12 @@ class DocumentMetadata:
     mime_type: str
     byte_size: int
     page_count: int = 0
-    course_code: Optional[str] = None
-    topic: Optional[str] = None
+    course_code: str | None = None
+    topic: str | None = None
     authority: ContentAuthority = ContentAuthority.INSTITUTIONAL
-    storage_uri: Optional[str] = None
-    content_sha256: Optional[str] = None
-    custom_attributes: Dict[str, Any] = field(default_factory=dict)
+    storage_uri: str | None = None
+    content_sha256: str | None = None
+    custom_attributes: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -171,7 +171,7 @@ class Document:
     source: DocumentSource
     status: DocumentStatus
     metadata: DocumentMetadata
-    pages: List[DocumentPage] = field(default_factory=list)
+    pages: list[DocumentPage] = field(default_factory=list)
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
 
@@ -187,7 +187,7 @@ class Document:
         metadata: DocumentMetadata,
         doc_type: DocumentType = DocumentType.PDF,
         source: DocumentSource = DocumentSource.UPLOAD,
-        document_id: Optional[str] = None,
+        document_id: str | None = None,
     ) -> "Document":
         return cls(
             document_id=document_id or f"doc_{uuid.uuid4().hex[:12]}",
@@ -200,7 +200,7 @@ class Document:
         )
 
     def to_chunk_provenance(
-        self, page_number: int, section_title: Optional[str] = None
+        self, page_number: int, section_title: str | None = None
     ) -> ChunkProvenance:
         """
         Generates an AI-2A compatible ChunkProvenance record linking back to this document.

@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from typing import Dict, List, Tuple
 
 from app.core.rag.contracts import DocumentChunk, RetrievalFilter
 from app.core.rag.errors import TenantContextMissingError, VectorStoreError
@@ -12,26 +11,22 @@ class VectorStorePort(ABC):
     """
 
     @abstractmethod
-    async def add_chunks(self, chunks: List[DocumentChunk]) -> int:
+    async def add_chunks(self, chunks: list[DocumentChunk]) -> int:
         """Insert or update chunks with their dense embeddings."""
-        pass
 
     @abstractmethod
     async def query_dense(
-        self, vector: List[float], filter: RetrievalFilter, top_k: int = 10
-    ) -> List[Tuple[DocumentChunk, float]]:
+        self, vector: list[float], filter: RetrievalFilter, top_k: int = 10
+    ) -> list[tuple[DocumentChunk, float]]:
         """Find the top-k nearest semantic chunks adhering to the authoritative tenant filter."""
-        pass
 
     @abstractmethod
     async def delete_document(self, tenant_id: str, document_id: str) -> int:
         """Delete all chunks associated with a document under a specific tenant."""
-        pass
 
     @abstractmethod
     async def count(self, tenant_id: str) -> int:
         """Count total active chunks for a tenant."""
-        pass
 
 
 class InMemoryVectorStore(VectorStorePort):
@@ -42,17 +37,16 @@ class InMemoryVectorStore(VectorStorePort):
 
     def __init__(self):
         # tenant_id -> chunk_id -> DocumentChunk
-        self._store: Dict[str, Dict[str, DocumentChunk]] = {}
+        self._store: dict[str, dict[str, DocumentChunk]] = {}
 
-    def add(self, embedding: List[float], metadata: dict) -> None:
+    def add(self, embedding: list[float], metadata: dict) -> None:
         """Backward-compatible synchronous stub."""
-        pass
 
-    def query(self, vector: List[float], top_k: int = 5) -> List[dict]:
+    def query(self, vector: list[float], top_k: int = 5) -> list[dict]:
         """Backward-compatible synchronous stub."""
         return []
 
-    async def add_chunks(self, chunks: List[DocumentChunk]) -> int:
+    async def add_chunks(self, chunks: list[DocumentChunk]) -> int:
         added = 0
         for chunk in chunks:
             if not chunk.tenant_id:
@@ -71,8 +65,8 @@ class InMemoryVectorStore(VectorStorePort):
         return added
 
     async def query_dense(
-        self, vector: List[float], filter: RetrievalFilter, top_k: int = 10
-    ) -> List[Tuple[DocumentChunk, float]]:
+        self, vector: list[float], filter: RetrievalFilter, top_k: int = 10
+    ) -> list[tuple[DocumentChunk, float]]:
         if not filter.tenant_id:
             raise TenantContextMissingError("Dense vector query requires authoritative tenant_id")
 
@@ -80,7 +74,7 @@ class InMemoryVectorStore(VectorStorePort):
         if tid not in self._store or not self._store[tid]:
             return []
 
-        scored: List[Tuple[DocumentChunk, float]] = []
+        scored: list[tuple[DocumentChunk, float]] = []
         for chunk in self._store[tid].values():
             if chunk.embedding is None:
                 continue
@@ -126,7 +120,7 @@ class PgVectorStore(VectorStorePort):
     def __init__(self, session_factory=None):
         self._session_factory = session_factory
 
-    async def add_chunks(self, chunks: List[DocumentChunk]) -> int:
+    async def add_chunks(self, chunks: list[DocumentChunk]) -> int:
         if not self._session_factory:
             raise VectorStoreError(
                 "PgVectorStore session_factory is not configured", store_type="pgvector"
@@ -137,8 +131,8 @@ class PgVectorStore(VectorStorePort):
         return len(chunks)
 
     async def query_dense(
-        self, vector: List[float], filter: RetrievalFilter, top_k: int = 10
-    ) -> List[Tuple[DocumentChunk, float]]:
+        self, vector: list[float], filter: RetrievalFilter, top_k: int = 10
+    ) -> list[tuple[DocumentChunk, float]]:
         if not filter.tenant_id:
             raise TenantContextMissingError("PgVectorStore query requires authoritative tenant_id")
         if not self._session_factory:

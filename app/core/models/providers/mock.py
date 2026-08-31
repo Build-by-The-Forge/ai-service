@@ -1,5 +1,5 @@
 import asyncio
-from typing import AsyncIterator, List, Optional
+from collections.abc import AsyncIterator
 
 from app.core.models.contracts import (
     ModelDecision,
@@ -23,8 +23,8 @@ class MockProviderAdapter(ModelProviderAdapter):
         name: str = "mock",
         default_response: str = "Mock generated content",
         latency_seconds: float = 0.0,
-        simulated_error: Optional[Exception] = None,
-        token_usage: Optional[ModelUsage] = None,
+        simulated_error: Exception | None = None,
+        token_usage: ModelUsage | None = None,
     ):
         self._name = name
         self._default_response = default_response
@@ -33,7 +33,7 @@ class MockProviderAdapter(ModelProviderAdapter):
         self._token_usage = token_usage or ModelUsage(
             prompt_tokens=10, completion_tokens=20, total_tokens=30, estimated_cost_usd=0.00005
         )
-        self.call_history: List[ModelRequest] = []
+        self.call_history: list[ModelRequest] = []
 
     @property
     def name(self) -> str:
@@ -42,7 +42,7 @@ class MockProviderAdapter(ModelProviderAdapter):
     def supports_model(self, model: str) -> bool:
         return True
 
-    def set_simulated_error(self, exc: Optional[Exception]) -> None:
+    def set_simulated_error(self, exc: Exception | None) -> None:
         self._simulated_error = exc
 
     def set_default_response(self, text: str) -> None:

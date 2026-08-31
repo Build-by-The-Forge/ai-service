@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from typing import AsyncIterator, Dict, List, Optional
+from collections.abc import AsyncIterator
 
 from app.core.models.budget import BudgetTracker
 from app.core.models.contracts import (
@@ -35,12 +35,12 @@ class ModelGateway:
 
     def __init__(
         self,
-        providers: Optional[List[ModelProviderAdapter]] = None,
-        budget_tracker: Optional[BudgetTracker] = None,
-        rate_limiter: Optional[TokenBucketRateLimiter] = None,
+        providers: list[ModelProviderAdapter] | None = None,
+        budget_tracker: BudgetTracker | None = None,
+        rate_limiter: TokenBucketRateLimiter | None = None,
     ):
-        self._providers: Dict[str, ModelProviderAdapter] = {}
-        self._circuit_breakers: Dict[str, CircuitBreaker] = {}
+        self._providers: dict[str, ModelProviderAdapter] = {}
+        self._circuit_breakers: dict[str, CircuitBreaker] = {}
         self.budget_tracker = budget_tracker or BudgetTracker()
         self.rate_limiter = rate_limiter or TokenBucketRateLimiter()
 
@@ -56,7 +56,7 @@ class ModelGateway:
         if provider.name not in self._circuit_breakers:
             self._circuit_breakers[provider.name] = CircuitBreaker(provider.name)
 
-    def get_provider(self, name: str) -> Optional[ModelProviderAdapter]:
+    def get_provider(self, name: str) -> ModelProviderAdapter | None:
         return self._providers.get(name)
 
     def get_circuit_breaker(self, provider_name: str) -> CircuitBreaker:
@@ -115,7 +115,7 @@ class ModelGateway:
             )
 
         # 3. Provider Routing & Fallback Loop
-        attempted_providers: List[str] = []
+        attempted_providers: list[str] = []
         candidate_providers = [decision.provider] + [
             p for p in decision.fallback_providers if p != decision.provider
         ]
@@ -123,7 +123,7 @@ class ModelGateway:
             if p not in candidate_providers:
                 candidate_providers.append(p)
 
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
 
         for provider_name in candidate_providers:
             attempted_providers.append(provider_name)
@@ -171,7 +171,7 @@ class ModelGateway:
         # If we got here, all providers failed
         if len(attempted_providers) > 1:
             raise FallbackExhaustedError(
-                f"All candidate providers ({attempted_providers}) failed. Last error: {str(last_error)}",
+                f"All candidate providers ({attempted_providers}) failed. Last error: {last_error!s}",
                 attempted_providers=attempted_providers,
             )
         elif last_error:
@@ -220,7 +220,7 @@ class ModelGateway:
             raise
 
 
-_default_gateway: Optional[ModelGateway] = None
+_default_gateway: ModelGateway | None = None
 
 
 def get_model_gateway() -> ModelGateway:

@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Dict
 
 
 @dataclass(frozen=True)
@@ -23,7 +22,7 @@ class OCRConfig:
     cls_model_name: str = "ch_ppocr_mobile_v2.0_cls_infer"
     enable_orientation_classification: bool = True
     enable_table_extraction: bool = True
-    quality_thresholds: Dict[str, float] = field(
+    quality_thresholds: dict[str, float] = field(
         default_factory=lambda: {
             "min_blur_score": 100.0,
             "min_contrast": 20.0,

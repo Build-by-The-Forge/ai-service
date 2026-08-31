@@ -1,8 +1,9 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.db.models.exam_session import ExamSession
-from app.db.models.exam import Exam
+
 from app.core.tenant import get_school_id
+from app.db.models.exam import Exam
+from app.db.models.exam_session import ExamSession
 
 
 class ExamSessionService:

@@ -1,4 +1,3 @@
-from typing import List
 from app.schemas.tree import TreeNode
 from app.services.tree.traversal import TreeTraversalService
 
@@ -7,7 +6,7 @@ class LearningPathService:
     def __init__(self):
         self.traversal = TreeTraversalService()
 
-    def generate_path(self, root: TreeNode) -> List[TreeNode]:
+    def generate_path(self, root: TreeNode) -> list[TreeNode]:
         """
         Default DFS learning path (will later become AI-adaptive)
         """

@@ -1,5 +1,6 @@
 import time
-from typing import Any, AsyncIterator, Dict, Optional
+from collections.abc import AsyncIterator
+from typing import Any
 
 import httpx
 
@@ -22,7 +23,7 @@ from app.core.models.errors import (
 from app.core.models.provider import ModelProviderAdapter
 
 # Standard pricing table: (input_price_per_1k, output_price_per_1k)
-OPENAI_PRICING: Dict[str, tuple[float, float]] = {
+OPENAI_PRICING: dict[str, tuple[float, float]] = {
     "gpt-4o": (0.005, 0.015),
     "gpt-4o-mini": (0.00015, 0.0006),
     "gpt-4-turbo": (0.01, 0.03),
@@ -42,7 +43,7 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
     Production OpenAI adapter conforming to ModelProviderAdapter.
     """
 
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
+    def __init__(self, api_key: str | None = None, base_url: str | None = None):
         self._api_key = api_key or settings.OPENAI_API_KEY or "sk-mock-key"
         self._base_url = (base_url or "https://api.openai.com/v1").rstrip("/")
 
@@ -60,9 +61,9 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
 
     def _prepare_payload(
         self, request: ModelRequest, decision: ModelDecision, stream: bool = False
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         messages_payload = [msg.to_dict() for msg in request.messages]
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "model": decision.model,
             "messages": messages_payload,
             "temperature": decision.temperature,
@@ -161,11 +162,11 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
 
         except httpx.TimeoutException as te:
             raise ModelTimeoutError(
-                f"OpenAI request timed out after {decision.timeout_seconds}s: {str(te)}",
+                f"OpenAI request timed out after {decision.timeout_seconds}s: {te!s}",
                 provider="openai",
             )
         except httpx.NetworkError as ne:
-            raise ProviderUnavailableError(f"OpenAI network error: {str(ne)}", provider="openai")
+            raise ProviderUnavailableError(f"OpenAI network error: {ne!s}", provider="openai")
 
     async def generate_stream(
         self, request: ModelRequest, decision: ModelDecision
@@ -213,8 +214,8 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
                             )
 
         except httpx.TimeoutException as te:
-            raise ModelTimeoutError(f"OpenAI streaming timed out: {str(te)}", provider="openai")
+            raise ModelTimeoutError(f"OpenAI streaming timed out: {te!s}", provider="openai")
         except httpx.NetworkError as ne:
             raise ProviderUnavailableError(
-                f"OpenAI streaming network error: {str(ne)}", provider="openai"
+                f"OpenAI streaming network error: {ne!s}", provider="openai"
             )

@@ -1,14 +1,13 @@
 from passlib.hash import pbkdf2_sha256
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
-from app.db.models.school import School
-from app.db.models.user import User
+from app.db.base import Base
 from app.db.models.exam import Exam
 from app.db.models.question_bank import Question
-from app.db.base import Base
+from app.db.models.school import School
+from app.db.models.user import User
 
 
 def get_engine():

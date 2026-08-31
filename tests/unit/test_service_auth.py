@@ -1,7 +1,8 @@
 import time
+
 import pytest
-from fastapi import FastAPI, Depends
-from httpx import AsyncClient, ASGITransport
+from fastapi import Depends, FastAPI
+from httpx import ASGITransport, AsyncClient
 
 from app.core.config import settings
 from app.core.service_auth import (

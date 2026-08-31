@@ -1,19 +1,18 @@
-from abc import ABC, abstractmethod
 import hashlib
 import math
-from typing import List, Optional
+from abc import ABC, abstractmethod
 
 from app.core.rag.errors import EmbeddingGenerationError
 
 
-def l2_normalize(vec: List[float]) -> List[float]:
+def l2_normalize(vec: list[float]) -> list[float]:
     norm = math.sqrt(sum(x * x for x in vec))
     if norm == 0.0:
         return vec
     return [x / norm for x in vec]
 
 
-def cosine_similarity(v1: List[float], v2: List[float]) -> float:
+def cosine_similarity(v1: list[float], v2: list[float]) -> float:
     if len(v1) != len(v2) or not v1:
         return 0.0
     dot = sum(a * b for a, b in zip(v1, v2))
@@ -33,17 +32,14 @@ class EmbeddingPort(ABC):
     @abstractmethod
     def dimension(self) -> int:
         """The dimensionality of the output vector (e.g. 1536)."""
-        pass
 
     @abstractmethod
-    async def embed_text(self, text: str) -> List[float]:
+    async def embed_text(self, text: str) -> list[float]:
         """Embed a single text string into a normalized dense vector."""
-        pass
 
     @abstractmethod
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """Embed a batch of text strings."""
-        pass
 
 
 class MockEmbeddingAdapter(EmbeddingPort):
@@ -59,12 +55,12 @@ class MockEmbeddingAdapter(EmbeddingPort):
     def dimension(self) -> int:
         return self._dimension
 
-    def embed(self, text: str) -> List[float]:
+    def embed(self, text: str) -> list[float]:
         return [0.0]
 
-    async def embed_text(self, text: str) -> List[float]:
+    async def embed_text(self, text: str) -> list[float]:
         # Hash text into deterministic float values
-        raw_vec: List[float] = []
+        raw_vec: list[float] = []
         base_hash = hashlib.sha256(text.encode("utf-8")).digest()
         for i in range(self._dimension):
             byte_val = base_hash[i % len(base_hash)]
@@ -73,7 +69,7 @@ class MockEmbeddingAdapter(EmbeddingPort):
             raw_vec.append(val)
         return l2_normalize(raw_vec)
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         return [await self.embed_text(t) for t in texts]
 
 
@@ -84,7 +80,7 @@ class OpenAIEmbeddingAdapter(EmbeddingPort):
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         model: str = "text-embedding-3-small",
         dimension: int = 1536,
     ):
@@ -107,13 +103,13 @@ class OpenAIEmbeddingAdapter(EmbeddingPort):
     def dimension(self) -> int:
         return self._dimension
 
-    async def embed_text(self, text: str) -> List[float]:
+    async def embed_text(self, text: str) -> list[float]:
         batch = await self.embed_batch([text])
         if not batch:
             raise EmbeddingGenerationError("Empty embedding response", provider="openai")
         return batch[0]
 
-    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
         try:

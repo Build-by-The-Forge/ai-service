@@ -1,12 +1,7 @@
-from typing import Optional
-
-
 class RAGError(Exception):
     """Base exception for all RAG and retrieval operations."""
 
-    def __init__(
-        self, message: str, error_code: str = "RAG_ERROR", tenant_id: Optional[str] = None
-    ):
+    def __init__(self, message: str, error_code: str = "RAG_ERROR", tenant_id: str | None = None):
         super().__init__(message)
         self.message = message
         self.error_code = error_code
@@ -44,7 +39,7 @@ class VectorStoreError(RAGError):
 class DocumentNotFoundError(RAGError):
     """Raised when a requested document ID or chunk ID does not exist."""
 
-    def __init__(self, document_id: str, tenant_id: Optional[str] = None):
+    def __init__(self, document_id: str, tenant_id: str | None = None):
         super().__init__(
             f"Document '{document_id}' not found",
             error_code="DOCUMENT_NOT_FOUND",

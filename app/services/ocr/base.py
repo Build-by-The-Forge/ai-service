@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict
 
 
 class OCRProvider(ABC):
     @abstractmethod
-    async def extract_text_from_image(self, image_path: str) -> List[Dict]:
+    async def extract_text_from_image(self, image_path: str) -> list[dict]:
         """
         Returns structured OCR output:
         [
@@ -15,4 +14,3 @@ class OCRProvider(ABC):
             }
         ]
         """
-        pass

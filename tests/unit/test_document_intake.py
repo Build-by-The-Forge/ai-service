@@ -3,10 +3,10 @@ import hashlib
 import pytest
 
 from app.core.documents import (
+    DocumentSizeLimitExceededError,
     DocumentSource,
     DocumentStatus,
     DocumentTenantMissingError,
-    DocumentSizeLimitExceededError,
     UnsupportedDocumentTypeError,
 )
 from app.core.documents.intake import DocumentIntakeService, UnsafeFilenameError

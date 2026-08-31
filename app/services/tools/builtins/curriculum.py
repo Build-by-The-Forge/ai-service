@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from app.core.tools.contracts import ToolContext, ToolDefinition, ToolSideEffect
 
@@ -37,8 +37,8 @@ CURRICULUM_LOOKUP_DEFINITION = ToolDefinition(
 
 
 async def curriculum_lookup_handler(
-    context: ToolContext, arguments: Dict[str, Any]
-) -> Dict[str, Any]:
+    context: ToolContext, arguments: dict[str, Any]
+) -> dict[str, Any]:
     course_code = arguments["course_code"].upper()
     return {
         "tenant_id": context.tenant_id,

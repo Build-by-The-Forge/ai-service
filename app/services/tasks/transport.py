@@ -1,7 +1,7 @@
 import abc
 import asyncio
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from app.core.execution_context import AITask
 from app.core.redis import get_redis_client
@@ -16,7 +16,6 @@ class TaskTransport(abc.ABC):
     @abc.abstractmethod
     async def publish(self, task: AITask, stream_name: str = "stream:ai_tasks") -> str:
         """Publishes an AITask envelope to the designated stream. Returns the transport message ID."""
-        pass
 
     @abc.abstractmethod
     async def consume(
@@ -26,12 +25,11 @@ class TaskTransport(abc.ABC):
         stream_name: str = "stream:ai_tasks",
         count: int = 1,
         block_ms: int = 2000,
-    ) -> List[Tuple[str, AITask]]:
+    ) -> list[tuple[str, AITask]]:
         """
         Consumes tasks from the stream.
         Returns a list of (transport_msg_id, AITask).
         """
-        pass
 
     @abc.abstractmethod
     async def ack(
@@ -41,7 +39,6 @@ class TaskTransport(abc.ABC):
         group: str = "ai_worker_group",
     ) -> None:
         """Acknowledges successful task processing."""
-        pass
 
     @abc.abstractmethod
     async def send_to_dlq(
@@ -51,7 +48,6 @@ class TaskTransport(abc.ABC):
         dlq_stream_name: str = "stream:ai_tasks:dlq",
     ) -> str:
         """Transfers a permanently failed or max-retried task to the Dead-Letter Queue."""
-        pass
 
 
 class InMemoryTaskTransport(TaskTransport):
@@ -60,8 +56,8 @@ class InMemoryTaskTransport(TaskTransport):
     """
 
     def __init__(self):
-        self._queue: asyncio.Queue[Tuple[str, AITask]] = asyncio.Queue()
-        self._dlq: List[Dict[str, Any]] = []
+        self._queue: asyncio.Queue[tuple[str, AITask]] = asyncio.Queue()
+        self._dlq: list[dict[str, Any]] = []
         self._counter = 0
         self._acked: set[str] = set()
 
@@ -78,13 +74,13 @@ class InMemoryTaskTransport(TaskTransport):
         stream_name: str = "stream:ai_tasks",
         count: int = 1,
         block_ms: int = 2000,
-    ) -> List[Tuple[str, AITask]]:
-        items: List[Tuple[str, AITask]] = []
+    ) -> list[tuple[str, AITask]]:
+        items: list[tuple[str, AITask]] = []
         try:
             timeout_sec = max(block_ms / 1000.0, 0.01)
             msg_id, task = await asyncio.wait_for(self._queue.get(), timeout=timeout_sec)
             items.append((msg_id, task))
-        except asyncio.TimeoutError:
+        except TimeoutError:
             pass
         return items
 
@@ -114,7 +110,7 @@ class InMemoryTaskTransport(TaskTransport):
         return dlq_id
 
     @property
-    def dlq_items(self) -> List[Dict[str, Any]]:
+    def dlq_items(self) -> list[dict[str, Any]]:
         return self._dlq
 
 
@@ -123,7 +119,7 @@ class RedisStreamTransport(TaskTransport):
     Production-grade Redis Streams transport using consumer groups (XADD, XREADGROUP, XACK).
     """
 
-    def __init__(self, fallback: Optional[TaskTransport] = None):
+    def __init__(self, fallback: TaskTransport | None = None):
         self._fallback = fallback or InMemoryTaskTransport()
         self._groups_created: set[str] = set()
 
@@ -158,7 +154,7 @@ class RedisStreamTransport(TaskTransport):
         stream_name: str = "stream:ai_tasks",
         count: int = 1,
         block_ms: int = 2000,
-    ) -> List[Tuple[str, AITask]]:
+    ) -> list[tuple[str, AITask]]:
         try:
             await self._ensure_group(stream_name, group)
             client = get_redis_client()
@@ -170,7 +166,7 @@ class RedisStreamTransport(TaskTransport):
                 count=count,
                 block=block_ms,
             )
-            results: List[Tuple[str, AITask]] = []
+            results: list[tuple[str, AITask]] = []
             if raw_entries:
                 for stream, messages in raw_entries:
                     for msg_id, data in messages:
@@ -213,7 +209,7 @@ class RedisStreamTransport(TaskTransport):
 
 
 # Global Transport Provider
-_default_transport: Optional[TaskTransport] = None
+_default_transport: TaskTransport | None = None
 
 
 def get_task_transport() -> TaskTransport:

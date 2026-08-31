@@ -1,4 +1,5 @@
 import pytest
+
 from app.core.callbacks.dispatcher import InMemoryCallbackDispatcher
 from app.core.callbacks.events import CallbackEventType
 from app.core.execution_context import AITask, TaskStatus

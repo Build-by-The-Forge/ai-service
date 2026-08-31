@@ -1,7 +1,6 @@
 import json
 import logging
 import time
-from typing import List, Optional
 
 from app.core.agents.contracts import (
     AgentContext,
@@ -41,10 +40,10 @@ class AgentExecutor:
 
     def __init__(
         self,
-        model_gateway: Optional[ModelGateway] = None,
-        tool_registry: Optional[ToolRegistry] = None,
-        tool_executor: Optional[ToolExecutor] = None,
-        agent_registry: Optional[AgentRegistry] = None,
+        model_gateway: ModelGateway | None = None,
+        tool_registry: ToolRegistry | None = None,
+        tool_executor: ToolExecutor | None = None,
+        agent_registry: AgentRegistry | None = None,
     ):
         self.model_gateway = model_gateway or get_model_gateway()
         self.tool_registry = tool_registry or get_tool_registry()
@@ -80,7 +79,7 @@ class AgentExecutor:
         agent_id: str,
         prompt: str,
         context: AgentContext,
-        custom_policy: Optional[AgentExecutionPolicy] = None,
+        custom_policy: AgentExecutionPolicy | None = None,
     ) -> AgentResult:
         start_time = time.time()
 
@@ -140,12 +139,12 @@ class AgentExecutor:
         tools_schema = [t.to_openai_tool() for t in available_tools] if available_tools else None
 
         # 5. Initialize Conversation History
-        messages: List[ModelMessage] = [
+        messages: list[ModelMessage] = [
             ModelMessage(role=ModelRole.SYSTEM, content=definition.system_prompt),
             ModelMessage(role=ModelRole.USER, content=prompt),
         ]
 
-        final_output: Optional[str] = None
+        final_output: str | None = None
 
         # 6. Bounded ReAct Execution Loop
         while run.is_active():
@@ -224,7 +223,7 @@ class AgentExecutor:
                 if run.consecutive_failures >= effective_policy.max_consecutive_failures:
                     run.transition_to(
                         AgentState.FAILED,
-                        error=f"Consecutive model failure limit reached: {str(model_err)}",
+                        error=f"Consecutive model failure limit reached: {model_err!s}",
                     )
                     break
                 else:
@@ -319,7 +318,7 @@ class AgentExecutor:
         return self._build_result(run, start_time, output=final_output)
 
     def _build_result(
-        self, run: AgentRun, start_time: float, output: Optional[str] = None
+        self, run: AgentRun, start_time: float, output: str | None = None
     ) -> AgentResult:
         latency_ms = (time.time() - start_time) * 1000.0
         return AgentResult(
@@ -345,7 +344,7 @@ class AgentExecutor:
         )
 
 
-_default_executor: Optional[AgentExecutor] = None
+_default_executor: AgentExecutor | None = None
 
 
 def get_agent_executor() -> AgentExecutor:

@@ -1,8 +1,7 @@
+import time
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-import time
-from typing import List, Optional
-import uuid
 
 from app.core.models.contracts import ModelPolicy, ModelUsage
 from app.core.tools.contracts import ToolExecutionPolicy
@@ -33,16 +32,16 @@ class AgentContext:
     correlation_id: str
     agent_run_id: str = field(default_factory=lambda: f"arun_{uuid.uuid4().hex[:12]}")
     actor_role: str = "assistant"
-    permissions: List[str] = field(default_factory=list)
-    capabilities: List[str] = field(default_factory=list)
-    deadline: Optional[float] = None
+    permissions: list[str] = field(default_factory=list)
+    capabilities: list[str] = field(default_factory=list)
+    deadline: float | None = None
     _is_cancelled: bool = False
-    _cancellation_reason: Optional[str] = None
+    _cancellation_reason: str | None = None
 
     def is_cancelled(self) -> bool:
         return self._is_cancelled
 
-    def cancellation_reason(self) -> Optional[str]:
+    def cancellation_reason(self) -> str | None:
         return self._cancellation_reason
 
     def is_expired(self) -> bool:
@@ -61,7 +60,7 @@ class AgentExecutionPolicy:
     max_model_calls: int = 10
     max_tool_calls: int = 10
     max_tokens: int = 8192
-    max_cost_usd: Optional[float] = None
+    max_cost_usd: float | None = None
     max_runtime_seconds: float = 60.0
     max_consecutive_failures: int = 3
     max_output_bytes: int = 262144  # 256 KB
@@ -81,9 +80,9 @@ class AgentDefinition:
     model_policy: ModelPolicy = field(default_factory=ModelPolicy)
     tool_policy: ToolExecutionPolicy = field(default_factory=ToolExecutionPolicy)
     execution_policy: AgentExecutionPolicy = field(default_factory=AgentExecutionPolicy)
-    allowed_tools: Optional[List[str]] = None
-    required_permissions: List[str] = field(default_factory=list)
-    required_capabilities: List[str] = field(default_factory=list)
+    allowed_tools: list[str] | None = None
+    required_permissions: list[str] = field(default_factory=list)
+    required_capabilities: list[str] = field(default_factory=list)
     allow_proposals: bool = True
     allow_mutating: bool = False
     is_enabled: bool = True
@@ -111,9 +110,9 @@ class AgentRun:
     total_tokens: int = 0
     estimated_cost_usd: float = 0.0
     started_at: float = field(default_factory=time.time)
-    completed_at: Optional[float] = None
-    deadline: Optional[float] = None
-    last_error: Optional[str] = None
+    completed_at: float | None = None
+    deadline: float | None = None
+    last_error: str | None = None
     consecutive_failures: int = 0
 
     def is_active(self) -> bool:
@@ -132,7 +131,7 @@ class AgentRun:
     def record_step(self) -> None:
         self.step_count += 1
 
-    def transition_to(self, new_state: AgentState, error: Optional[str] = None) -> None:
+    def transition_to(self, new_state: AgentState, error: str | None = None) -> None:
         if not self.is_active() and new_state != self.state:
             raise ValueError(f"Cannot transition terminal run from {self.state} to {new_state}")
         self.state = new_state
@@ -158,7 +157,7 @@ class AgentResult:
     run_id: str
     agent_id: str
     state: AgentState
-    output: Optional[str] = None
+    output: str | None = None
     step_count: int = 0
     model_call_count: int = 0
     tool_call_count: int = 0
@@ -167,5 +166,5 @@ class AgentResult:
     started_at: float = 0.0
     completed_at: float = 0.0
     latency_ms: float = 0.0
-    error_code: Optional[str] = None
-    error_message: Optional[str] = None
+    error_code: str | None = None
+    error_message: str | None = None

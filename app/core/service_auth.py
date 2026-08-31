@@ -31,7 +31,7 @@ def compute_service_signature(
     else:
         body_bytes = body
 
-    canonical_payload = f"{method.upper()}\n{path}\n{timestamp}\n".encode("utf-8") + body_bytes
+    canonical_payload = f"{method.upper()}\n{path}\n{timestamp}\n".encode() + body_bytes
     return hmac.new(secret.encode("utf-8"), canonical_payload, hashlib.sha256).hexdigest()
 
 

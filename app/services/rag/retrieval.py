@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from app.core.rag.contracts import (
     ChunkProvenance,
@@ -26,10 +26,10 @@ class HybridRetrievalEngine:
 
     def __init__(
         self,
-        embedder: Optional[EmbeddingPort] = None,
-        vector_store: Optional[VectorStorePort] = None,
-        lexical_index: Optional[LexicalIndexPort] = None,
-        chunker: Optional[Chunker] = None,
+        embedder: EmbeddingPort | None = None,
+        vector_store: VectorStorePort | None = None,
+        lexical_index: LexicalIndexPort | None = None,
+        chunker: Chunker | None = None,
     ):
         self.embedder = embedder or MockEmbeddingAdapter()
         self.vector_store = vector_store or InMemoryVectorStore()
@@ -42,10 +42,10 @@ class HybridRetrievalEngine:
         document_id: str,
         document_title: str,
         text: str,
-        course_code: Optional[str] = None,
-        topic: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        provenance: Optional[ChunkProvenance] = None,
+        course_code: str | None = None,
+        topic: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        provenance: ChunkProvenance | None = None,
     ) -> int:
         """
         Ingest, chunk, embed, and index a document across dense and sparse stores.
@@ -83,7 +83,7 @@ class HybridRetrievalEngine:
         self,
         query: str,
         filter: RetrievalFilter,
-        policy: Optional[RetrievalPolicy] = None,
+        policy: RetrievalPolicy | None = None,
     ) -> RetrievedContext:
         """
         Execute dense and sparse hybrid retrieval with Reciprocal Rank Fusion.
@@ -116,10 +116,10 @@ class HybridRetrievalEngine:
 
         # Reciprocal Rank Fusion (RRF)
         # RRF_Score(d) = w_dense / (rrf_k + rank_dense) + w_sparse / (rrf_k + rank_sparse)
-        chunk_map: Dict[str, DocumentChunk] = {}
-        dense_scores: Dict[str, float] = {}
-        sparse_scores: Dict[str, float] = {}
-        rrf_scores: Dict[str, float] = {}
+        chunk_map: dict[str, DocumentChunk] = {}
+        dense_scores: dict[str, float] = {}
+        sparse_scores: dict[str, float] = {}
+        rrf_scores: dict[str, float] = {}
 
         for rank, (chunk, score) in enumerate(dense_results, start=1):
             cid = chunk.chunk_id
@@ -140,7 +140,7 @@ class HybridRetrievalEngine:
         # Sort candidate chunks by fused RRF score
         sorted_cids = sorted(rrf_scores.keys(), key=lambda cid: rrf_scores[cid], reverse=True)
 
-        retrieved_chunks: List[RetrievedChunk] = []
+        retrieved_chunks: list[RetrievedChunk] = []
         cumulative_bytes = 0
         current_rank = 1
 
@@ -178,7 +178,7 @@ class HybridRetrievalEngine:
 
 
 # Global singleton instance for app-wide hybrid retrieval
-_default_retrieval_engine: Optional[HybridRetrievalEngine] = None
+_default_retrieval_engine: HybridRetrievalEngine | None = None
 
 
 def get_retrieval_engine() -> HybridRetrievalEngine:
@@ -195,10 +195,10 @@ def set_retrieval_engine(engine: HybridRetrievalEngine) -> None:
 
 # Backward-compatible RetrievalService facade
 class RetrievalService:
-    def __init__(self, engine: Optional[HybridRetrievalEngine] = None):
+    def __init__(self, engine: HybridRetrievalEngine | None = None):
         self.engine = engine or get_retrieval_engine()
 
-    async def retrieve(self, query: str) -> List[Dict[str, Any]]:
+    async def retrieve(self, query: str) -> list[dict[str, Any]]:
         from app.core import tenant
 
         school_id = tenant.get_school_id() or "default"

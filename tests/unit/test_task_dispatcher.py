@@ -1,4 +1,5 @@
 import pytest
+
 from app.services.tasks.dispatcher import TaskDispatcher
 from app.services.tasks.transport import InMemoryTaskTransport
 

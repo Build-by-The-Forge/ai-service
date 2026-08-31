@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 from app.core.documents.config import OCRConfig
 from app.core.documents.contracts import Document, DocumentPage, OCRDocument, OCRPage
@@ -15,27 +15,24 @@ class OCRPort(ABC):
     async def extract_page(
         self,
         page: DocumentPage,
-        config: Optional[OCRConfig] = None,
+        config: OCRConfig | None = None,
     ) -> OCRPage:
         """
         Extract text, bounding boxes, block types, and confidence scores from a single DocumentPage.
         """
-        pass
 
     @abstractmethod
     async def extract_document(
         self,
         document: Document,
-        config: Optional[OCRConfig] = None,
+        config: OCRConfig | None = None,
     ) -> OCRDocument:
         """
         Extract and aggregate OCR structures across all pages of a Document.
         """
-        pass
 
     @abstractmethod
-    async def health_check(self) -> Dict[str, Any]:
+    async def health_check(self) -> dict[str, Any]:
         """
         Verifies OCR runtime engine readiness and compiled model states.
         """
-        pass

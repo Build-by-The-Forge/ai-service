@@ -1,5 +1,7 @@
 import time
+
 import pytest
+
 from app.core.agents.contracts import AgentContext, AgentExecutionPolicy, AgentState
 from app.core.models.contracts import ModelDecision, ModelRequest, ModelResponse
 from app.core.models.gateway import ModelGateway

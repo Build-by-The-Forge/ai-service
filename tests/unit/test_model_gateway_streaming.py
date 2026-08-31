@@ -1,5 +1,7 @@
 import asyncio
+
 import pytest
+
 from app.core.models.contracts import (
     ModelInvocationContext,
     ModelMessage,

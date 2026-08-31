@@ -1,7 +1,8 @@
 from fastapi import APIRouter
+
 from app.schemas.common import APIResponse
-from app.services.tree.learning_path import LearningPathService
 from app.schemas.tree import TreeNode
+from app.services.tree.learning_path import LearningPathService
 
 router = APIRouter()
 

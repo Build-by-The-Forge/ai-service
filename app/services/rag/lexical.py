@@ -1,8 +1,7 @@
-from abc import ABC, abstractmethod
-from collections import Counter
 import math
 import re
-from typing import Dict, List, Set, Tuple
+from abc import ABC, abstractmethod
+from collections import Counter
 
 from app.core.rag.contracts import DocumentChunk, RetrievalFilter
 from app.core.rag.errors import TenantContextMissingError
@@ -14,13 +13,13 @@ class LexicalIndexPort(ABC):
     """
 
     @abstractmethod
-    async def index_chunks(self, chunks: List[DocumentChunk]) -> int:
+    async def index_chunks(self, chunks: list[DocumentChunk]) -> int:
         pass
 
     @abstractmethod
     async def query_sparse(
         self, query: str, filter: RetrievalFilter, top_k: int = 10
-    ) -> List[Tuple[DocumentChunk, float]]:
+    ) -> list[tuple[DocumentChunk, float]]:
         pass
 
     @abstractmethod
@@ -38,20 +37,20 @@ class BM25Index(LexicalIndexPort):
         self.k1 = k1
         self.b = b
         # tenant_id -> chunk_id -> DocumentChunk
-        self._chunks: Dict[str, Dict[str, DocumentChunk]] = {}
+        self._chunks: dict[str, dict[str, DocumentChunk]] = {}
         # tenant_id -> chunk_id -> Counter(term -> count)
-        self._term_freqs: Dict[str, Dict[str, Counter]] = {}
+        self._term_freqs: dict[str, dict[str, Counter]] = {}
         # tenant_id -> term -> set(chunk_ids)
-        self._inverted_index: Dict[str, Dict[str, Set[str]]] = {}
+        self._inverted_index: dict[str, dict[str, set[str]]] = {}
         # tenant_id -> total words in all chunks
-        self._doc_lengths: Dict[str, Dict[str, int]] = {}
+        self._doc_lengths: dict[str, dict[str, int]] = {}
 
-    def _tokenize(self, text: str) -> List[str]:
+    def _tokenize(self, text: str) -> list[str]:
         # Lowercase and split on non-alphanumeric (preserves acronyms and course codes like CSC201)
         tokens = re.findall(r"\b[a-zA-Z0-9_-]+\b", text.lower())
         return tokens
 
-    async def index_chunks(self, chunks: List[DocumentChunk]) -> int:
+    async def index_chunks(self, chunks: list[DocumentChunk]) -> int:
         indexed_count = 0
         for chunk in chunks:
             if not chunk.tenant_id:
@@ -84,7 +83,7 @@ class BM25Index(LexicalIndexPort):
 
     async def query_sparse(
         self, query: str, filter: RetrievalFilter, top_k: int = 10
-    ) -> List[Tuple[DocumentChunk, float]]:
+    ) -> list[tuple[DocumentChunk, float]]:
         if not filter.tenant_id:
             raise TenantContextMissingError("BM25 query requires authoritative tenant_id")
 
@@ -99,7 +98,7 @@ class BM25Index(LexicalIndexPort):
         n_docs = len(self._chunks[tid])
         avg_doc_len = sum(self._doc_lengths[tid].values()) / max(1, n_docs)
 
-        scores: Dict[str, float] = {}
+        scores: dict[str, float] = {}
 
         for term in tokens:
             matching_chunks = self._inverted_index[tid].get(term, set())
@@ -136,7 +135,7 @@ class BM25Index(LexicalIndexPort):
             return []
 
         max_score = max(scores.values()) or 1.0
-        ranked: List[Tuple[DocumentChunk, float]] = []
+        ranked: list[tuple[DocumentChunk, float]] = []
         for cid, raw_score in scores.items():
             norm_score = raw_score / max_score
             if norm_score >= filter.min_score:

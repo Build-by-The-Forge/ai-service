@@ -1,4 +1,5 @@
 from fastapi import Depends, Header, HTTPException, status
+
 from app.auth.permissions import rbac
 from app.auth.token import decode_jwt
 from app.core.tenant import set_school_id

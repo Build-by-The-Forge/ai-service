@@ -1,8 +1,8 @@
+import time
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-import time
-from typing import Any, Dict, List, Optional
-import uuid
+from typing import Any
 
 
 class ModelRole(str, Enum):
@@ -16,12 +16,12 @@ class ModelRole(str, Enum):
 class ModelMessage:
     role: ModelRole
     content: str
-    name: Optional[str] = None
-    tool_call_id: Optional[str] = None
-    tool_calls: Optional[List[Dict[str, Any]]] = None
+    name: str | None = None
+    tool_call_id: str | None = None
+    tool_calls: list[dict[str, Any]] | None = None
 
-    def to_dict(self) -> Dict[str, Any]:
-        data: Dict[str, Any] = {
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
             "role": self.role.value if isinstance(self.role, ModelRole) else str(self.role),
             "content": self.content,
         }
@@ -45,7 +45,7 @@ class ModelInvocationContext:
     execution_id: str
     task_id: str
     correlation_id: str
-    agent_run_id: Optional[str] = None
+    agent_run_id: str | None = None
     model_call_id: str = field(default_factory=lambda: f"call_{uuid.uuid4().hex[:12]}")
     created_at: float = field(default_factory=time.time)
 
@@ -59,9 +59,9 @@ class ModelPolicy:
 
     quality: str = "balanced"  # "fast", "balanced", "high"
     preferred_provider: str = "openai"
-    fallback_providers: List[str] = field(default_factory=list)
+    fallback_providers: list[str] = field(default_factory=list)
     max_tokens: int = 2048
-    max_cost_usd: Optional[float] = None
+    max_cost_usd: float | None = None
     timeout_seconds: float = 30.0
     max_retries: int = 3
     temperature: float = 0.7
@@ -75,11 +75,11 @@ class ModelDecision:
 
     provider: str
     model: str
-    fallback_providers: List[str]
+    fallback_providers: list[str]
     max_tokens: int
     timeout_seconds: float
     max_retries: int
-    max_cost_usd: Optional[float]
+    max_cost_usd: float | None
     temperature: float
 
 
@@ -105,17 +105,17 @@ class ModelRequest:
     Provider-independent request contract for all model invocations.
     """
 
-    messages: List[ModelMessage]
+    messages: list[ModelMessage]
     context: ModelInvocationContext
-    policy: Optional[ModelPolicy] = None
-    model: Optional[str] = None
-    temperature: Optional[float] = None
-    max_tokens: Optional[int] = None
-    top_p: Optional[float] = None
+    policy: ModelPolicy | None = None
+    model: str | None = None
+    temperature: float | None = None
+    max_tokens: int | None = None
+    top_p: float | None = None
     stream: bool = False
-    tools: Optional[List[Dict[str, Any]]] = None
-    tool_choice: Optional[Any] = None
-    response_format: Optional[Dict[str, Any]] = None
+    tools: list[dict[str, Any]] | None = None
+    tool_choice: Any | None = None
+    response_format: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -128,11 +128,11 @@ class ModelResponse:
     model: str
     provider: str
     role: ModelRole = ModelRole.ASSISTANT
-    finish_reason: Optional[str] = "stop"
-    tool_calls: Optional[List[Dict[str, Any]]] = None
+    finish_reason: str | None = "stop"
+    tool_calls: list[dict[str, Any]] | None = None
     usage: ModelUsage = field(default_factory=ModelUsage)
     latency_ms: float = 0.0
-    context: Optional[ModelInvocationContext] = None
+    context: ModelInvocationContext | None = None
 
 
 @dataclass(frozen=True)
@@ -144,6 +144,6 @@ class ModelStreamChunk:
     delta_content: str
     model: str
     provider: str
-    finish_reason: Optional[str] = None
-    tool_calls: Optional[List[Dict[str, Any]]] = None
-    usage: Optional[ModelUsage] = None
+    finish_reason: str | None = None
+    tool_calls: list[dict[str, Any]] | None = None
+    usage: ModelUsage | None = None

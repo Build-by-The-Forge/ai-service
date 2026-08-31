@@ -2,7 +2,6 @@ import hashlib
 import re
 from dataclasses import dataclass
 from pathlib import PurePosixPath
-from typing import Optional
 
 from app.core.documents.config import OCRConfig
 from app.core.documents.contracts import Document, DocumentMetadata
@@ -14,7 +13,6 @@ from app.core.documents.errors import (
 )
 from app.core.rag.contracts import ContentAuthority
 from app.core.tenant import get_school_id
-
 
 _SUPPORTED_MIME_TYPES = {
     "application/pdf": DocumentType.PDF,
@@ -42,7 +40,9 @@ class DocumentIngestionResult:
 class DocumentStoragePort:
     """Minimal storage port that keeps tenant and document identity isolated by design."""
 
-    async def write_document(self, tenant_id: str, document_id: str, filename: str, content: bytes) -> str:
+    async def write_document(
+        self, tenant_id: str, document_id: str, filename: str, content: bytes
+    ) -> str:
         safe_name = PurePosixPath(filename).name
         if not safe_name or safe_name != filename or "/" in filename or "\\" in filename:
             raise UnsafeFilenameError(f"Unsafe filename: {filename!r}")
@@ -56,8 +56,8 @@ class DocumentIntakeService:
     def __init__(
         self,
         max_document_bytes: int = 20 * 1024 * 1024,
-        storage_port: Optional[DocumentStoragePort] = None,
-        ocr_config: Optional[OCRConfig] = None,
+        storage_port: DocumentStoragePort | None = None,
+        ocr_config: OCRConfig | None = None,
     ):
         self.max_document_bytes = max_document_bytes
         self.storage_port = storage_port or DocumentStoragePort()
@@ -99,7 +99,7 @@ class DocumentIntakeService:
         content: bytes,
         mime_type: str,
         source: DocumentSource,
-        title: Optional[str] = None,
+        title: str | None = None,
     ) -> DocumentIngestionResult:
         tenant_id = self._require_authoritative_tenant()
         safe_name = self._validate_filename(filename)
@@ -116,7 +116,7 @@ class DocumentIntakeService:
             )
 
         content_hash = self._calculate_hash(content)
-        document_id = f"doc_{hashlib.sha256(f'{tenant_id}:{safe_name}:{content_hash}'.encode('utf-8')).hexdigest()[:12]}"
+        document_id = f"doc_{hashlib.sha256(f'{tenant_id}:{safe_name}:{content_hash}'.encode()).hexdigest()[:12]}"
         storage_uri = f"tenants/{tenant_id}/documents/{document_id}/{safe_name}"
 
         metadata = DocumentMetadata(
@@ -155,7 +155,7 @@ class DocumentIntakeService:
         content: bytes,
         mime_type: str,
         source: DocumentSource,
-        title: Optional[str] = None,
+        title: str | None = None,
     ) -> DocumentIngestionResult:
         return __import__("asyncio").run(
             self.submit_document_async(

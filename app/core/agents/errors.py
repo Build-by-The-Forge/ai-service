@@ -1,12 +1,7 @@
-from typing import Optional
-
-
 class AgentError(Exception):
     """Base exception for all agent runtime operations."""
 
-    def __init__(
-        self, message: str, agent_id: Optional[str] = None, error_code: str = "AGENT_ERROR"
-    ):
+    def __init__(self, message: str, agent_id: str | None = None, error_code: str = "AGENT_ERROR"):
         super().__init__(message)
         self.message = message
         self.agent_id = agent_id
@@ -66,7 +61,7 @@ class AgentBudgetExceededError(AgentError):
         budget_type: str,
         limit: float,
         current: float,
-        agent_id: Optional[str] = None,
+        agent_id: str | None = None,
     ):
         super().__init__(message, agent_id=agent_id, error_code="AGENT_BUDGET_EXCEEDED")
         self.budget_type = budget_type

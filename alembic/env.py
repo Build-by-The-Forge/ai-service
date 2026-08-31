@@ -3,18 +3,18 @@ import sys
 from logging.config import fileConfig
 from pathlib import Path
 
-from alembic import context
 from sqlalchemy import pool
+
+from alembic import context
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from app.core.config import settings  # noqa: E402
-from app.db.base import Base  # noqa: E402
-
-import app.db.models  # noqa: F401,E402 - import all models so metadata is populated
+import app.db.models  # noqa: F401 - import all models so metadata is populated
+from app.core.config import settings
+from app.db.base import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

@@ -1,6 +1,6 @@
 import abc
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Any
 
 from app.core.execution_context import AIExecutionContext
 
@@ -11,12 +11,11 @@ class TaskHandler(abc.ABC):
     """
 
     @abc.abstractmethod
-    async def handle(self, ctx: AIExecutionContext, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle(self, ctx: AIExecutionContext, payload: dict[str, Any]) -> dict[str, Any]:
         """
         Executes the business logic for the task in the given execution context.
         Returns a result dictionary on success or raises an exception on failure.
         """
-        pass
 
 
 class ContentIngestionTaskHandler(TaskHandler):
@@ -24,7 +23,7 @@ class ContentIngestionTaskHandler(TaskHandler):
     Deterministic task handler for content ingestion pipelines (OCR, PDF/Doc parsing, chunking, indexing).
     """
 
-    async def handle(self, ctx: AIExecutionContext, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle(self, ctx: AIExecutionContext, payload: dict[str, Any]) -> dict[str, Any]:
         if ctx.is_cancelled():
             raise asyncio.CancelledError(f"Task cancelled: {ctx.cancellation_reason}")
 
@@ -66,10 +65,10 @@ class AgentExecutionTaskHandler(TaskHandler):
     Task handler bridging background task worker executions to bounded agent orchestration.
     """
 
-    def __init__(self, agent_executor: Optional[Any] = None):
+    def __init__(self, agent_executor: Any | None = None):
         self._executor = agent_executor
 
-    async def handle(self, ctx: AIExecutionContext, payload: Dict[str, Any]) -> Dict[str, Any]:
+    async def handle(self, ctx: AIExecutionContext, payload: dict[str, Any]) -> dict[str, Any]:
         from app.core.agents.contracts import AgentContext
         from app.services.agents.executor import get_agent_executor
 
@@ -123,7 +122,7 @@ class TaskHandlerRegistry:
     """
 
     def __init__(self):
-        self._handlers: Dict[str, TaskHandler] = {}
+        self._handlers: dict[str, TaskHandler] = {}
         # Register default handlers
         self.register("content.ingestion", ContentIngestionTaskHandler())
         self.register("agent.execution", AgentExecutionTaskHandler())
@@ -131,11 +130,11 @@ class TaskHandlerRegistry:
     def register(self, task_type: str, handler: TaskHandler) -> None:
         self._handlers[task_type] = handler
 
-    def get(self, task_type: str) -> Optional[TaskHandler]:
+    def get(self, task_type: str) -> TaskHandler | None:
         return self._handlers.get(task_type)
 
 
-_default_registry: Optional[TaskHandlerRegistry] = None
+_default_registry: TaskHandlerRegistry | None = None
 
 
 def get_task_handler_registry() -> TaskHandlerRegistry:

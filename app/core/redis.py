@@ -1,4 +1,5 @@
 import redis.asyncio as redis
+
 from app.core.config import settings
 
 redis_url = settings.REDIS_URL or f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}"

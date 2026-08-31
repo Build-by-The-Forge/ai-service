@@ -1,4 +1,5 @@
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple
+from collections.abc import Callable, Coroutine
+from typing import Any
 
 from app.core.tools.contracts import (
     ToolContext,
@@ -7,7 +8,7 @@ from app.core.tools.contracts import (
     ToolSideEffect,
 )
 
-ToolHandler = Callable[[ToolContext, Dict[str, Any]], Coroutine[Any, Any, Any]]
+ToolHandler = Callable[[ToolContext, dict[str, Any]], Coroutine[Any, Any, Any]]
 
 
 class ToolRegistry:
@@ -17,7 +18,7 @@ class ToolRegistry:
     """
 
     def __init__(self):
-        self._tools: Dict[str, Tuple[ToolDefinition, ToolHandler]] = {}
+        self._tools: dict[str, tuple[ToolDefinition, ToolHandler]] = {}
 
     def register(self, definition: ToolDefinition, handler: ToolHandler) -> None:
         self._tools[definition.name] = (definition, handler)
@@ -25,18 +26,18 @@ class ToolRegistry:
     def unregister(self, name: str) -> None:
         self._tools.pop(name, None)
 
-    def get(self, name: str) -> Optional[Tuple[ToolDefinition, ToolHandler]]:
+    def get(self, name: str) -> tuple[ToolDefinition, ToolHandler] | None:
         return self._tools.get(name)
 
     def list_available(
         self,
         context: ToolContext,
-        policy: Optional[ToolExecutionPolicy] = None,
-    ) -> List[ToolDefinition]:
+        policy: ToolExecutionPolicy | None = None,
+    ) -> list[ToolDefinition]:
         """
         Returns the subset of registered tools that the caller is authorized and permitted to execute.
         """
-        available: List[ToolDefinition] = []
+        available: list[ToolDefinition] = []
 
         for definition, _ in self._tools.values():
             if not definition.is_enabled:
@@ -71,7 +72,7 @@ class ToolRegistry:
         return available
 
 
-_default_registry: Optional[ToolRegistry] = None
+_default_registry: ToolRegistry | None = None
 
 
 def get_tool_registry() -> ToolRegistry:

@@ -1,8 +1,8 @@
+import time
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-import time
-from typing import Any, Dict, Optional
-import uuid
+from typing import Any
 
 
 class CallbackEventType(str, Enum):
@@ -28,16 +28,16 @@ class CallbackEvent:
     correlation_id: str
     event_type: CallbackEventType
     event_id: str = field(default_factory=lambda: f"evt_{uuid.uuid4().hex}")
-    progress_pct: Optional[int] = None
-    error_code: Optional[str] = None
-    error_message: Optional[str] = None
-    retryable: Optional[bool] = None
-    extracted_metadata: Optional[Dict[str, Any]] = None
-    chunk_summary: Optional[Dict[str, Any]] = None
+    progress_pct: int | None = None
+    error_code: str | None = None
+    error_message: str | None = None
+    retryable: bool | None = None
+    extracted_metadata: dict[str, Any] | None = None
+    chunk_summary: dict[str, Any] | None = None
     timestamp: float = field(default_factory=time.time)
 
-    def to_dict(self) -> Dict[str, Any]:
-        data: Dict[str, Any] = {
+    def to_dict(self) -> dict[str, Any]:
+        data: dict[str, Any] = {
             "job_id": self.job_id,
             "asset_id": self.asset_id,
             "tenant_id": self.tenant_id,
@@ -45,9 +45,11 @@ class CallbackEvent:
             "attempt_count": self.attempt_count,
             "external_task_id": self.external_task_id,
             "correlation_id": self.correlation_id,
-            "event_type": self.event_type.value
-            if isinstance(self.event_type, CallbackEventType)
-            else str(self.event_type),
+            "event_type": (
+                self.event_type.value
+                if isinstance(self.event_type, CallbackEventType)
+                else str(self.event_type)
+            ),
             "event_id": self.event_id,
             "timestamp": self.timestamp,
         }
@@ -74,10 +76,10 @@ class CallbackDeliveryResult:
     """
 
     success: bool
-    status_code: Optional[int] = None
+    status_code: int | None = None
     attempts: int = 1
     retryable: bool = False
-    error_code: Optional[str] = None
-    error_message: Optional[str] = None
-    delivered_at: Optional[float] = None
-    event_id: Optional[str] = None
+    error_code: str | None = None
+    error_message: str | None = None
+    delivered_at: float | None = None
+    event_id: str | None = None

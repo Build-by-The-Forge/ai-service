@@ -1,5 +1,5 @@
-from typing import Any, Dict
 import uuid
+from typing import Any
 
 from app.core.tools.contracts import ToolContext, ToolDefinition, ToolSideEffect
 
@@ -50,7 +50,7 @@ DRAFT_QUESTION_DEFINITION = ToolDefinition(
 )
 
 
-async def draft_question_handler(context: ToolContext, arguments: Dict[str, Any]) -> Dict[str, Any]:
+async def draft_question_handler(context: ToolContext, arguments: dict[str, Any]) -> dict[str, Any]:
     topic = arguments["topic"]
     difficulty = arguments["difficulty"]
     q_type = arguments.get("question_type", "MULTIPLE_CHOICE")

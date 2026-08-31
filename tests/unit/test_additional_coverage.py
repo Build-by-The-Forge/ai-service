@@ -18,20 +18,20 @@ from app.auth import routes as auth_routes
 from app.core import dependencies as core_dependencies
 from app.core import exceptions as core_exceptions
 from app.core import logging as core_logging
+from app.core import token_verifier
 from app.core.middleware.tenant import TenantMiddleware
 from app.core.prompt_builder import PromptBuilder
 from app.core.rbac import RBAC
-from app.core import token_verifier
 from app.core.token_verifier import TokenVerifier
 from app.db import session as db_session
 from app.rag.pipeline import RAGPipeline
 from app.schemas.chat import ChatRequest, ChatResponse
 from app.schemas.ocr import OCRRequest, OCRResponse
 from app.schemas.rag import RetrieveRequest, RetrieveResponse
+from app.services.exam.redis_timer import RedisExamTimer
 from app.services.ocr.image_parser import ImageParser
 from app.services.realtime.sync_bridge import SyncBridge
 from app.services.tree.learning_path import LearningPathService
-from app.services.exam.redis_timer import RedisExamTimer
 
 
 class DummyAsyncResult:

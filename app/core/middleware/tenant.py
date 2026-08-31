@@ -1,5 +1,6 @@
 from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
+
 from app.core.tenant import set_school_id
 
 

@@ -1,8 +1,8 @@
+import time
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-import time
-from typing import Any, Dict, List, Optional
-import uuid
+from typing import Any
 
 
 class ToolSideEffect(str, Enum):
@@ -23,11 +23,11 @@ class ToolContext:
     execution_id: str
     task_id: str
     correlation_id: str
-    agent_run_id: Optional[str] = None
+    agent_run_id: str | None = None
     actor_role: str = "assistant"
-    permissions: List[str] = field(default_factory=list)
-    capabilities: List[str] = field(default_factory=list)
-    deadline: Optional[float] = None
+    permissions: list[str] = field(default_factory=list)
+    capabilities: list[str] = field(default_factory=list)
+    deadline: float | None = None
     _is_cancelled: bool = False
 
     def is_cancelled(self) -> bool:
@@ -45,7 +45,7 @@ class ToolExecutionPolicy:
     Execution constraints governing tool capabilities during an execution run.
     """
 
-    allowed_tools: Optional[List[str]] = None  # None means all authorized tools in registry
+    allowed_tools: list[str] | None = None  # None means all authorized tools in registry
     max_tool_calls: int = 10
     max_runtime_seconds: float = 60.0
     max_input_bytes: int = 65536  # 64 KB
@@ -63,17 +63,17 @@ class ToolDefinition:
     name: str
     version: str
     description: str
-    input_schema: Dict[str, Any]
-    output_schema: Optional[Dict[str, Any]] = None
-    required_permissions: List[str] = field(default_factory=list)
-    required_capabilities: List[str] = field(default_factory=list)
+    input_schema: dict[str, Any]
+    output_schema: dict[str, Any] | None = None
+    required_permissions: list[str] = field(default_factory=list)
+    required_capabilities: list[str] = field(default_factory=list)
     tenant_scoped: bool = True
     side_effect: ToolSideEffect = ToolSideEffect.READ_ONLY
     timeout_seconds: float = 15.0
-    max_invocations: Optional[int] = None
+    max_invocations: int | None = None
     is_enabled: bool = True
 
-    def to_openai_tool(self) -> Dict[str, Any]:
+    def to_openai_tool(self) -> dict[str, Any]:
         """Converts ToolDefinition to OpenAI-compatible function tool schema."""
         return {
             "type": "function",
@@ -92,7 +92,7 @@ class ToolInvocation:
     """
 
     tool_name: str
-    arguments: Dict[str, Any]
+    arguments: dict[str, Any]
     context: ToolContext
     invocation_id: str = field(default_factory=lambda: f"tcall_{uuid.uuid4().hex[:12]}")
     created_at: float = field(default_factory=time.time)
@@ -107,8 +107,8 @@ class ToolResult:
     invocation_id: str
     tool_name: str
     success: bool
-    data: Optional[Any] = None
-    error_code: Optional[str] = None
-    error_message: Optional[str] = None
+    data: Any | None = None
+    error_code: str | None = None
+    error_message: str | None = None
     latency_ms: float = 0.0
     output_bytes: int = 0

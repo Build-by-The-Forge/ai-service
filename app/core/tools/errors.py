@@ -1,12 +1,7 @@
-from typing import Optional
-
-
 class ToolError(Exception):
     """Base exception for all tool operations."""
 
-    def __init__(
-        self, message: str, tool_name: Optional[str] = None, error_code: str = "TOOL_ERROR"
-    ):
+    def __init__(self, message: str, tool_name: str | None = None, error_code: str = "TOOL_ERROR"):
         super().__init__(message)
         self.message = message
         self.tool_name = tool_name

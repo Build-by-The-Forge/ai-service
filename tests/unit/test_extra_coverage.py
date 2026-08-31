@@ -1,22 +1,22 @@
 import asyncio
 import json
-import types
 import sys
+import types
 
 import pytest
 
 from app.api.v1.ai import exam_submit as exam_submit_route
 from app.api.v1.ai import fusion_exam as fusion_exam_route
 from app.api.v1.ai import ocr as ocr_route
-from app.api.v1.ai import retrieve as retrieve_route
 from app.api.v1.ai import read as read_route
+from app.api.v1.ai import retrieve as retrieve_route
 from app.core import metrics as core_metrics
 from app.schemas.tree import TreeNode
 from app.services.exam.redis_session_store import RedisSessionStore
 from app.services.exam.session_service import ExamSessionService
 from app.services.memory.memory_service import MemoryService
-from app.services.realtime.pubsub import RedisPubSub
 from app.services.ocr.pdf_parser import PDFParser
+from app.services.realtime.pubsub import RedisPubSub
 
 
 class DummyResult:

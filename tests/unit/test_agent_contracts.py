@@ -1,5 +1,7 @@
 import time
+
 import pytest
+
 from app.core.agents.contracts import (
     AgentContext,
     AgentRun,

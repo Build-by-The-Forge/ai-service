@@ -1,5 +1,5 @@
-from app.services.ocr.paddle import PaddleOCRService
 from app.services.ocr.cleaner import TextCleaner
+from app.services.ocr.paddle import PaddleOCRService
 from app.services.ocr.pdf_parser import PDFParser
 
 

@@ -1,8 +1,8 @@
+import time
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-import time
-from typing import Any, Dict, Optional
-import uuid
+from typing import Any
 
 
 class AgentEventType(str, Enum):
@@ -34,12 +34,12 @@ class AgentEvent:
     task_id: str
     correlation_id: str
     step_number: int = 0
-    data: Optional[Dict[str, Any]] = None
+    data: dict[str, Any] | None = None
     event_id: str = field(default_factory=lambda: f"aevt_{uuid.uuid4().hex[:12]}")
     timestamp: float = field(default_factory=time.time)
 
-    def to_dict(self) -> Dict[str, Any]:
-        result: Dict[str, Any] = {
+    def to_dict(self) -> dict[str, Any]:
+        result: dict[str, Any] = {
             "event_id": self.event_id,
             "event_type": self.event_type.value,
             "run_id": self.run_id,

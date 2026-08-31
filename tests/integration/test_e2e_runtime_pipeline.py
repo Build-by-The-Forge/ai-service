@@ -1,8 +1,14 @@
 import pytest
+
 from app.core.callbacks.dispatcher import InMemoryCallbackDispatcher
 from app.core.callbacks.events import CallbackEventType
 from app.core.execution_context import AITask, TaskStatus
-from app.core.models.contracts import ModelDecision, ModelRequest, ModelResponse, ModelUsage
+from app.core.models.contracts import (
+    ModelDecision,
+    ModelRequest,
+    ModelResponse,
+    ModelUsage,
+)
 from app.core.models.gateway import ModelGateway
 from app.core.models.provider import ModelProviderAdapter
 from app.core.tools.registry import ToolRegistry

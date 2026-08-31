@@ -1,4 +1,3 @@
-from typing import List, Dict
 from app.services.ocr.base import OCRProvider
 
 
@@ -9,7 +8,7 @@ class PaddleOCRService(OCRProvider):
         # self.model = PaddleOCR(use_angle_cls=True, lang="en")
         self.model = None
 
-    async def extract_text_from_image(self, image_path: str) -> List[Dict]:
+    async def extract_text_from_image(self, image_path: str) -> list[dict]:
         """
         Production flow:
         result = self.model.ocr(image_path)

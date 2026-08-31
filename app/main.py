@@ -2,16 +2,16 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.core.config import settings
-from app.core.logging import setup_logging
-from app.core.metrics import setup_metrics
-from app.core.errors import app_exception_handler
-from app.core.middleware.tenant import TenantMiddleware
-from app.core.middleware.request_id import RequestIDMiddleware
-from app.api.v1.router import api_router
-from app.auth.routes import router as auth_router
 from app.api.v1.exams import router as exams_router
 from app.api.v1.ingest import router as ingest_router
+from app.api.v1.router import api_router
+from app.auth.routes import router as auth_router
+from app.core.config import settings
+from app.core.errors import app_exception_handler
+from app.core.logging import setup_logging
+from app.core.metrics import setup_metrics
+from app.core.middleware.request_id import RequestIDMiddleware
+from app.core.middleware.tenant import TenantMiddleware
 from app.db.session import initialize_database, reset_engine
 
 

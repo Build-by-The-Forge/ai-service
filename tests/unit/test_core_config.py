@@ -1,6 +1,5 @@
 import socket
 
-
 from app.core.config import Settings, _resolve_embedded_hostname
 
 

@@ -3,7 +3,6 @@ import asyncio
 import logging
 import random
 import time
-from typing import List, Optional
 from urllib.parse import urlparse
 
 import httpx
@@ -34,7 +33,7 @@ class InMemoryCallbackDispatcher(CallbackPort):
     """
 
     def __init__(self):
-        self._events: List[dict] = []
+        self._events: list[dict] = []
         self._should_fail: bool = False
         self._failure_status: int = 500
 
@@ -47,11 +46,11 @@ class InMemoryCallbackDispatcher(CallbackPort):
         self._should_fail = False
 
     @property
-    def delivered_events(self) -> List[CallbackEvent]:
+    def delivered_events(self) -> list[CallbackEvent]:
         return [item["event"] for item in self._events]
 
     @property
-    def deliveries(self) -> List[dict]:
+    def deliveries(self) -> list[dict]:
         return self._events
 
     async def dispatch(self, callback_url: str, event: CallbackEvent) -> CallbackDeliveryResult:
@@ -93,12 +92,12 @@ class HTTPCallbackDispatcher(CallbackPort):
 
     def __init__(
         self,
-        signer: Optional[CallbackSigner] = None,
-        timeout_seconds: Optional[float] = None,
-        max_attempts: Optional[int] = None,
-        initial_backoff: Optional[float] = None,
-        max_backoff: Optional[float] = None,
-        jitter: Optional[bool] = None,
+        signer: CallbackSigner | None = None,
+        timeout_seconds: float | None = None,
+        max_attempts: int | None = None,
+        initial_backoff: float | None = None,
+        max_backoff: float | None = None,
+        jitter: bool | None = None,
     ):
         self._signer = signer or CallbackSigner(settings.SERVICE_AUTH_SECRET)
         self._timeout = timeout_seconds or settings.CALLBACK_TIMEOUT_SECONDS
@@ -245,7 +244,7 @@ class HTTPCallbackDispatcher(CallbackPort):
         )
 
 
-_default_callback_dispatcher: Optional[CallbackPort] = None
+_default_callback_dispatcher: CallbackPort | None = None
 
 
 def get_callback_dispatcher() -> CallbackPort:

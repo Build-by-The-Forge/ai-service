@@ -2,7 +2,6 @@ import abc
 import json
 import time
 from dataclasses import asdict, dataclass
-from typing import Optional
 
 from app.core.redis import get_redis_client
 
@@ -22,7 +21,7 @@ class IdempotencyStore(abc.ABC):
     """
 
     @abc.abstractmethod
-    async def get(self, tenant_id: str, idempotency_key: str) -> Optional[IdempotencyRecord]:
+    async def get(self, tenant_id: str, idempotency_key: str) -> IdempotencyRecord | None:
         pass
 
     @abc.abstractmethod
@@ -32,14 +31,13 @@ class IdempotencyStore(abc.ABC):
         idempotency_key: str,
         external_task_id: str,
         ttl_seconds: int = 86400,
-    ) -> tuple[bool, Optional[IdempotencyRecord]]:
+    ) -> tuple[bool, IdempotencyRecord | None]:
         """
         Attempts to record the idempotency key atomically.
         Returns:
             (True, None) if key was newly set (fresh request).
             (False, existing_record) if key already existed (duplicate request).
         """
-        pass
 
 
 class InMemoryIdempotencyStore(IdempotencyStore):
@@ -51,7 +49,7 @@ class InMemoryIdempotencyStore(IdempotencyStore):
     def _format_key(self, tenant_id: str, idempotency_key: str) -> str:
         return f"idempotency:{tenant_id}:{idempotency_key}"
 
-    async def get(self, tenant_id: str, idempotency_key: str) -> Optional[IdempotencyRecord]:
+    async def get(self, tenant_id: str, idempotency_key: str) -> IdempotencyRecord | None:
         key = self._format_key(tenant_id, idempotency_key)
         return self._store.get(key)
 
@@ -61,7 +59,7 @@ class InMemoryIdempotencyStore(IdempotencyStore):
         idempotency_key: str,
         external_task_id: str,
         ttl_seconds: int = 86400,
-    ) -> tuple[bool, Optional[IdempotencyRecord]]:
+    ) -> tuple[bool, IdempotencyRecord | None]:
         key = self._format_key(tenant_id, idempotency_key)
         existing = self._store.get(key)
         if existing:
@@ -86,7 +84,7 @@ class RedisIdempotencyStore(IdempotencyStore):
     def _format_key(self, tenant_id: str, idempotency_key: str) -> str:
         return f"idempotency:{tenant_id}:{idempotency_key}"
 
-    async def get(self, tenant_id: str, idempotency_key: str) -> Optional[IdempotencyRecord]:
+    async def get(self, tenant_id: str, idempotency_key: str) -> IdempotencyRecord | None:
         key = self._format_key(tenant_id, idempotency_key)
         try:
             client = await get_redis_client()
@@ -104,7 +102,7 @@ class RedisIdempotencyStore(IdempotencyStore):
         idempotency_key: str,
         external_task_id: str,
         ttl_seconds: int = 86400,
-    ) -> tuple[bool, Optional[IdempotencyRecord]]:
+    ) -> tuple[bool, IdempotencyRecord | None]:
         key = self._format_key(tenant_id, idempotency_key)
         record = IdempotencyRecord(
             tenant_id=tenant_id,
@@ -132,7 +130,7 @@ class RedisIdempotencyStore(IdempotencyStore):
 
 
 # Default store singleton provider
-_default_store: Optional[IdempotencyStore] = None
+_default_store: IdempotencyStore | None = None
 
 
 def get_idempotency_store() -> IdempotencyStore:

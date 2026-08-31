@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -16,10 +15,10 @@ class ExamCreate(ExamBase):
 
 
 class ExamUpdate(BaseModel):
-    title: Optional[str] = None
-    course: Optional[str] = None
-    duration_minutes: Optional[int] = None
-    is_active: Optional[bool] = None
+    title: str | None = None
+    course: str | None = None
+    duration_minutes: int | None = None
+    is_active: bool | None = None
 
 
 class ExamResponse(ExamBase):

@@ -1,11 +1,8 @@
-from typing import Optional
-
-
 class DocumentError(Exception):
     """Base exception for all document processing and ingestion errors."""
 
     def __init__(
-        self, message: str, error_code: str = "DOCUMENT_ERROR", tenant_id: Optional[str] = None
+        self, message: str, error_code: str = "DOCUMENT_ERROR", tenant_id: str | None = None
     ):
         super().__init__(message)
         self.message = message
@@ -23,9 +20,7 @@ class DocumentTenantMissingError(DocumentError):
 class CorruptDocumentError(DocumentError):
     """Raised when a document payload cannot be parsed or is corrupted."""
 
-    def __init__(
-        self, message: str, document_id: Optional[str] = None, tenant_id: Optional[str] = None
-    ):
+    def __init__(self, message: str, document_id: str | None = None, tenant_id: str | None = None):
         super().__init__(
             f"Corrupted document ({document_id or 'unknown'}): {message}",
             error_code="CORRUPT_DOCUMENT",
@@ -37,7 +32,7 @@ class CorruptDocumentError(DocumentError):
 class UnsupportedDocumentTypeError(DocumentError):
     """Raised when an uploaded file MIME or format is not supported."""
 
-    def __init__(self, mime_type: str, tenant_id: Optional[str] = None):
+    def __init__(self, mime_type: str, tenant_id: str | None = None):
         super().__init__(
             f"Unsupported document MIME type: '{mime_type}'",
             error_code="UNSUPPORTED_DOCUMENT_TYPE",
@@ -50,7 +45,7 @@ class DocumentSizeLimitExceededError(DocumentError):
     """Raised when document byte size or page count exceeds tenant limits."""
 
     def __init__(
-        self, message: str, max_limit: int, current_value: int, tenant_id: Optional[str] = None
+        self, message: str, max_limit: int, current_value: int, tenant_id: str | None = None
     ):
         super().__init__(message, error_code="DOCUMENT_SIZE_LIMIT_EXCEEDED", tenant_id=tenant_id)
         self.max_limit = max_limit
@@ -60,9 +55,7 @@ class DocumentSizeLimitExceededError(DocumentError):
 class OCRExtractionError(DocumentError):
     """Raised when OCR extraction engine fails to process a page or image."""
 
-    def __init__(
-        self, message: str, page_number: Optional[int] = None, tenant_id: Optional[str] = None
-    ):
+    def __init__(self, message: str, page_number: int | None = None, tenant_id: str | None = None):
         super().__init__(
             f"OCR extraction failed on page {page_number or 'unknown'}: {message}",
             error_code="OCR_EXTRACTION_FAILED",

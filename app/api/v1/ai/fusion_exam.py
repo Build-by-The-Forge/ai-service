@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
-from app.core.dependencies import get_db
+
 from app.core.auth import require_teacher_or_admin
+from app.core.dependencies import get_db
 from app.schemas.common import APIResponse
-from app.services.exam.fusion_engine import CBTFusionEngine
-from app.services.generation.cbt_ai_generator import CBTAIGenerator
 from app.services.ai.openai import OpenAILLM
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
 from app.services.exam.adaptive_engine import AdaptiveDifficultyEngine
+from app.services.exam.fusion_engine import CBTFusionEngine
+from app.services.generation.cbt_ai_generator import CBTAIGenerator
 from app.services.memory.memory_service import MemoryService
 
 router = APIRouter()

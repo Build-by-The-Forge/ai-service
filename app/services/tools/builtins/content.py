@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 from app.core.rag.contracts import RetrievalFilter, RetrievalPolicy
 from app.core.tools.contracts import ToolContext, ToolDefinition, ToolSideEffect
@@ -44,7 +44,7 @@ CONTENT_SEARCH_DEFINITION = ToolDefinition(
 )
 
 
-async def content_search_handler(context: ToolContext, arguments: Dict[str, Any]) -> Dict[str, Any]:
+async def content_search_handler(context: ToolContext, arguments: dict[str, Any]) -> dict[str, Any]:
     """
     Authoritative handler for content.search tool.
     Executes live hybrid dense/sparse retrieval filtered strictly by the authoritative ToolContext.tenant_id.
@@ -76,7 +76,7 @@ async def content_search_handler(context: ToolContext, arguments: Dict[str, Any]
 
     results = []
     for rc in ctx.chunks:
-        item: Dict[str, Any] = {
+        item: dict[str, Any] = {
             "chunk_id": rc.chunk.chunk_id,
             "document_title": rc.chunk.document_title,
             "course_code": rc.chunk.course_code,

@@ -1,7 +1,6 @@
 import asyncio
 import logging
 import time
-from typing import Optional
 
 from app.core.tools.budget import ToolBudgetTracker
 from app.core.tools.contracts import (
@@ -37,8 +36,8 @@ class ToolExecutor:
 
     def __init__(
         self,
-        registry: Optional[ToolRegistry] = None,
-        budget_tracker: Optional[ToolBudgetTracker] = None,
+        registry: ToolRegistry | None = None,
+        budget_tracker: ToolBudgetTracker | None = None,
         register_builtins: bool = True,
     ):
         self.registry = registry or get_tool_registry()
@@ -55,7 +54,7 @@ class ToolExecutor:
     async def execute(
         self,
         invocation: ToolInvocation,
-        policy: Optional[ToolExecutionPolicy] = None,
+        policy: ToolExecutionPolicy | None = None,
     ) -> ToolResult:
         start_time = time.time()
         tool_name = invocation.tool_name
@@ -195,7 +194,7 @@ class ToolExecutor:
                 handler(invocation.context, invocation.arguments),
                 timeout=timeout,
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             logger.warning("Tool '%s' execution timed out after %fs", tool_name, timeout)
             return ToolResult(
                 invocation_id=invocation.invocation_id,
@@ -257,7 +256,7 @@ class ToolExecutor:
         )
 
 
-_default_executor: Optional[ToolExecutor] = None
+_default_executor: ToolExecutor | None = None
 
 
 def get_tool_executor() -> ToolExecutor:

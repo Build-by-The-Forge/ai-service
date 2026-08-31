@@ -1,7 +1,7 @@
 import os
 
 import pytest_asyncio
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 from passlib.hash import pbkdf2_sha256
 from sqlalchemy import select
 

@@ -1,5 +1,3 @@
-from typing import Dict, List, Optional
-
 from app.core.agents.contracts import (
     AgentContext,
     AgentDefinition,
@@ -77,7 +75,7 @@ class AgentRegistry:
     """
 
     def __init__(self, register_builtins: bool = True):
-        self._agents: Dict[str, AgentDefinition] = {}
+        self._agents: dict[str, AgentDefinition] = {}
         if register_builtins:
             self.register(STUDY_ASSISTANT_DEFINITION)
             self.register(CONTENT_ANALYZER_DEFINITION)
@@ -88,11 +86,11 @@ class AgentRegistry:
     def unregister(self, agent_id: str) -> None:
         self._agents.pop(agent_id, None)
 
-    def get(self, agent_id: str) -> Optional[AgentDefinition]:
+    def get(self, agent_id: str) -> AgentDefinition | None:
         return self._agents.get(agent_id)
 
-    def list_available(self, context: AgentContext) -> List[AgentDefinition]:
-        available: List[AgentDefinition] = []
+    def list_available(self, context: AgentContext) -> list[AgentDefinition]:
+        available: list[AgentDefinition] = []
         actor_perms = set(context.permissions)
         actor_caps = set(context.capabilities)
 
@@ -115,7 +113,7 @@ class AgentRegistry:
         return available
 
 
-_default_registry: Optional[AgentRegistry] = None
+_default_registry: AgentRegistry | None = None
 
 
 def get_agent_registry() -> AgentRegistry:

@@ -1,12 +1,12 @@
 import hashlib
 import hmac
 import json
-from typing import Any, Dict, Union
+from typing import Any
 
 from app.core.callbacks.events import CallbackEvent
 
 
-def canonical_serialize(data: Union[Dict[str, Any], CallbackEvent]) -> bytes:
+def canonical_serialize(data: dict[str, Any] | CallbackEvent) -> bytes:
     """
     Serializes a callback event or dictionary into deterministic canonical JSON bytes.
     Keys are strictly sorted with compact separators to guarantee identical byte representations.
@@ -32,7 +32,7 @@ class CallbackSigner:
         """
         Computes HMAC-SHA256 signature for the given canonical payload bytes and epoch timestamp.
         """
-        canonical_material = f"{timestamp}.".encode("utf-8") + payload
+        canonical_material = f"{timestamp}.".encode() + payload
         return hmac.new(
             self._secret.encode("utf-8"),
             canonical_material,

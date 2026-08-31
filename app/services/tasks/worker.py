@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from typing import Optional
 import uuid
 
 from app.core.callbacks.dispatcher import CallbackPort, get_callback_dispatcher
@@ -22,11 +21,11 @@ class TaskWorker:
 
     def __init__(
         self,
-        worker_id: Optional[str] = None,
-        transport: Optional[TaskTransport] = None,
-        registry: Optional[TaskHandlerRegistry] = None,
-        heartbeat_mgr: Optional[HeartbeatManager] = None,
-        callback_dispatcher: Optional[CallbackPort] = None,
+        worker_id: str | None = None,
+        transport: TaskTransport | None = None,
+        registry: TaskHandlerRegistry | None = None,
+        heartbeat_mgr: HeartbeatManager | None = None,
+        callback_dispatcher: CallbackPort | None = None,
         group_name: str = "ai_worker_group",
     ):
         self.worker_id = worker_id or f"worker_{uuid.uuid4().hex[:8]}"
@@ -37,7 +36,7 @@ class TaskWorker:
         self.group_name = group_name
         self._active_contexts: dict[str, AIExecutionContext] = {}
 
-    def get_active_context(self, execution_id: str) -> Optional[AIExecutionContext]:
+    def get_active_context(self, execution_id: str) -> AIExecutionContext | None:
         return self._active_contexts.get(execution_id)
 
     def cancel_task(self, execution_id: str, reason: str = "Cancellation requested") -> bool:
@@ -47,7 +46,7 @@ class TaskWorker:
             return True
         return False
 
-    async def _emit_callback(self, callback_url: Optional[str], event: CallbackEvent) -> None:
+    async def _emit_callback(self, callback_url: str | None, event: CallbackEvent) -> None:
         """
         Emits a callback event safely without allowing delivery exceptions to fail the task execution.
         """
@@ -233,7 +232,7 @@ class TaskWorker:
                 )
                 return TaskStatus.DEAD_LETTER
 
-    async def run_once(self, block_ms: int = 1000) -> Optional[TaskStatus]:
+    async def run_once(self, block_ms: int = 1000) -> TaskStatus | None:
         entries = await self.transport.consume(
             group=self.group_name,
             consumer=self.worker_id,

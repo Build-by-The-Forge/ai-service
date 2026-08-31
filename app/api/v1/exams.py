@@ -1,16 +1,14 @@
-from typing import Optional
-
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, delete
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.dependencies import get_db
 from app.auth.dependencies import (
-    require_teacher_or_admin,
     require_admin,
     require_authenticated_user,
+    require_teacher_or_admin,
 )
+from app.core.dependencies import get_db
 from app.db.models.exam import Exam
 from app.schemas.common import APIResponse
 from app.schemas.exam import ExamResponse
@@ -93,10 +91,10 @@ async def get_exam(
 @router.patch("/{exam_id}", response_model=APIResponse)
 async def update_exam(
     exam_id: int,
-    title: Optional[str] = None,
-    course: Optional[str] = None,
-    duration_minutes: Optional[int] = None,
-    is_active: Optional[bool] = None,
+    title: str | None = None,
+    course: str | None = None,
+    duration_minutes: int | None = None,
+    is_active: bool | None = None,
     user: dict = Depends(require_teacher_or_admin),
     db: AsyncSession = Depends(get_db),
 ):

@@ -1,6 +1,6 @@
-from typing import Any, Dict, Optional
-import uuid
 import time
+import uuid
+from typing import Any
 
 from app.core.execution_context import AITask
 from app.services.tasks.transport import TaskTransport, get_task_transport
@@ -12,7 +12,7 @@ class TaskDispatcher:
     Does not execute tasks directly; delegates asynchronously to the transport port.
     """
 
-    def __init__(self, transport: Optional[TaskTransport] = None):
+    def __init__(self, transport: TaskTransport | None = None):
         self._transport = transport
 
     @property
@@ -29,11 +29,11 @@ class TaskDispatcher:
         asset_id: str,
         tenant_id: str,
         correlation_id: str,
-        payload: Dict[str, Any],
+        payload: dict[str, Any],
         run_number: int = 1,
         attempt_count: int = 1,
-        external_task_id: Optional[str] = None,
-        deadline: Optional[float] = None,
+        external_task_id: str | None = None,
+        deadline: float | None = None,
         max_attempts: int = 3,
     ) -> AITask:
         """Helper to construct and dispatch a content ingestion task."""
@@ -60,7 +60,7 @@ class TaskDispatcher:
         return task
 
 
-_default_dispatcher: Optional[TaskDispatcher] = None
+_default_dispatcher: TaskDispatcher | None = None
 
 
 def get_task_dispatcher() -> TaskDispatcher:

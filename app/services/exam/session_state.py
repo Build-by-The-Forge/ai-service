@@ -1,6 +1,5 @@
-from dataclasses import dataclass, field
-from typing import Dict, List
 import time
+from dataclasses import dataclass, field
 
 from app.services.exam.timer import ExamTimer
 
@@ -16,8 +15,8 @@ class AnswerRecord:
 class ExamSessionState:
     session_id: str
     start_time: float = field(default_factory=time.time)
-    answers: Dict[str, str] = field(default_factory=dict)
-    answer_log: List[AnswerRecord] = field(default_factory=list)
+    answers: dict[str, str] = field(default_factory=dict)
+    answer_log: list[AnswerRecord] = field(default_factory=list)
     last_activity: float = field(default_factory=time.time)
 
     def update_answer(self, question_id: str, answer: str) -> None:

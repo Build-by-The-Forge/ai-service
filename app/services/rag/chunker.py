@@ -1,5 +1,5 @@
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from app.core.rag.contracts import ChunkProvenance, DocumentChunk
 
@@ -16,16 +16,16 @@ class Chunker:
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 
-    def chunk(self, text: str) -> List[str]:
+    def chunk(self, text: str) -> list[str]:
         """Backward-compatible alias for chunk_text."""
         return self.chunk_text(text)
 
-    def _split_into_sentences(self, text: str) -> List[str]:
+    def _split_into_sentences(self, text: str) -> list[str]:
         # Split by paragraph and sentence punctuation
         sentences = re.split(r"(?<=[.!?])\s+|\n\n+", text.strip())
         return [s.strip() for s in sentences if s.strip()]
 
-    def chunk_text(self, text: str) -> List[str]:
+    def chunk_text(self, text: str) -> list[str]:
         if not text or not text.strip():
             return []
 
@@ -33,7 +33,7 @@ class Chunker:
         if len(words) <= self.chunk_size:
             return [" ".join(words)]
 
-        chunks: List[str] = []
+        chunks: list[str] = []
         step = self.chunk_size - self.chunk_overlap
         for i in range(0, len(words), step):
             window = words[i : i + self.chunk_size]
@@ -51,13 +51,13 @@ class Chunker:
         document_id: str,
         document_title: str,
         text: str,
-        course_code: Optional[str] = None,
-        topic: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        provenance: Optional[ChunkProvenance] = None,
-    ) -> List[DocumentChunk]:
+        course_code: str | None = None,
+        topic: str | None = None,
+        metadata: dict[str, Any] | None = None,
+        provenance: ChunkProvenance | None = None,
+    ) -> list[DocumentChunk]:
         raw_chunks = self.chunk_text(text)
-        document_chunks: List[DocumentChunk] = []
+        document_chunks: list[DocumentChunk] = []
 
         for idx, chunk_str in enumerate(raw_chunks, start=1):
             chunk_meta = dict(metadata or {})

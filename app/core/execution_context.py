@@ -1,8 +1,8 @@
+import time
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-import time
-from typing import Any, Dict, List, Optional
-import uuid
+from typing import Any
 
 
 class TaskStatus(str, Enum):
@@ -32,9 +32,9 @@ class AITask:
     run_number: int
     attempt_count: int
     correlation_id: str
-    payload: Dict[str, Any]
+    payload: dict[str, Any]
     created_at: float = field(default_factory=time.time)
-    deadline: Optional[float] = None
+    deadline: float | None = None
     max_attempts: int = 3
 
     def is_expired(self) -> bool:
@@ -42,7 +42,7 @@ class AITask:
             return False
         return time.time() > self.deadline
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "task_id": self.task_id,
             "task_type": self.task_type,
@@ -60,7 +60,7 @@ class AITask:
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "AITask":
+    def from_dict(cls, data: dict[str, Any]) -> "AITask":
         return cls(
             task_id=data["task_id"],
             task_type=data["task_type"],
@@ -94,10 +94,10 @@ class AIExecutionContext:
         attempt_count: int,
         correlation_id: str,
         task_type: str,
-        actor_context: Optional[Dict[str, Any]] = None,
-        permissions: Optional[List[str]] = None,
-        created_at: Optional[float] = None,
-        deadline: Optional[float] = None,
+        actor_context: dict[str, Any] | None = None,
+        permissions: list[str] | None = None,
+        created_at: float | None = None,
+        deadline: float | None = None,
     ):
         self.execution_id = execution_id
         self.tenant_id = tenant_id
@@ -112,15 +112,15 @@ class AIExecutionContext:
         self.created_at = created_at or time.time()
         self.deadline = deadline
         self._is_cancelled = False
-        self._cancellation_reason: Optional[str] = None
-        self._metadata: Dict[str, Any] = {}
+        self._cancellation_reason: str | None = None
+        self._metadata: dict[str, Any] = {}
 
     @classmethod
     def from_task(
         cls,
         task: AITask,
-        actor_context: Optional[Dict[str, Any]] = None,
-        permissions: Optional[List[str]] = None,
+        actor_context: dict[str, Any] | None = None,
+        permissions: list[str] | None = None,
     ) -> "AIExecutionContext":
         return cls(
             execution_id=task.execution_id or f"exec_{uuid.uuid4().hex}",
@@ -145,7 +145,7 @@ class AIExecutionContext:
         return self._is_cancelled
 
     @property
-    def cancellation_reason(self) -> Optional[str]:
+    def cancellation_reason(self) -> str | None:
         return self._cancellation_reason
 
     def is_expired(self) -> bool:

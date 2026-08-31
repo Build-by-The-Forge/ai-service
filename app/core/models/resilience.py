@@ -1,7 +1,6 @@
-from enum import Enum
 import random
 import time
-from typing import Dict, Optional
+from enum import Enum
 
 from app.core.models.errors import (
     AuthenticationError,
@@ -45,7 +44,7 @@ class CircuitBreaker:
         self._state = CircuitState.CLOSED
         self._consecutive_failures = 0
         self._consecutive_successes = 0
-        self._opened_at: Optional[float] = None
+        self._opened_at: float | None = None
 
     @property
     def state(self) -> CircuitState:
@@ -92,8 +91,8 @@ class TokenBucketRateLimiter:
     def __init__(self, rate_per_second: float = 20.0, burst_capacity: int = 50):
         self.rate_per_second = rate_per_second
         self.burst_capacity = burst_capacity
-        self._buckets: Dict[str, float] = {}
-        self._last_refill: Dict[str, float] = {}
+        self._buckets: dict[str, float] = {}
+        self._last_refill: dict[str, float] = {}
 
     def acquire(self, key: str, tokens: int = 1) -> bool:
         now = time.time()

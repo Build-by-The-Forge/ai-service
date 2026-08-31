@@ -1,8 +1,8 @@
+import time
+import uuid
 from dataclasses import dataclass, field
 from enum import Enum
-import time
-from typing import Any, Dict, List, Optional
-import uuid
+from typing import Any
 
 
 class ContentAuthority(str, Enum):
@@ -20,12 +20,12 @@ class ChunkProvenance:
     """
 
     source_uri: str
-    page_number: Optional[int] = None
-    section_title: Optional[str] = None
+    page_number: int | None = None
+    section_title: str | None = None
     authority: ContentAuthority = ContentAuthority.INSTITUTIONAL
-    content_sha256: Optional[str] = None
+    content_sha256: str | None = None
 
-    def to_citation_dict(self) -> Dict[str, Any]:
+    def to_citation_dict(self) -> dict[str, Any]:
         return {
             "source_uri": self.source_uri,
             "page_number": self.page_number,
@@ -45,11 +45,11 @@ class DocumentChunk:
     document_id: str
     document_title: str
     content: str
-    course_code: Optional[str] = None
-    topic: Optional[str] = None
-    embedding: Optional[List[float]] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    provenance: Optional[ChunkProvenance] = None
+    course_code: str | None = None
+    topic: str | None = None
+    embedding: list[float] | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    provenance: ChunkProvenance | None = None
     created_at: float = field(default_factory=time.time)
 
     @classmethod
@@ -59,11 +59,11 @@ class DocumentChunk:
         document_id: str,
         document_title: str,
         content: str,
-        course_code: Optional[str] = None,
-        topic: Optional[str] = None,
-        embedding: Optional[List[float]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        provenance: Optional[ChunkProvenance] = None,
+        course_code: str | None = None,
+        topic: str | None = None,
+        embedding: list[float] | None = None,
+        metadata: dict[str, Any] | None = None,
+        provenance: ChunkProvenance | None = None,
     ) -> "DocumentChunk":
         return cls(
             chunk_id=f"chk_{uuid.uuid4().hex[:12]}",
@@ -87,9 +87,9 @@ class RetrievalFilter:
     """
 
     tenant_id: str
-    course_code: Optional[str] = None
-    document_ids: Optional[List[str]] = None
-    authority_tiers: Optional[List[ContentAuthority]] = None
+    course_code: str | None = None
+    document_ids: list[str] | None = None
+    authority_tiers: list[ContentAuthority] | None = None
     min_score: float = 0.0
 
 
@@ -128,13 +128,13 @@ class RetrievedContext:
 
     query: str
     tenant_id: str
-    chunks: List[RetrievedChunk]
+    chunks: list[RetrievedChunk]
     retrieval_method: str = "hybrid_rrf"
     latency_ms: float = 0.0
     total_candidates: int = 0
 
-    def to_citation_summary(self) -> List[Dict[str, Any]]:
-        citations: List[Dict[str, Any]] = []
+    def to_citation_summary(self) -> list[dict[str, Any]]:
+        citations: list[dict[str, Any]] = []
         for rc in self.chunks:
             item = {
                 "chunk_id": rc.chunk.chunk_id,

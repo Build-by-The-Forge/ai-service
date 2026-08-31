@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+
 from app.schemas.tree import TreeNode
 
 
@@ -8,7 +8,7 @@ class TreeGeneratorService:
     Converts raw course input into structured learning tree.
     """
 
-    def generate_base_tree(self, course_title: str, topics: List[str]) -> TreeNode:
+    def generate_base_tree(self, course_title: str, topics: list[str]) -> TreeNode:
         root = TreeNode(
             id=str(uuid.uuid4()),
             title=course_title,

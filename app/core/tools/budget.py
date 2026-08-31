@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Dict, Optional
 
 from app.core.tools.contracts import ToolExecutionPolicy
 from app.core.tools.errors import ToolBudgetExceededError
@@ -17,10 +16,10 @@ class ToolBudgetTracker:
     """
 
     def __init__(self):
-        self._usage: Dict[str, ToolExecutionUsage] = {}
+        self._usage: dict[str, ToolExecutionUsage] = {}
 
     def check_pre_invocation(
-        self, scope_key: str, policy: Optional[ToolExecutionPolicy] = None
+        self, scope_key: str, policy: ToolExecutionPolicy | None = None
     ) -> None:
         if not policy:
             return
@@ -58,7 +57,7 @@ class ToolBudgetTracker:
     def get_usage(self, scope_key: str) -> ToolExecutionUsage:
         return self._usage.get(scope_key, ToolExecutionUsage())
 
-    def reset(self, scope_key: Optional[str] = None) -> None:
+    def reset(self, scope_key: str | None = None) -> None:
         if scope_key:
             self._usage.pop(scope_key, None)
         else:

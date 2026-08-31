@@ -1,7 +1,7 @@
 import pytest
 
+from app.core import tenant
 from app.services.rag.retrieval import RetrievalService
-import app.core.tenant as tenant
 
 
 @pytest.mark.asyncio

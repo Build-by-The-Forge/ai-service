@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+
 from app.schemas.common import APIResponse
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
 

@@ -1,7 +1,8 @@
 from fastapi import APIRouter
-from app.db.session import get_engine
-from app.core.redis import redis_client
+
 from app.core.logging import logger
+from app.core.redis import redis_client
+from app.db.session import get_engine
 
 router = APIRouter()
 

@@ -1,4 +1,5 @@
 from openai import AsyncOpenAI
+
 from app.core.config import settings
 from app.services.ai.llm import LLMProvider
 

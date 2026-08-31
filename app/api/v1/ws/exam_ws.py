@@ -1,11 +1,13 @@
 import asyncio
 import json
 import time
+
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+
 from app.core.tenant import set_school_id
+from app.services.exam.anti_cheat import AntiCheatEngine
 from app.services.exam.redis_session_store import RedisSessionStore
 from app.services.exam.redis_timer import RedisExamTimer
-from app.services.exam.anti_cheat import AntiCheatEngine
 from app.services.realtime.sync_bridge import SyncBridge
 
 router = APIRouter()

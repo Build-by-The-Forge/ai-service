@@ -1,18 +1,19 @@
 from fastapi import APIRouter
-from app.api.v1.health import router as health_router
-from app.api.v1.system import router as system_router
+
 from app.api.v1.ai.chat import router as chat_router
-from app.api.v1.ai.retrieve import router as retrieve_router
-from app.api.v1.ai.tree import router as tree_router
-from app.api.v1.ai.read import router as read_router
-from app.api.v1.ai.explain import router as explain_router
-from app.api.v1.ai.generate_questions import router as questions_router
 from app.api.v1.ai.exam import router as exam_router
 from app.api.v1.ai.exam_submit import router as exam_submit_router
+from app.api.v1.ai.explain import router as explain_router
 from app.api.v1.ai.fusion_exam import router as fusion_exam_router
-from app.api.v1.ws.exam_ws import router as ws_router
+from app.api.v1.ai.generate_questions import router as questions_router
+from app.api.v1.ai.read import router as read_router
+from app.api.v1.ai.retrieve import router as retrieve_router
+from app.api.v1.ai.tree import router as tree_router
 from app.api.v1.exams import router as exams_router
+from app.api.v1.health import router as health_router
 from app.api.v1.ingest import router as ingest_router
+from app.api.v1.system import router as system_router
+from app.api.v1.ws.exam_ws import router as ws_router
 
 api_router = APIRouter()
 

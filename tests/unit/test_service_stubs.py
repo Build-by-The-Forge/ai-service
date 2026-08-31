@@ -1,4 +1,5 @@
 from datetime import datetime
+
 import pytest
 
 from app.core import rate_limit
@@ -15,8 +16,8 @@ from app.services.memory.reward import LearningReward
 from app.services.ocr.base import OCRProvider
 from app.services.ocr.cleaner import TextCleaner
 from app.services.ocr.openvino import OpenVINOService
-from app.services.ocr.pdf_parser import PDFParser
 from app.services.ocr.paddle import PaddleOCRService
+from app.services.ocr.pdf_parser import PDFParser
 from app.services.rag.chunker import Chunker
 from app.services.rag.embedder import Embedder
 from app.services.rag.vector_store import VectorStore

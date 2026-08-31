@@ -1,4 +1,5 @@
 import pytest
+
 from app.core.models.budget import BudgetLimits, BudgetTracker
 from app.core.models.contracts import (
     ModelInvocationContext,

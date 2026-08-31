@@ -1,11 +1,13 @@
 import json
 import time
+
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 from app.core.config import settings
 from app.core.idempotency import InMemoryIdempotencyStore, set_idempotency_store
 from app.core.service_auth import compute_service_signature
+from app.main import app
 from app.schemas.ingest import (
     CallbackEventType,
     ContentAuthority,
@@ -14,7 +16,6 @@ from app.schemas.ingest import (
     IngestDispatchRequest,
     IngestDispatchResponse,
 )
-from app.main import app
 
 
 @pytest.fixture(autouse=True)
