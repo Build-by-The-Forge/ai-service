@@ -19,6 +19,7 @@ class DocumentSource(str, Enum):
 
 
 class DocumentStatus(str, Enum):
+    RECEIVED = "RECEIVED"
     PENDING = "PENDING"
     PARSING = "PARSING"
     OCR_PROCESSING = "OCR_PROCESSING"

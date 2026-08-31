@@ -8,6 +8,7 @@ from app.core.documents.contracts import (
     OCRDocument,
     OCRPage,
 )
+from app.core.documents.intake import DocumentIngestionResult, DocumentIntakeService, DocumentStoragePort
 from app.core.documents.enums import (
     DocumentSource,
     DocumentStatus,
@@ -48,4 +49,7 @@ __all__ = [
     "InvalidBoundingBoxError",
     "OCRPort",
     "OCRConfig",
+    "DocumentIngestionResult",
+    "DocumentIntakeService",
+    "DocumentStoragePort",
 ]
