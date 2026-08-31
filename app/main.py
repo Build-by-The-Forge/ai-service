@@ -11,6 +11,7 @@ from app.core.middleware.request_id import RequestIDMiddleware
 from app.api.v1.router import api_router
 from app.auth.routes import router as auth_router
 from app.api.v1.exams import router as exams_router
+from app.api.v1.ingest import router as ingest_router
 from app.db.session import initialize_database, reset_engine
 
 
@@ -46,6 +47,7 @@ def create_app() -> FastAPI:
 
     # Routes
     app.include_router(api_router, prefix="/api/v1")
+    app.include_router(ingest_router, prefix="/v1/ingest")
     app.include_router(auth_router, prefix="/auth")
     app.include_router(exams_router, prefix="/exams")
 

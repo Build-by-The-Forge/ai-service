@@ -51,6 +51,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_AUDIENCE: str | None = None
 
+    SERVICE_AUTH_SECRET: str = "build-internal-service-secret"
+    ALLOWED_SERVICE_IDENTITIES: list[str] = ["build-backend"]
+    SERVICE_AUTH_MAX_SKEW_SECONDS: int = 300
+
     LOG_LEVEL: str = "INFO"
 
     def __init__(self, **values):
