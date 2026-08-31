@@ -1,6 +1,8 @@
 from typing import Any, Dict
 
+from app.core.rag.contracts import RetrievalFilter, RetrievalPolicy
 from app.core.tools.contracts import ToolContext, ToolDefinition, ToolSideEffect
+from app.services.rag.retrieval import get_retrieval_engine
 
 CONTENT_SEARCH_DEFINITION = ToolDefinition(
     name="content.search",
@@ -18,6 +20,10 @@ CONTENT_SEARCH_DEFINITION = ToolDefinition(
                 "description": "Maximum number of search results to return",
                 "default": 3,
             },
+            "course_code": {
+                "type": "string",
+                "description": "Optional course code filter (e.g. CSC201)",
+            },
         },
         "required": ["query"],
     },
@@ -25,6 +31,8 @@ CONTENT_SEARCH_DEFINITION = ToolDefinition(
         "type": "object",
         "properties": {
             "query": {"type": "string"},
+            "tenant_id": {"type": "string"},
+            "results_count": {"type": "integer"},
             "results": {"type": "array"},
         },
     },
@@ -37,25 +45,53 @@ CONTENT_SEARCH_DEFINITION = ToolDefinition(
 
 
 async def content_search_handler(context: ToolContext, arguments: Dict[str, Any]) -> Dict[str, Any]:
-    query = arguments["query"]
+    """
+    Authoritative handler for content.search tool.
+    Executes live hybrid dense/sparse retrieval filtered strictly by the authoritative ToolContext.tenant_id.
+    """
+    query = str(arguments["query"])
     limit = int(arguments.get("limit", 3))
+    course_code = arguments.get("course_code")
+
+    engine = get_retrieval_engine()
+    retrieval_filter = RetrievalFilter(
+        tenant_id=context.tenant_id,
+        course_code=str(course_code) if course_code else None,
+    )
+    retrieval_policy = RetrievalPolicy(top_k=max(1, min(limit, 10)))
+
+    ctx = (
+        await engine.retrieve(query=query, filter=retrieval_filter, policy=policy)
+        if (policy := retrieval_policy)
+        else None
+    )
+
+    if not ctx:
+        return {
+            "tenant_id": context.tenant_id,
+            "query": query,
+            "results_count": 0,
+            "results": [],
+        }
+
+    results = []
+    for rc in ctx.chunks:
+        item: Dict[str, Any] = {
+            "chunk_id": rc.chunk.chunk_id,
+            "document_title": rc.chunk.document_title,
+            "course_code": rc.chunk.course_code,
+            "topic": rc.chunk.topic,
+            "snippet": rc.chunk.content,
+            "relevance_score": round(rc.hybrid_score, 4),
+            "rank": rc.rank,
+        }
+        if rc.chunk.provenance:
+            item["provenance"] = rc.chunk.provenance.to_citation_dict()
+        results.append(item)
 
     return {
         "tenant_id": context.tenant_id,
         "query": query,
-        "results_count": min(limit, 2),
-        "results": [
-            {
-                "chunk_id": "chunk_001",
-                "document_title": "Lecture Notes - Chapter 1",
-                "snippet": f"Content matching query '{query}' from Chapter 1.",
-                "relevance_score": 0.92,
-            },
-            {
-                "chunk_id": "chunk_002",
-                "document_title": "Course Syllabus",
-                "snippet": f"Additional context regarding '{query}'.",
-                "relevance_score": 0.85,
-            },
-        ][:limit],
+        "results_count": len(results),
+        "results": results,
     }
