@@ -1,40 +1,47 @@
 # Project Status & System Review: AI Service
 
 **Service:** `ai-service` (Build Core)  
-**Version:** 1.0.0  
-**Current Test Coverage:** 86% (92 unit tests passing)  
-**Primary Focus:** CBT Examination Engine, Adaptive Learning Memory, Multi-Tenant RAG, AI Tutoring & OCR Document Ingestion  
+**Version:** 1.0.0 (AI Runtime Foundation v1.0)  
+**Current Test Status:** 208 passed, 2 skipped across unit, contract, and E2E integration suites (100% pass rate)  
+**Primary Focus:** CBT Examination Engine, Adaptive Learning Memory, Multi-Tenant RAG, Bounded Agent Orchestration & OCR Document Ingestion  
 
 ---
 
 ## 1. Executive System Overview
 
-The `ai-service` is the central intelligence and exam delivery backbone of the platform. It provides:
-1. **Multi-Tenant CBT Examination Engine:** Timed session management, live answer persistence, auto-scoring, and anti-cheat activity anomaly detection.
-2. **Real-time Synchronization:** WebSocket-based live exam orchestration and Redis pub/sub state bridges.
-3. **Adaptive Tutoring & Memory:** Student mastery tracking (`LearningMemory`), dynamic difficulty calculation, and prompt-driven AI tutoring.
-4. **Knowledge Tree & Curriculum Engine:** Hierarchical topic breakdown, prerequisites tracking, and learning path traversal (DFS/BFS).
-5. **RAG & Document Intelligence:** Multi-tenant contextual retrieval, OCR document extraction (Paddle/OpenVINO stubs), and PDF parsing.
+The `ai-service` is the central intelligence, exam delivery, and agent orchestration backbone of the BUILD platform. It provides:
+1. **Authenticated Service Boundary (AI-1A):** HMAC-SHA256 authenticated dispatch, replay protection, and idempotency guarantees.
+2. **Distributed Asynchronous Execution Substrate (AI-1B):** Redis Streams / In-memory task transport, worker lease governance, retries, and dead-letter queues.
+3. **Signed Domain Callback Delivery (AI-1C):** Canonical JSON serialization and HMAC-signed webhook delivery to Backend.
+4. **Model Control Plane & Governance (AI-1D):** Provider-independent Model Gateway with Token Bucket rate limiting, Circuit Breakers, retries, cost/token budgets, and streaming.
+5. **Tool Capability Plane & Sandbox (AI-1E):** Policy-aware Tool Registry, strict schema/tenant validation, byte ceilings, and isolated execution.
+6. **Bounded Agent Orchestration Engine (AI-1F):** Multi-step ReAct reasoning loop with strict ceilings on steps, tokens, model calls, tool calls, runtime, and cost.
+7. **End-to-End Verified Pipeline (AI-1G):** Comprehensive E2E integration covering dispatch $\to$ worker $\to$ agent $\to$ model $\to$ tool $\to$ signed callback.
+8. **Multi-Tenant CBT Examination Engine:** Timed session management, live answer persistence, auto-scoring, and anti-cheat activity anomaly detection.
+9. **Adaptive Tutoring & Memory:** Student mastery tracking (`LearningMemory`), dynamic difficulty calculation, and prompt-driven AI tutoring.
+10. **Knowledge Tree & Curriculum Engine:** Hierarchical topic breakdown, prerequisites tracking, and learning path traversal (DFS/BFS).
 
 ---
 
 ## 2. System Status (Traffic Light Assessment)
 
 ```
-🟢 GREEN   - Core Architecture, Auth/RBAC, Exam Engine, Test Coverage (86%), Multi-Tenant Context
-🟡 YELLOW  - Pydantic v2 Deprecations, Single-Node WebSocket State, Vector DB Stubs, Contract Tests
-🔴 RED     - LLM Error Resilience/Circuit Breaker, Async Task Queue for Heavy OCR/Gen, Production Vector Store
+🟢 GREEN   - AI Runtime Foundation v1.0 (AI-1A..AI-1G: Auth, Worker Engine, Model Gateway, Tool Plane, Agent Runtime, E2E Verification), CBT Engine, Tenant Isolation
+🟡 YELLOW  - Pydantic v2 Deprecations in legacy routes, Single-Node WebSocket State, Vector DB Stubs
+🔵 PLANNED - AI-2 Intelligence Plane (Multi-Tenant pgvector RAG, Production OCR Pipeline, Batch Question Generation Engine, Knowledge Tree Traversal)
 ```
 
-### 🟢 Green (Operational & Solid)
-These components are well-architected, stable, and pass unit/integration requirements:
-- ✅ **FastAPI Lifecycle & Engine Management:** Clean async lifespan management with database initialization and graceful engine disposal.
-- ✅ **Tenant Context Isolation:** Multi-tenant scoping via `TenantMiddleware` and `x-school-id` header resolution across all DB queries, memory records, and Redis channels.
-- ✅ **Authentication & RBAC:** JWT authentication with role enforcement (`student`, `teacher`, `admin`) and secure password hashing (`passlib/bcrypt`).
-- ✅ **Exam State Machine & Timers:** Robust Redis-backed and in-memory fallback exam session state, timestamped answer audit logs, and countdown timers.
-- ✅ **Anti-Cheat Anomaly Engine:** Real-time answer submission rate monitoring and abnormal activity detection.
-- ✅ **Knowledge Tree & Learning Paths:** Tree generation and deterministic graph traversal algorithms.
-- ✅ **Test Suite Health:** Unit test suite exceeds target threshold at **86% coverage** with 92 passing tests.
+### 🟢 Green (Operational & Verified)
+- ✅ **AI-1A Service Boundary & HMAC Auth:** Signed request validation, nonce tracking, idempotency deduplication (`/v1/ingest/dispatch`).
+- ✅ **AI-1B Task Worker & Execution Substrate:** Asynchronous task queue with `AITask`, `AIExecutionContext`, heartbeat leases, and cooperative cancellation.
+- ✅ **AI-1C Signed Callback Dispatcher:** HMAC-SHA256 signed event delivery with exponential backoff retries.
+- ✅ **AI-1D Model Control Plane:** Provider adapters (OpenAI/Scripted/Mock), CircuitBreakers (`CLOSED`/`OPEN`/`HALF_OPEN`), rate limits, and token budgets.
+- ✅ **AI-1E Tool / Capability Plane:** Policy-aware registry, schema/tenant validation, and sandboxed failure isolation.
+- ✅ **AI-1F Bounded Agent Runtime:** ReAct multi-step orchestration with hard step/token/runtime/cost budgets.
+- ✅ **AI-1G E2E Integration Suite:** Full-stack verification from dispatch to callback delivery with 208 passing tests.
+- ✅ **Tenant Context Isolation:** Multi-tenant scoping via `TenantMiddleware` and `x-school-id` header resolution.
+- ✅ **Authentication & RBAC:** JWT authentication with role enforcement (`student`, `teacher`, `admin`) and secure password hashing.
+- ✅ **Exam State Machine & Timers:** Redis-backed and in-memory fallback exam session state, timestamped answer logs, and anomaly detection.
 
 ---
 
