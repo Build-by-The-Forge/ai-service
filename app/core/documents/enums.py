@@ -1,0 +1,47 @@
+from enum import Enum
+
+
+class DocumentType(str, Enum):
+    PDF = "PDF"
+    IMAGE = "IMAGE"
+    DOCX = "DOCX"
+    TEXT = "TEXT"
+    MARKDOWN = "MARKDOWN"
+    UNKNOWN = "UNKNOWN"
+
+
+class DocumentSource(str, Enum):
+    UPLOAD = "UPLOAD"
+    CURRICULUM_SYNC = "CURRICULUM_SYNC"
+    LMS_INTEGRATION = "LMS_INTEGRATION"
+    MANUAL_ENTRY = "MANUAL_ENTRY"
+    S3_IMPORT = "S3_IMPORT"
+
+
+class DocumentStatus(str, Enum):
+    PENDING = "PENDING"
+    PARSING = "PARSING"
+    OCR_PROCESSING = "OCR_PROCESSING"
+    EXTRACTED = "EXTRACTED"
+    CHUNKING = "CHUNKING"
+    INDEXED = "INDEXED"
+    FAILED = "FAILED"
+
+
+class PageType(str, Enum):
+    NATIVE_TEXT = "NATIVE_TEXT"
+    SCANNED_IMAGE = "SCANNED_IMAGE"
+    HYBRID = "HYBRID"
+    BLANK = "BLANK"
+
+
+class OCRBlockType(str, Enum):
+    HEADING = "HEADING"
+    PARAGRAPH = "PARAGRAPH"
+    TABLE = "TABLE"
+    LIST_ITEM = "LIST_ITEM"
+    EQUATION = "EQUATION"
+    CAPTION = "CAPTION"
+    CODE = "CODE"
+    HEADER_FOOTER = "HEADER_FOOTER"
+    UNKNOWN = "UNKNOWN"
