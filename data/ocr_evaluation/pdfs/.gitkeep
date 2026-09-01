@@ -1,0 +1,11 @@
+"""
+PDF OCR test corpus — placeholder directory.
+
+To populate:
+1. Add representative PDFs from BUILD's domain
+2. Include both scanned and digitally-generated PDFs
+3. Vary page counts, orientations, layouts
+4. Ensure anonymization (no real PII)
+
+See ../README.md and ../BENCHMARKING_CHECKLIST.md for details.
+"""

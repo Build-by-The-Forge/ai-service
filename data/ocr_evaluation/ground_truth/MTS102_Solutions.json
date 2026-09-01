@@ -1,0 +1,49 @@
+{
+  "document": {
+    "filename": "MTS102_Solutions.pdf",
+    "document_type": "solutions_manual",
+    "content_type": "pdf_native_or_mixed",
+    "source": "digitally_generated_or_scanned",
+    "language": "en",
+    "page_count": null,
+    "file_size_mb": 0.247,
+    "quality_notes": "Solutions PDF - may contain native text and/or scanned images"
+  },
+  "ground_truth": {
+    "pages": [
+      {
+        "page_number": 1,
+        "full_text": "[Expected OCR transcription of page 1]\n\nNote: Solutions usually contain worked problems and answers",
+        "text_regions": [
+          {
+            "id": "p1_solution_1",
+            "text": "Solution 1: [Complete worked solution]",
+            "type": "solution",
+            "confidence_expected": 0.85
+          }
+        ],
+        "content_type": "native_text_or_scanned"
+      }
+    ],
+    "document_structure": {
+      "has_worked_solutions": true,
+      "has_equations": true,
+      "has_step_by_step": true,
+      "has_diagrams": false,
+      "has_tables": false,
+      "has_mathematical_notation": true
+    }
+  },
+  "metadata": {
+    "created_date": "2026-09-01",
+    "ground_truth_type": "partial_manual_verification",
+    "difficulty_notes": "Solutions manual - may mix native text and scanned solutions",
+    "expected_challenges": [
+      "mixed content type (native + scanned)",
+      "mathematical notation",
+      "varying page formats",
+      "solution numbering and references"
+    ],
+    "important_note": "Verify if this PDF contains extractable native text or if it's entirely scanned"
+  }
+}

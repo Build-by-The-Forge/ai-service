@@ -27,6 +27,12 @@ coverage.xml
 coverage.out
 htmlcov/
 
+# Benchmark and OCR results
+results/
+*.json.log
+*_benchmark.json
+*_execution.log
+
 # Type checking and linting
 .mypy_cache/
 .dmypy.json
@@ -50,3 +56,7 @@ htmlcov/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Keep model artifacts and ground truth (tracked in git)
+!data/ocr_evaluation/ground_truth/
+!models/ocr/openvino_models/

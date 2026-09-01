@@ -1,0 +1,11 @@
+"""
+Image OCR test corpus — placeholder directory.
+
+To populate:
+1. Add representative document images from BUILD's domain
+2. Ensure anonymization (no real PII)
+3. Cover diversity: different quality, orientations, formats
+4. Document source and licensing for each image
+
+See ../README.md and ../BENCHMARKING_CHECKLIST.md for details.
+"""

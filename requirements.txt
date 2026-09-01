@@ -21,6 +21,11 @@ openai==1.0.0
 pymupdf==1.28.0
 httpx==0.28.1
 
+# OCR & Computer Vision
+openvino>=2023.0
+paddleocr>=2.7.0
+Pillow>=9.0.0
+
 # Observability & Rate Limiting
 prometheus-fastapi-instrumentator==6.0.0
 slowapi==0.1.9

@@ -1,0 +1,18 @@
+"""
+Ground truth annotations — placeholder directory.
+
+To populate with JSON files matching:
+- data/ocr_evaluation/images/*.{png,jpg}
+- data/ocr_evaluation/pdfs/*.pdf
+
+Each annotation file should contain:
+- Expected OCR text
+- Bounding box regions with confidence expectations
+- Document type and content metadata
+- Language labels
+- Layout complexity notes
+
+Example: id_card.png → id_card.json
+
+See ../README.md for annotation schema.
+"""

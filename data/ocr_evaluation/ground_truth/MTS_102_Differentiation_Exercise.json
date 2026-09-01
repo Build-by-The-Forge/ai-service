@@ -1,0 +1,60 @@
+{
+  "document": {
+    "filename": "MTS 102 - Differentiation Exercise  BY PHOTOCHEM.pdf",
+    "document_type": "exercise_sheet",
+    "content_type": "pdf_scanned",
+    "source": "scanned_document",
+    "language": "en",
+    "page_count": 2,
+    "file_size_mb": 0.043,
+    "quality_notes": "Short scanned PDF, mathematical exercises"
+  },
+  "ground_truth": {
+    "pages": [
+      {
+        "page_number": 1,
+        "full_text": "[Expected OCR transcription of page 1]\n\nNote: Contains differentiation exercises with mathematical notation",
+        "text_regions": [
+          {
+            "id": "p1_header",
+            "text": "MTS 102 - Differentiation Exercise",
+            "type": "title",
+            "confidence_expected": 0.90
+          },
+          {
+            "id": "p1_ex1",
+            "text": "Exercise 1: [Mathematical expression and instruction]",
+            "type": "exercise",
+            "confidence_expected": 0.80,
+            "notes": "Contains mathematical symbols and equations"
+          }
+        ]
+      },
+      {
+        "page_number": 2,
+        "full_text": "[Expected OCR transcription of page 2]",
+        "text_regions": []
+      }
+    ],
+    "document_structure": {
+      "has_questions": false,
+      "has_exercises": true,
+      "has_solutions": false,
+      "has_equations": true,
+      "has_mathematical_symbols": true,
+      "has_tables": false,
+      "has_multiple_columns": false
+    }
+  },
+  "metadata": {
+    "created_date": "2026-09-01",
+    "ground_truth_type": "partial_manual_verification",
+    "difficulty_notes": "2-page scanned PDF with heavy mathematical notation",
+    "expected_challenges": [
+      "mathematical symbols (integral, derivative, etc.)",
+      "subscripts and superscripts",
+      "LaTeX-like notation",
+      "variable accuracy of symbols"
+    ]
+  }
+}

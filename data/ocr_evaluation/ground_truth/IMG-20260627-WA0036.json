@@ -1,0 +1,34 @@
+{
+  "document": {
+    "filename": "IMG-20260627-WA0036.jpg",
+    "document_type": "document_photograph",
+    "content_type": "raster_image",
+    "source": "mobile_camera",
+    "language": "en",
+    "page_count": 1,
+    "resolution": "960x1280",
+    "quality_notes": "Mobile camera photo, likely low-light or angled"
+  },
+  "ground_truth": {
+    "full_text": "[Expected OCR transcription of photographed document content]\n\nNote: This field should contain the actual readable text.\nCan be lecture notes, certificate, ID, form, etc.",
+    "text_regions": [
+      {
+        "id": "region_1",
+        "text": "[Text content from first region]",
+        "type": "body_text",
+        "estimated_bbox": [0.05, 0.1, 0.95, 0.9],
+        "confidence_expected": 0.85
+      }
+    ]
+  },
+  "metadata": {
+    "created_date": "2026-09-01",
+    "ground_truth_type": "manual_transcription",
+    "difficulty_notes": "Mobile camera photo - likely perspective distortion, variable lighting",
+    "expected_challenges": [
+      "perspective skew",
+      "shadow/lighting variation",
+      "image compression artifacts"
+    ]
+  }
+}

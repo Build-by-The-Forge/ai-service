@@ -1,0 +1,55 @@
+{
+  "document": {
+    "filename": "MTS 102 Cheat sheet.pdf_20250907_152115_0000.pdf",
+    "document_type": "study_guide",
+    "content_type": "pdf_scanned",
+    "source": "scanned_document",
+    "language": "en",
+    "page_count": 4,
+    "file_size_mb": 0.135,
+    "quality_notes": "4-page scanned study guide/cheat sheet"
+  },
+  "ground_truth": {
+    "pages": [
+      {
+        "page_number": 1,
+        "full_text": "[Expected OCR transcription of page 1]\n\nNote: Cheat sheet typically contains condensed notes, formulas, key concepts",
+        "text_regions": [
+          {
+            "id": "p1_title",
+            "text": "MTS 102 Cheat Sheet",
+            "type": "title",
+            "confidence_expected": 0.95
+          },
+          {
+            "id": "p1_section1",
+            "text": "[Section heading with condensed content]",
+            "type": "section",
+            "confidence_expected": 0.80
+          }
+        ]
+      }
+    ],
+    "document_structure": {
+      "has_dense_content": true,
+      "has_multiple_columns": true,
+      "has_formulas": true,
+      "has_equations": true,
+      "has_bullet_points": true,
+      "has_tables": false,
+      "has_highlighting": true
+    }
+  },
+  "metadata": {
+    "created_date": "2026-09-01",
+    "ground_truth_type": "partial_manual_verification",
+    "difficulty_notes": "Dense study guide with complex formatting",
+    "expected_challenges": [
+      "multiple columns and dense layout",
+      "mathematical formulas",
+      "bullet points and hierarchies",
+      "potential handwritten annotations",
+      "column reading order preservation"
+    ]
+  }
+}

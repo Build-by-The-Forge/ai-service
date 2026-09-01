@@ -15,6 +15,11 @@ from app.core.documents.contracts import (
     OCRDocument,
     OCRPage,
 )
+from app.core.documents.evaluation import (
+    OCRCandidateEvaluation,
+    OCRModelCandidate,
+    OCRModelEvaluator,
+)
 from app.core.documents.enums import (
     DocumentSource,
     DocumentStatus,
@@ -81,8 +86,11 @@ __all__ = [
     "OCRBlockType",
     "OCRBoundingBox",
     "OCRConfig",
+    "OCRCandidateEvaluation",
     "OCRDocument",
     "OCRExtractionError",
+    "OCRModelCandidate",
+    "OCRModelEvaluator",
     "OCRPage",
     "OCRPageRequest",
     "OCRPageResult",

@@ -1,0 +1,41 @@
+{
+  "document": {
+    "filename": "DTS SECOND SEMESTER 20252026 EXAMINATION.jpeg",
+    "document_type": "examination_paper",
+    "content_type": "raster_image",
+    "source": "camera/scan",
+    "language": "en",
+    "page_count": 1,
+    "resolution": "905x1280",
+    "quality_notes": "Medium quality JPEG, likely photographed exam paper"
+  },
+  "ground_truth": {
+    "full_text": "[Expected OCR transcription of exam paper content]\n\nNote: This field should contain the actual readable text from the document.\nPreserve structure where identifiable (questions, options, etc.)",
+    "text_regions": [
+      {
+        "id": "header",
+        "text": "DTS SECOND SEMESTER 2025/2026 EXAMINATION",
+        "type": "heading",
+        "estimated_bbox": [0.05, 0.05, 0.95, 0.15],
+        "confidence_expected": 0.95
+      },
+      {
+        "id": "question_1",
+        "text": "[Question 1 and options]",
+        "type": "question_mcq",
+        "estimated_bbox": [0.05, 0.20, 0.95, 0.40],
+        "confidence_expected": 0.90
+      }
+    ]
+  },
+  "metadata": {
+    "created_date": "2026-09-01",
+    "ground_truth_type": "manual_transcription",
+    "difficulty_notes": "Exam paper with multiple choice questions, possibly handwritten student marks",
+    "expected_challenges": [
+      "handwriting overlays",
+      "varying text sizes",
+      "multiple columns"
+    ]
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "document": {
+    "filename": "PHY 102 PRACTICE MULTIPLE CHOICE QUESTIONS BY GRACE..pdf",
+    "document_type": "practice_questions",
+    "content_type": "pdf_scanned",
+    "source": "scanned_document",
+    "language": "en",
+    "page_count": 21,
+    "file_size_mb": 0.647,
+    "quality_notes": "21-page scanned practice question set for Physics"
+  },
+  "ground_truth": {
+    "pages": [
+      {
+        "page_number": 1,
+        "full_text": "[Expected OCR transcription of page 1]\n\nNote: Physics MCQ typically includes diagrams, formulas, multiple-choice options",
+        "text_regions": [
+          {
+            "id": "p1_header",
+            "text": "PHY 102 PRACTICE MULTIPLE CHOICE QUESTIONS",
+            "type": "title",
+            "confidence_expected": 0.92
+          },
+          {
+            "id": "p1_q1",
+            "text": "1. [Question with potential diagram reference]",
+            "type": "question_mcq",
+            "confidence_expected": 0.80,
+            "notes": "May reference diagrams not OCR-extractable"
+          }
+        ]
+      }
+    ],
+    "document_structure": {
+      "has_questions": true,
+      "has_multiple_choice": true,
+      "has_equations": true,
+      "has_diagrams": true,
+      "has_tables": false,
+      "has_scientific_notation": true
+    }
+  },
+  "metadata": {
+    "created_date": "2026-09-01",
+    "ground_truth_type": "partial_manual_verification",
+    "difficulty_notes": "21-page scanned PDF with physics content",
+    "expected_challenges": [
+      "scientific equations and notation",
+      "diagrams (non-OCR content)",
+      "varying text densities",
+      "multi-page processing",
+      "physics symbols (θ, λ, Δ, etc.)",
+      "potential for low OCR accuracy on diagrams"
+    ],
+    "note": "For full benchmark, recommend sampling pages: 1, 5, 10, 15, 21"
+  }
+}

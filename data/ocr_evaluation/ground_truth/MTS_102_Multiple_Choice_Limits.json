@@ -1,0 +1,54 @@
+{
+  "document": {
+    "filename": "MTS 102  Multiple Choice Questions on Limits and Continuity BY ROTIMI.pdf",
+    "document_type": "course_material",
+    "content_type": "pdf_scanned",
+    "source": "scanned_document",
+    "language": "en",
+    "page_count": 18,
+    "file_size_mb": 4.5,
+    "quality_notes": "Large scanned PDF, likely multiple choice questions and solutions"
+  },
+  "ground_truth": {
+    "pages": [
+      {
+        "page_number": 1,
+        "full_text": "[Expected OCR transcription of page 1]\n\nNote: Full text should be extracted for each page",
+        "text_regions": [
+          {
+            "id": "p1_header",
+            "text": "MTS 102: Multiple Choice Questions on Limits and Continuity",
+            "type": "title",
+            "confidence_expected": 0.92
+          },
+          {
+            "id": "p1_q1",
+            "text": "1. [Question text with options A-D]",
+            "type": "question_mcq",
+            "confidence_expected": 0.85
+          }
+        ]
+      }
+    ],
+    "document_structure": {
+      "has_questions": true,
+      "has_solutions": false,
+      "has_diagrams": false,
+      "has_equations": true,
+      "has_tables": false,
+      "has_multiple_columns": false
+    }
+  },
+  "metadata": {
+    "created_date": "2026-09-01",
+    "ground_truth_type": "partial_manual_verification",
+    "difficulty_notes": "18-page scanned PDF with mathematical content",
+    "expected_challenges": [
+      "mathematical notation and equations",
+      "varying text sizes",
+      "possible scanning artifacts",
+      "multi-page processing latency"
+    ],
+    "note": "For full benchmark, transcribe all pages or representative sample (pages 1, 5, 10, 18)"
+  }
+}
