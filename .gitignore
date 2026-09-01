@@ -6,6 +6,8 @@ __pycache__/
 # Virtual environments
 .venv/
 .venv*/
+.venv_wsl/
+.venv_wsl*/
 venv/
 ENV/
 env/
@@ -32,6 +34,18 @@ results/
 *.json.log
 *_benchmark.json
 *_execution.log
+*_output.txt
+*_summary.txt
+coverage.*
+coverage_summary.txt
+pytest_*.txt
+status.txt
+out.txt
+nul
+=2.6.1,
+=2.7.0
+=2023.0
+=9.0.0
 
 # Type checking and linting
 .mypy_cache/

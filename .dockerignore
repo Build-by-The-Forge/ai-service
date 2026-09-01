@@ -2,6 +2,7 @@
 .gitignore
 
 .venv
+.venv_wsl
 .venv-linux
 venv
 env
