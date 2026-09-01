@@ -44,8 +44,17 @@ from app.core.documents.ocr import (
     OCRResult,
     OCRRouter,
     OCRTextLine,
-    OpenVINORuntime,
     PaddleOCRProvider,
+)
+from app.core.documents.openvino import ModelDescriptor, OpenVINORuntime
+from app.core.documents.openvino_errors import (
+    OpenVINOCompilationError,
+    OpenVINODeviceNotFoundError,
+    OpenVINOError,
+    OpenVINOInitializationError,
+    OpenVINOModelInvalidError,
+    OpenVINOModelNotFoundError,
+    OpenVINOPathValidationError,
 )
 from app.core.documents.ports import OCRPort
 
@@ -67,6 +76,7 @@ __all__ = [
     "DocumentTenantMissingError",
     "DocumentType",
     "InvalidBoundingBoxError",
+    "ModelDescriptor",
     "OCRBlock",
     "OCRBlockType",
     "OCRBoundingBox",
@@ -82,6 +92,13 @@ __all__ = [
     "OCRResult",
     "OCRRouter",
     "OCRTextLine",
+    "OpenVINOCompilationError",
+    "OpenVINODeviceNotFoundError",
+    "OpenVINOError",
+    "OpenVINOInitializationError",
+    "OpenVINOModelInvalidError",
+    "OpenVINOModelNotFoundError",
+    "OpenVINOPathValidationError",
     "OpenVINORuntime",
     "PaddleOCRProvider",
     "PageAnalysis",
