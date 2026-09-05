@@ -1,3 +1,9 @@
+# ============================================================
+# BUILD AI Service — Application Runtime Dependencies
+# Keep this file for the general app stack; OCR runtime is isolated
+# in requirements-ocr.txt for the PP-OCRv3 baseline proof.
+# ============================================================
+
 # Core Framework & Server
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
@@ -14,24 +20,20 @@ redis==5.0.0
 # Security & Authentication
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
-bcrypt==5.0.0
+bcrypt==4.1.3
 
-# AI, LLM & Document Processing
+# AI / LLM
 openai==1.0.0
-pymupdf==1.28.0
-httpx==0.28.1
+httpx==0.27.2
 
-# OCR & Computer Vision
-paddlepaddle==2.6.2
-paddleocr==2.7.0
-openvino>=2023.0
-Pillow>=9.0.0
+# Document Processing
+# Keep separate from OCR proof until PyMuPDF/3.12 compatibility is validated.
 
-# Observability & Rate Limiting
+# Observability / Rate Limiting
 prometheus-fastapi-instrumentator==6.0.0
 slowapi==0.1.9
 
-# Development, Testing & Code Quality
+# Development / Testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
 pytest-cov==4.1.0
@@ -40,7 +42,7 @@ ruff==0.1.8
 mypy==1.7.1
 pre-commit==4.5.0
 
-# Type Definitions & Stubs
+# Type Definitions
 types-python-jose==3.5.0.20260408
 types-passlib==1.7.7.20260211
 types-pyasn1==0.6.0.20260408

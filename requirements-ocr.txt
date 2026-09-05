@@ -1,0 +1,10 @@
+# OCR smoke-test runtime only
+# Purpose: prove the current PP-OCRv3 baseline works on Python 3.12 Linux
+
+paddlepaddle==2.6.2
+paddleocr==2.7.0
+opencv-python==4.6.0.66
+Pillow==10.4.0
+numpy==1.26.4
+protobuf==3.20.3
+setuptools==75.6.0

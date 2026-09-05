@@ -77,9 +77,9 @@ def levenshtein_distance(s1: str, s2: str) -> EditDistanceResult:
                 dp[i][j] = dp[i - 1][j - 1]
             else:
                 dp[i][j] = 1 + min(
-                    dp[i - 1][j],      # deletion
-                    dp[i][j - 1],      # insertion
-                    dp[i - 1][j - 1]   # substitution
+                    dp[i - 1][j],  # deletion
+                    dp[i][j - 1],  # insertion
+                    dp[i - 1][j - 1],  # substitution
                 )
 
     # Backtrack to count operations
@@ -261,9 +261,7 @@ class ComparisonResult:
 
 
 def compare_ocr_to_ground_truth(
-    ocr_text: str,
-    gt_path: Path,
-    document_name: str = ""
+    ocr_text: str, gt_path: Path, document_name: str = ""
 ) -> ComparisonResult:
     """
     Compare OCR output to ground truth and calculate metrics.
@@ -331,10 +329,14 @@ if __name__ == "__main__":
     print("Testing CER calculation...")
     cer, result = calculate_cer("hello world", "helo world")
     print(f"CER: {cer:.2f}%")
-    print(f"  Insertions: {result.insertions}, Deletions: {result.deletions}, Substitutions: {result.substitutions}")
+    print(
+        f"  Insertions: {result.insertions}, Deletions: {result.deletions}, Substitutions: {result.substitutions}"
+    )
 
     # Test WER
     print("\nTesting WER calculation...")
     wer, result = calculate_wer("The quick brown fox", "The quik brown fox")
     print(f"WER: {wer:.2f}%")
-    print(f"  Insertions: {result.insertions}, Deletions: {result.deletions}, Substitutions: {result.substitutions}")
+    print(
+        f"  Insertions: {result.insertions}, Deletions: {result.deletions}, Substitutions: {result.substitutions}"
+    )

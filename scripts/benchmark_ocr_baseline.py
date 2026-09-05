@@ -30,10 +30,10 @@ import time
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any
 
 try:
     from openvino.runtime import Core
+
     OPENVINO_AVAILABLE = True
 except ImportError:
     OPENVINO_AVAILABLE = False
@@ -150,9 +150,7 @@ class OCRBenchmark:
     def _initialize_ocr_runtime(self) -> None:
         """Initialize OpenVINO runtime (if available)."""
         if not OPENVINO_AVAILABLE:
-            logger.warning(
-                "OpenVINO not available. Benchmarking will use mock execution."
-            )
+            logger.warning("OpenVINO not available. Benchmarking will use mock execution.")
             return
 
         try:
@@ -162,9 +160,7 @@ class OCRBenchmark:
             logger.info(f"Available OpenVINO devices: {available_devices}")
 
             if self.device not in available_devices:
-                logger.warning(
-                    f"Device {self.device} not found. Available: {available_devices}"
-                )
+                logger.warning(f"Device {self.device} not found. Available: {available_devices}")
                 self.device = available_devices[0] if available_devices else "CPU"
                 logger.info(f"Falling back to device: {self.device}")
         except Exception as e:
@@ -199,7 +195,7 @@ class OCRBenchmark:
 
             # Mock OCR execution
             logger.debug(f"  → Loading image: {image_path}")
-            logger.debug(f"  → Running OCR...")
+            logger.debug("  → Running OCR...")
             await asyncio.sleep(0.1)  # Simulate OCR latency
 
             latency_ms = (time.time() - start_time) * 1000
@@ -257,7 +253,7 @@ class OCRBenchmark:
 
             # Placeholder: actual PDF processing would run here
             logger.debug(f"  → Loading PDF: {pdf_path}")
-            logger.debug(f"  → Extracting pages...")
+            logger.debug("  → Extracting pages...")
             await asyncio.sleep(0.1)
 
             # Mock page count (in real execution, this comes from PDF parsing)
@@ -302,9 +298,9 @@ class OCRBenchmark:
             BenchmarkResult with aggregated metrics
         """
         logger.info("=" * 70)
-        logger.info(f"Starting OCR Baseline Benchmark")
+        logger.info("Starting OCR Baseline Benchmark")
         logger.info(f"Candidate: {self.candidate}")
-        logger.info(f"Runtime: OpenVINO")
+        logger.info("Runtime: OpenVINO")
         logger.info(f"Device: {self.device}")
         logger.info("=" * 70)
 
@@ -365,9 +361,13 @@ class OCRBenchmark:
 
         # Calculate averages
         if successful:
-            cer_values = [m.character_error_rate for m in successful if m.character_error_rate is not None]
+            cer_values = [
+                m.character_error_rate for m in successful if m.character_error_rate is not None
+            ]
             wer_values = [m.word_error_rate for m in successful if m.word_error_rate is not None]
-            latency_values = [m.total_latency_ms for m in successful if m.total_latency_ms is not None]
+            latency_values = [
+                m.total_latency_ms for m in successful if m.total_latency_ms is not None
+            ]
             memory_values = [m.peak_memory_mb for m in successful if m.peak_memory_mb is not None]
 
             if cer_values:

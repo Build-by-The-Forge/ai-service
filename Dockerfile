@@ -12,10 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
+COPY requirements-ocr.txt .
 
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements-ocr.txt
+RUN pip install --no-cache-dir --no-deps paddleocr==2.7.0
 
 COPY . .
 
