@@ -1,0 +1,36 @@
+# paddleocr==2.7.0 and its actual runtime deps, installed with --no-deps
+# (see requirements-ocr.txt for why). Every entry here is verified by
+# import against real ModuleNotFoundErrors -- not paddleocr's declared
+# dependency list, which includes unused-feature packages
+# (pdf2docx, beautifulsoup4, PyMuPDF<1.21.0) this app never calls.
+
+paddleocr==2.7.0
+
+# core detection/recognition postprocessing
+shapely==2.1.2
+# pyclipper==1.4.0 is required too, but is built from source in its own
+# Dockerfile layer (its prebuilt Linux wheel crashes alongside paddlepaddle).
+tqdm==4.68.3
+requests==2.34.2
+urllib3==2.8.0
+scikit-image==0.22.0
+scipy==1.11.4
+imageio==2.34.1
+tifffile==2024.5.22
+lazy_loader==0.4
+networkx==3.2.1
+
+# paddleocr utility deps (data augmentation, dict handling, CLI, logging)
+imgaug==0.4.0
+six==1.17.0
+Cython==3.3.0
+fire==0.7.1
+fonttools==4.65.0
+lmdb==2.3.0
+lxml==6.1.3
+openpyxl==3.1.5
+premailer==3.10.0
+python-docx==1.2.0
+rapidfuzz==3.14.6
+visualdl==2.5.3
+attrdict==2.0.1

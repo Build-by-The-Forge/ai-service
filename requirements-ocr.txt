@@ -1,10 +1,23 @@
 # OCR smoke-test runtime only
 # Purpose: prove the current PP-OCRv3 baseline works on Python 3.12 Linux
+#
+# This file is the "core" layer: installed with normal dependency
+# resolution, because these packages' own transitive deps are small,
+# safe, and already proven to resolve cleanly (httpx, decorator, astor,
+# opt-einsum for paddlepaddle).
+#
+# paddleocr==2.7.0 and its runtime deps live in requirements-ocr-nodeps.txt
+# and are installed with --no-deps (see Dockerfile). Full resolution of
+# paddleocr's declared deps pulls in PyMuPDF<1.21.0 (no Python 3.12 wheel,
+# fails to build from source: needs Visual Studio on Windows / `swig` on
+# Linux after ~18 min compiling MuPDF+Tesseract) and an unpinned
+# `opencv-python` via imgaug, which silently overwrites the headless
+# build below and reintroduces a libGL.so.1 dependency the slim image
+# doesn't have. --no-deps plus exact pins avoids both.
 
 paddlepaddle==2.6.2
-paddleocr==2.7.0
-opencv-python==4.6.0.66
+opencv-python-headless==4.6.0.66
 Pillow==10.4.0
 numpy==1.26.4
-protobuf==3.20.3
+protobuf==3.20.2
 setuptools==75.6.0
