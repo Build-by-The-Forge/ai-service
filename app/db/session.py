@@ -42,6 +42,12 @@ def get_engine():
 
 
 async def initialize_database() -> None:
+    """Create every table in Base.metadata on an isolated test database.
+
+    Test-only. Base.metadata still includes legacy models that shadow
+    backend-owned tables, so this must never run against the shared
+    database; real schema comes from Alembic.
+    """
     eng = _build_engine()
     # Retry loop: database containers can be starting when tests begin.
     max_attempts = 10
