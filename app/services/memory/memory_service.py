@@ -5,28 +5,35 @@ from app.core.tenant import get_school_id
 from app.db.models.learning_memory import LearningMemory
 
 
+def _current_tenant_id() -> str:
+    # Temporary bridge: the request tenant context is still the legacy integer
+    # school id. Phase 1 Item 3 replaces it with the authenticated backend
+    # tenant id; until then it is stored in tenant_id as a string.
+    return str(get_school_id())
+
+
 class MemoryService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
     async def get_user_memory(self, user_id: str):
-        school_id = get_school_id()
+        tenant_id = _current_tenant_id()
         result = await self.db.execute(
             select(LearningMemory).where(
                 LearningMemory.user_id == user_id,
-                LearningMemory.school_id == school_id,
+                LearningMemory.tenant_id == tenant_id,
             )
         )
 
         return result.scalars().all()
 
     async def update_mastery(self, user_id: str, topic: str, delta: float):
-        school_id = get_school_id()
+        tenant_id = _current_tenant_id()
         result = await self.db.execute(
             select(LearningMemory).where(
                 LearningMemory.user_id == user_id,
                 LearningMemory.topic == topic,
-                LearningMemory.school_id == school_id,
+                LearningMemory.tenant_id == tenant_id,
             )
         )
 
@@ -34,7 +41,7 @@ class MemoryService:
 
         if not record:
             record = LearningMemory(
-                school_id=school_id,
+                tenant_id=tenant_id,
                 user_id=user_id,
                 topic=topic,
                 mastery_score=0.0,

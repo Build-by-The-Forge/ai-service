@@ -254,7 +254,12 @@ async def test_memory_service_get_user_memory_and_update_mastery(monkeypatch):
     monkeypatch.setattr("app.services.memory.memory_service.get_school_id", lambda: 77)
 
     dummy_record = types.SimpleNamespace(
-        school_id=77, user_id="u1", topic="math", mastery_score=0.5, attempts=1, last_interaction=""
+        tenant_id="77",
+        user_id="u1",
+        topic="math",
+        mastery_score=0.5,
+        attempts=1,
+        last_interaction="",
     )
     dummy_db = DummyAsyncSession(execute_result=DummyResult(scalars_list=[dummy_record]))
 
@@ -267,6 +272,7 @@ async def test_memory_service_get_user_memory_and_update_mastery(monkeypatch):
         user_id="u1", topic="math", delta=0.1
     )
 
+    assert updated.tenant_id == "77"
     assert updated.mastery_score == 0.1
     assert updated.attempts == 1
     assert dummy_update_db.committed is True
