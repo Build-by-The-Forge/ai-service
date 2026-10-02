@@ -5,6 +5,7 @@ from pathlib import Path
 import app.db.models  # noqa: F401 - import all models so metadata is populated
 from app.core.config import settings
 from app.db.base import Base
+from app.db.ownership import include_object
 
 from sqlalchemy import pool
 
@@ -43,6 +44,7 @@ def run_migrations_offline():
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         version_table=VERSION_TABLE,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
@@ -54,6 +56,7 @@ def do_run_migrations(connection):
         connection=connection,
         target_metadata=target_metadata,
         version_table=VERSION_TABLE,
+        include_object=include_object,
     )
 
     with context.begin_transaction():
