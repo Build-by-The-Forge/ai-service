@@ -29,6 +29,11 @@ config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 # add your model's MetaData object here
 target_metadata = Base.metadata
 
+# The database is shared with the Build backend, whose own Alembic chain uses
+# the default `alembic_version` table. Tracking our revisions there would make
+# each service see the other's revision ids and refuse to migrate.
+VERSION_TABLE = "ai_service_alembic_version"
+
 
 def run_migrations_offline():
     url = config.get_main_option("sqlalchemy.url")
@@ -37,6 +42,7 @@ def run_migrations_offline():
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
+        version_table=VERSION_TABLE,
     )
 
     with context.begin_transaction():
@@ -44,7 +50,11 @@ def run_migrations_offline():
 
 
 def do_run_migrations(connection):
-    context.configure(connection=connection, target_metadata=target_metadata)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        version_table=VERSION_TABLE,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
