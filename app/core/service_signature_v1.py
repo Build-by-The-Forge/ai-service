@@ -243,6 +243,18 @@ def _collect_headers(headers: Iterable[tuple[str, str]]) -> dict[str, str]:
 
 
 @dataclass(frozen=True)
+class PendingCall:
+    """Headers that passed A.5 steps 1-5; the signature is still unchecked."""
+
+    sender: str
+    timestamp: str
+    request_id: str
+    signature: str
+    context: ServiceContext
+    raw_context: bytes
+
+
+@dataclass(frozen=True)
 class ServiceVerifier:
     """Verifies requests from the single sender this receiver accepts.
 
@@ -266,10 +278,15 @@ class ServiceVerifier:
         body_sha256: str,
         now: int,
     ) -> VerifiedCall:
-        """A.5 steps 1-5 and 7, in that order.
+        """A.5 steps 1-5 and 7 for a body whose digest is already known."""
+        pending = self.precheck(headers=headers, now=now)
+        return self.finish(pending, method=method, target=target, body_sha256=body_sha256)
+
+    def precheck(self, *, headers: Iterable[tuple[str, str]], now: int) -> PendingCall:
+        """A.5 steps 1-5, in order, before any of the body is read.
 
         ``headers`` is an iterable of (name, value) pairs, so repeated headers
-        are visible; ``body_sha256`` is computed while the body is consumed.
+        are visible.
         """
         values = _collect_headers(headers)
 
@@ -297,26 +314,39 @@ class ServiceVerifier:
         except ServiceContextError as exc:
             raise SignatureVerificationError(f"context is invalid: {exc}") from exc
 
-        canonical = CanonicalRequest(
+        return PendingCall(
             sender=sender,
-            method=method,
-            target=target,
             timestamp=timestamp,
             request_id=request_id,
+            signature=signature,
+            context=context,
+            raw_context=raw_context,
+        )
+
+    def finish(
+        self, pending: PendingCall, *, method: str, target: str, body_sha256: str
+    ) -> VerifiedCall:
+        """A.5 step 7: the signature, against each configured secret."""
+        canonical = CanonicalRequest(
+            sender=pending.sender,
+            method=method,
+            target=target,
+            timestamp=pending.timestamp,
+            request_id=pending.request_id,
             body_sha256=body_sha256,
-            context_sha256=hex_sha256(raw_context),
+            context_sha256=hex_sha256(pending.raw_context),
         )
         matched = False
         for secret in self.secrets:
-            if hmac.compare_digest(canonical.signature(secret), signature):
+            if hmac.compare_digest(canonical.signature(secret), pending.signature):
                 matched = True
         if not matched:
             raise SignatureVerificationError("signature does not match")
 
         return VerifiedCall(
-            sender=sender,
-            timestamp=int(timestamp),
-            request_id=request_id,
-            context=context,
-            raw_context=raw_context,
+            sender=pending.sender,
+            timestamp=int(pending.timestamp),
+            request_id=pending.request_id,
+            context=pending.context,
+            raw_context=pending.raw_context,
         )
