@@ -35,9 +35,9 @@ else:
     sys.modules.setdefault("openvino", _openvino_module)
 
 if not hasattr(sys.modules["openvino"], "Core"):
-    sys.modules["openvino"].Core = Core
+    setattr(sys.modules["openvino"], "Core", Core)
 if not hasattr(sys.modules["openvino"], "__version__"):
-    sys.modules["openvino"].__version__ = __version__
+    setattr(sys.modules["openvino"], "__version__", __version__)
 
 
 def _resolve_openvino_core() -> Any:
@@ -127,8 +127,8 @@ class OpenVINORuntime:
         """
         self.model_dir = model_dir
         self.default_device = device.upper()
-        self._core = None
-        self._available_devices = []
+        self._core: Any = None
+        self._available_devices: list[str] = []
         self._compiled_models: dict[str, Any] = {}
 
         self._initialize()

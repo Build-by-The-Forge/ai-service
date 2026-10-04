@@ -1,6 +1,7 @@
 import hashlib
 import math
 from abc import ABC, abstractmethod
+from typing import Any
 
 from app.core.rag.errors import EmbeddingGenerationError
 
@@ -87,7 +88,7 @@ class OpenAIEmbeddingAdapter(EmbeddingPort):
         self._model = model
         self._dimension = dimension
         self._api_key = api_key
-        self._client = None
+        self._client: Any = None  # openai is imported lazily
 
     def _get_client(self):
         if self._client is None:
