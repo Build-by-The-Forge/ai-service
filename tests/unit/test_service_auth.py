@@ -36,7 +36,7 @@ async def test_valid_service_authentication_passes(auth_test_app):
             path="/test-service-auth",
             timestamp=timestamp,
             body=body,
-            secret=settings.SERVICE_AUTH_SECRET,
+            secret=settings.BACKEND_TO_AI_SECRET,
         )
 
         response = await client.post(
@@ -73,7 +73,7 @@ async def test_unauthorized_service_identity_returns_403(auth_test_app):
             path="/test-service-auth",
             timestamp=timestamp,
             body=body,
-            secret=settings.SERVICE_AUTH_SECRET,
+            secret=settings.BACKEND_TO_AI_SECRET,
         )
 
         response = await client.post(
@@ -101,7 +101,7 @@ async def test_expired_timestamp_skew_returns_401(auth_test_app):
             path="/test-service-auth",
             timestamp=stale_timestamp,
             body=body,
-            secret=settings.SERVICE_AUTH_SECRET,
+            secret=settings.BACKEND_TO_AI_SECRET,
         )
 
         response = await client.post(
@@ -128,7 +128,7 @@ async def test_tampered_body_signature_mismatch_returns_401(auth_test_app):
             path="/test-service-auth",
             timestamp=timestamp,
             body=original_body,
-            secret=settings.SERVICE_AUTH_SECRET,
+            secret=settings.BACKEND_TO_AI_SECRET,
         )
 
         tampered_body = b'{"action": "tampered"}'

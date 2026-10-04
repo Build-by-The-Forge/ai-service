@@ -44,7 +44,7 @@ async def test_dispatch_ingest_task_accepted():
             path="/v1/ingest/dispatch",
             timestamp=timestamp,
             body=body_bytes,
-            secret=settings.SERVICE_AUTH_SECRET,
+            secret=settings.BACKEND_TO_AI_SECRET,
         )
 
         response = await client.post(
@@ -93,7 +93,7 @@ async def test_dispatch_duplicate_request_returns_duplicate_status():
             path="/v1/ingest/dispatch",
             timestamp=timestamp,
             body=body_bytes,
-            secret=settings.SERVICE_AUTH_SECRET,
+            secret=settings.BACKEND_TO_AI_SECRET,
         )
 
         # First request
@@ -154,7 +154,7 @@ async def test_dispatch_invalid_sha256_returns_422():
             path="/v1/ingest/dispatch",
             timestamp=timestamp,
             body=body_bytes,
-            secret=settings.SERVICE_AUTH_SECRET,
+            secret=settings.BACKEND_TO_AI_SECRET,
         )
 
         response = await client.post(

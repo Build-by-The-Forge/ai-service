@@ -68,7 +68,7 @@ async def test_backend_4b4_dispatch_contract_accepted():
             path="/v1/ingest/dispatch",
             timestamp=timestamp,
             body=body_bytes,
-            secret=settings.SERVICE_AUTH_SECRET,
+            secret=settings.BACKEND_TO_AI_SECRET,
         )
 
         response = await client.post(

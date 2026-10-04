@@ -99,7 +99,11 @@ class HTTPCallbackDispatcher(CallbackPort):
         max_backoff: float | None = None,
         jitter: bool | None = None,
     ):
-        self._signer = signer or CallbackSigner(settings.SERVICE_AUTH_SECRET)
+        if signer is None:
+            if not settings.AI_TO_BACKEND_SECRET:
+                raise RuntimeError("AI_TO_BACKEND_SECRET is not configured")
+            signer = CallbackSigner(settings.AI_TO_BACKEND_SECRET)
+        self._signer = signer
         self._timeout = timeout_seconds or settings.CALLBACK_TIMEOUT_SECONDS
         self._max_attempts = max_attempts or settings.CALLBACK_MAX_ATTEMPTS
         self._initial_backoff = initial_backoff or settings.CALLBACK_INITIAL_BACKOFF_SECONDS

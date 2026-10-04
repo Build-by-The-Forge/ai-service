@@ -7,6 +7,12 @@ from fastapi import HTTPException, Request, status
 
 from app.core.config import settings
 
+# Interim: this pre-M3 scheme is replaced by BUILD Service Signature v1 in
+# M3-06. Its identity and skew rules stay as they were; only the secret now
+# comes from the directional BACKEND_TO_AI_SECRET.
+_ACCEPTED_SERVICE_IDENTITIES = frozenset({"build-backend"})
+_MAX_SKEW_SECONDS = 300
+
 
 @dataclass(frozen=True)
 class AuthenticatedServiceContext:
@@ -50,7 +56,7 @@ async def verify_service_authentication(request: Request) -> AuthenticatedServic
         )
 
     # 1. Check allowed service identities
-    if service_id not in settings.ALLOWED_SERVICE_IDENTITIES:
+    if service_id not in _ACCEPTED_SERVICE_IDENTITIES:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Service identity '{service_id}' is not authorized",
@@ -66,20 +72,25 @@ async def verify_service_authentication(request: Request) -> AuthenticatedServic
         )
 
     current_time = int(time.time())
-    if abs(current_time - req_timestamp) > settings.SERVICE_AUTH_MAX_SKEW_SECONDS:
+    if abs(current_time - req_timestamp) > _MAX_SKEW_SECONDS:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Timestamp skew exceeded acceptable window",
         )
 
-    # 3. Verify HMAC signature over request body
+    # 3. Verify HMAC signature over request body (refused if no secret is configured)
+    if not settings.BACKEND_TO_AI_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Service authentication is not configured",
+        )
     body_bytes = await request.body()
     expected_signature = compute_service_signature(
         method=request.method,
         path=request.url.path,
         timestamp=req_timestamp,
         body=body_bytes,
-        secret=settings.SERVICE_AUTH_SECRET,
+        secret=settings.BACKEND_TO_AI_SECRET,
     )
 
     if not hmac.compare_digest(signature, expected_signature):

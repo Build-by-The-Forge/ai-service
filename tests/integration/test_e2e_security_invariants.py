@@ -29,7 +29,7 @@ def generate_auth_headers(
     body_bytes: bytes,
     path: str = "/v1/ingest/dispatch",
     method: str = "POST",
-    secret: str = settings.SERVICE_AUTH_SECRET,
+    secret: str = settings.BACKEND_TO_AI_SECRET,
     identity: str = "build-backend",
 ) -> dict:
     timestamp = int(time.time())
