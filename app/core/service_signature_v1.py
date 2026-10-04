@@ -21,6 +21,12 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
+from app.core.service_context import (
+    ServiceContext,
+    ServiceContextError,
+    parse_service_context,
+)
+
 PROTOCOL_VERSION = "v1"
 
 # Sender ids, one per direction (A.1).
@@ -68,7 +74,7 @@ class VerifiedCall:
     sender: str
     timestamp: int
     request_id: str
-    context: dict[str, Any]
+    context: ServiceContext
     raw_context: bytes
 
 
@@ -188,12 +194,12 @@ class ServiceSigner:
         method: str,
         target: str,
         body: bytes,
-        context: Mapping[str, Any],
+        context: ServiceContext,
         timestamp: int,
         request_id: str | None = None,
     ) -> dict[str, str]:
         rid = request_id if request_id is not None else str(uuid.uuid4())
-        raw_context = serialize_context(context)
+        raw_context = serialize_context(context.to_json_object())
         canonical = CanonicalRequest(
             sender=self.sender,
             method=method,
@@ -285,7 +291,11 @@ class ServiceVerifier:
         if not _is_canonical_uuid4(request_id):
             raise SignatureVerificationError("request id is not a canonical UUIDv4")
 
-        raw_context, context = parse_context_header(values[CONTEXT_HEADER])
+        raw_context, decoded = parse_context_header(values[CONTEXT_HEADER])
+        try:
+            context = parse_service_context(decoded)
+        except ServiceContextError as exc:
+            raise SignatureVerificationError(f"context is invalid: {exc}") from exc
 
         canonical = CanonicalRequest(
             sender=sender,

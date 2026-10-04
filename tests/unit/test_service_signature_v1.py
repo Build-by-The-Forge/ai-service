@@ -9,6 +9,7 @@ import base64
 
 import pytest
 
+from app.core.service_context import parse_service_context
 from app.core.service_signature_v1 import (
     AI_SERVICE_ID,
     BACKEND_SERVICE_ID,
@@ -73,6 +74,7 @@ VECTOR_CONTEXT = {
     "user_id": "0b9d8c7a-6e5f-4a3b-8c2d-1e0f9a8b7c6d",
     "v": 1,
 }
+VECTOR_SERVICE_CONTEXT = parse_service_context(VECTOR_CONTEXT)
 NOW = 1760000000
 OTHER_DIRECTION_SECRET = "test-only-ai-to-backend-secret-fedcba9876543210"
 
@@ -157,7 +159,7 @@ def test_signer_produces_the_vector_headers():
         method=VECTOR["method"],
         target=VECTOR["target"],
         body=VECTOR["body"],
-        context=VECTOR_CONTEXT,
+        context=VECTOR_SERVICE_CONTEXT,
         timestamp=NOW,
         request_id=VECTOR["request_id"],
     )
@@ -171,7 +173,8 @@ def test_verifier_accepts_the_vector():
         NOW,
         VECTOR["request_id"],
     )
-    assert call.context == VECTOR_CONTEXT
+    assert call.context == VECTOR_SERVICE_CONTEXT
+    assert call.context.to_json_object() == VECTOR_CONTEXT
     assert call.raw_context == VECTOR["context_json"]
 
 
@@ -271,7 +274,7 @@ def test_a_request_signed_with_the_other_directions_secret_is_refused():
         method=VECTOR["method"],
         target=VECTOR["target"],
         body=VECTOR["body"],
-        context=VECTOR_CONTEXT,
+        context=VECTOR_SERVICE_CONTEXT,
         timestamp=NOW,
     )
     with pytest.raises(SignatureVerificationError, match="does not match"):
@@ -284,7 +287,7 @@ def test_outbound_callbacks_verify_with_the_ai_to_backend_secret_only():
         method="POST",
         target="/content/ingestion/callbacks",
         body=b"{}",
-        context=VECTOR_CONTEXT,
+        context=VECTOR_SERVICE_CONTEXT,
         timestamp=NOW,
     )
 
@@ -381,7 +384,11 @@ def test_request_id_must_be_canonical_lowercase_uuid4(value):
 def test_signer_uses_a_new_uuid4_for_every_request():
     def sign_once():
         return backend_signer.headers(
-            method="POST", target="/v1/ai/chat", body=b"{}", context=VECTOR_CONTEXT, timestamp=NOW
+            method="POST",
+            target="/v1/ai/chat",
+            body=b"{}",
+            context=VECTOR_SERVICE_CONTEXT,
+            timestamp=NOW,
         )
 
     first, second = sign_once(), sign_once()
@@ -516,7 +523,11 @@ def test_wire_request_target_rejects_non_ascii():
 
 def test_decoded_path_does_not_match_the_signed_encoded_path():
     headers = backend_signer.headers(
-        method="GET", target="/v1/ai/read/a%2Fb", body=b"", context=VECTOR_CONTEXT, timestamp=NOW
+        method="GET",
+        target="/v1/ai/read/a%2Fb",
+        body=b"",
+        context=VECTOR_SERVICE_CONTEXT,
+        timestamp=NOW,
     )
     verify(headers, method="GET", target="/v1/ai/read/a%2Fb", body=b"")
     with pytest.raises(SignatureVerificationError, match="does not match"):
