@@ -11,7 +11,6 @@ from app.api.v1.ai.retrieve import router as retrieve_router
 from app.api.v1.ai.tree import router as tree_router
 from app.api.v1.exams import router as exams_router
 from app.api.v1.health import router as health_router
-from app.api.v1.ingest import router as ingest_router
 from app.api.v1.system import router as system_router
 from app.api.v1.ws.exam_ws import router as ws_router
 
@@ -19,7 +18,6 @@ api_router = APIRouter()
 
 api_router.include_router(health_router, prefix="/health", tags=["Health"])
 api_router.include_router(system_router, prefix="/system", tags=["System"])
-api_router.include_router(ingest_router, prefix="/ingest", tags=["Ingest"])
 api_router.include_router(chat_router, prefix="/ai", tags=["AI Chat"])
 api_router.include_router(retrieve_router, prefix="/ai/retrieve", tags=["RAG"])
 api_router.include_router(tree_router, prefix="/ai/tree", tags=["Tree"])

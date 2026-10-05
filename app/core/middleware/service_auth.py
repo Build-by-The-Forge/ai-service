@@ -69,7 +69,7 @@ class SignedServiceRequestMiddleware:
         app: ASGIApp,
         *,
         receiver_id: str,
-        verifier: ServiceVerifier,
+        verifier: ServiceVerifier | None,
         replay_guard: ReplayGuard,
         applies_to: Callable[[str], bool],
         body_limit: int = BODY_LIMIT_BYTES,
@@ -105,6 +105,9 @@ class SignedServiceRequestMiddleware:
         await self.app(scope, _body_then(receive, body), send)
 
     async def _authenticate(self, scope: Scope, receive: Receive):
+        if self.verifier is None:
+            # No inbound secret configured (development only): nothing verifies.
+            raise _Rejected(401, "service secret not configured")
         header_pairs = [
             (name.decode("latin-1"), value.decode("latin-1")) for name, value in scope["headers"]
         ]

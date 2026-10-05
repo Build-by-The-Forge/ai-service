@@ -3,11 +3,8 @@ import uuid
 from fastapi import APIRouter, Depends, status
 
 from app.core.idempotency import IdempotencyStore, get_idempotency_store
-from app.core.service_auth import (
-    AuthenticatedServiceContext,
-    verify_service_authentication,
-)
-from app.core.tenant import set_school_id
+from app.core.service_call import signed_call_with
+from app.core.service_signature_v1 import VerifiedCall
 from app.schemas.ingest import (
     DispatchStatus,
     IngestDispatchRequest,
@@ -17,6 +14,10 @@ from app.services.tasks.dispatcher import TaskDispatcher, get_task_dispatcher
 
 router = APIRouter()
 
+# The backend checks this permission before dispatching (design B.2) and
+# records it in the signed context; AI-service requires exactly this string.
+INGEST_DISPATCH_PERMISSION = "content.job.manage"
+
 
 @router.post(
     "/dispatch",
@@ -24,27 +25,28 @@ router = APIRouter()
     status_code=status.HTTP_202_ACCEPTED,
     summary="Dispatch Content Ingestion Task",
     description=(
-        "Authenticated service-to-service endpoint for dispatching content ingestion jobs. "
-        "Guarantees idempotency, validates authenticated service claims, and enqueues to the TaskDispatcher."
+        "Signed backend-only endpoint (BUILD Service Signature v1). The task's tenant is "
+        "the verified context's tenant; the body cannot name one. Idempotent per tenant "
+        "and idempotency key."
     ),
 )
 async def dispatch_ingest_task(
     payload: IngestDispatchRequest,
-    service_ctx: AuthenticatedServiceContext = Depends(verify_service_authentication),
+    call: VerifiedCall = Depends(signed_call_with(INGEST_DISPATCH_PERMISSION)),
     idempotency_store: IdempotencyStore = Depends(get_idempotency_store),
     dispatcher: TaskDispatcher = Depends(get_task_dispatcher),
 ) -> IngestDispatchResponse:
-    # 1. Set tenant context from authenticated claim
-    try:
-        numeric_tenant = int(payload.tenant_id)
-        set_school_id(numeric_tenant)
-    except (ValueError, TypeError):
-        pass
+    tenant_id = call.context.tenant_id
+    receipt = {
+        "job_id": payload.job_id,
+        "asset_id": payload.asset_id,
+        "run_number": payload.run_number,
+        "attempt_count": payload.attempt_count,
+    }
 
-    # 2. Check Idempotency via abstraction port
     candidate_task_id = f"task_{uuid.uuid4().hex}"
     is_fresh, existing_record = await idempotency_store.set_if_absent(
-        tenant_id=payload.tenant_id,
+        tenant_id=tenant_id,
         idempotency_key=payload.idempotency_key,
         external_task_id=candidate_task_id,
     )
@@ -55,20 +57,13 @@ async def dispatch_ingest_task(
             external_task_id=existing_record.external_task_id,
             status=DispatchStatus.DUPLICATE,
             message="Ingestion task already accepted for this idempotency key",
-            data={
-                "job_id": payload.job_id,
-                "asset_id": payload.asset_id,
-                "tenant_id": payload.tenant_id,
-                "run_number": payload.run_number,
-                "attempt_count": payload.attempt_count,
-            },
+            data=receipt,
         )
 
-    # 3. Publish to Execution Platform via TaskDispatcher
     await dispatcher.dispatch_ingest(
         job_id=payload.job_id,
         asset_id=payload.asset_id,
-        tenant_id=payload.tenant_id,
+        tenant_id=tenant_id,
         correlation_id=payload.correlation_id,
         payload=payload.model_dump(),
         run_number=payload.run_number,
@@ -76,18 +71,10 @@ async def dispatch_ingest_task(
         external_task_id=candidate_task_id,
     )
 
-    # 4. Fresh task accepted
     return IngestDispatchResponse(
         success=True,
         external_task_id=candidate_task_id,
         status=DispatchStatus.ACCEPTED,
         message="Ingestion task accepted for processing",
-        data={
-            "job_id": payload.job_id,
-            "asset_id": payload.asset_id,
-            "tenant_id": payload.tenant_id,
-            "run_number": payload.run_number,
-            "attempt_count": payload.attempt_count,
-            "service_identity": service_ctx.service_identity,
-        },
+        data=receipt,
     )

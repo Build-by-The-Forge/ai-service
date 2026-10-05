@@ -27,15 +27,18 @@ class CallbackEventType(str, Enum):
 
 
 class IngestDispatchRequest(BaseModel):
-    model_config = ConfigDict(extra="ignore", from_attributes=True)
+    """Signed dispatch body (design B.2).
+
+    It names no tenant, user or callback destination: the tenant comes only
+    from the verified context and callbacks go only to BACKEND_CALLBACK_URL.
+    Unknown fields are rejected (422) rather than ignored.
+    """
+
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
 
     job_id: str = Field(..., min_length=1, description="Backend Ingestion Job identifier")
     asset_id: str = Field(..., min_length=1, description="Content Asset identifier")
-    tenant_id: str = Field(..., min_length=1, description="Tenant/School identifier")
-    source: str = Field(default="upload", description="Source of the asset (e.g. upload, s3, url)")
-    authority: ContentAuthority = Field(
-        default=ContentAuthority.INSTITUTIONAL, description="Content authority tier"
-    )
+    source_id: str = Field(..., min_length=1, description="Content Source identifier")
     storage_uri: str = Field(..., min_length=1, description="URI or path where raw asset is stored")
     mime_type: str = Field(..., min_length=1, description="MIME type of the asset")
     content_sha256: str = Field(
@@ -45,12 +48,6 @@ class IngestDispatchRequest(BaseModel):
     attempt_count: int = Field(default=1, ge=1, description="Execution attempt count")
     correlation_id: str = Field(..., min_length=1, description="Distributed tracing correlation ID")
     idempotency_key: str = Field(..., min_length=1, description="Unique idempotency token")
-    callback_url: str = Field(
-        ..., min_length=1, description="Webhook callback URL for progress/results"
-    )
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Arbitrary course/topic/asset metadata"
-    )
 
     @field_validator("content_sha256")
     @classmethod
@@ -58,13 +55,6 @@ class IngestDispatchRequest(BaseModel):
         if not re.match(r"^[a-fA-F0-9]{64}$", value):
             raise ValueError("content_sha256 must be a valid 64-character hex string")
         return value.lower()
-
-    @field_validator("callback_url")
-    @classmethod
-    def validate_callback_url(cls, value: str) -> str:
-        if not (value.startswith("http://") or value.startswith("https://")):
-            raise ValueError("callback_url must start with http:// or https://")
-        return value
 
 
 class IngestDispatchResponse(BaseModel):

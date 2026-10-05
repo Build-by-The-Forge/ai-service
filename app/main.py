@@ -6,12 +6,19 @@ from app.api.v1.exams import router as exams_router
 from app.api.v1.ingest import router as ingest_router
 from app.api.v1.router import api_router
 from app.auth.routes import router as auth_router
+from app.core.config import settings
 from app.core.errors import app_exception_handler
 from app.core.logging import setup_logging
 from app.core.metrics import setup_metrics
 from app.core.middleware.request_id import RequestIDMiddleware
+from app.core.middleware.service_auth import ReplayGuard, SignedServiceRequestMiddleware
 from app.core.middleware.tenant import TenantMiddleware
+from app.core.replay_guard import RedisReplayGuard
+from app.core.service_signature_v1 import AI_SERVICE_ID, BACKEND_SERVICE_ID, ServiceVerifier
 from app.db.session import reset_engine
+
+# Routes reachable only with a verified BUILD Service Signature v1 request.
+SIGNED_PATH_PREFIXES = ("/v1/ingest/",)
 
 
 @asynccontextmanager
@@ -26,7 +33,14 @@ async def lifespan(app: FastAPI):
     await reset_engine()
 
 
-def create_app() -> FastAPI:
+def _inbound_verifier() -> ServiceVerifier | None:
+    secrets = settings.backend_to_ai_verification_secrets
+    if not secrets:
+        return None  # development without secrets: every signed route refuses
+    return ServiceVerifier(accepted_sender=BACKEND_SERVICE_ID, secrets=secrets)
+
+
+def create_app(replay_guard: ReplayGuard | None = None) -> FastAPI:
     app = FastAPI(
         title="AI Service - Build Core",
         version="1.0.0",
@@ -37,6 +51,14 @@ def create_app() -> FastAPI:
     # Middleware stack (order matters)
     app.add_middleware(RequestIDMiddleware)
     app.add_middleware(TenantMiddleware)
+    # Added last, so it runs first: nothing else sees an unverified request.
+    app.add_middleware(
+        SignedServiceRequestMiddleware,
+        receiver_id=AI_SERVICE_ID,
+        verifier=_inbound_verifier(),
+        replay_guard=replay_guard or RedisReplayGuard.connect(settings.REDIS_URL),
+        applies_to=lambda path: path.startswith(SIGNED_PATH_PREFIXES),
+    )
 
     # Setup metrics
     setup_metrics(app)
