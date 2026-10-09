@@ -1,7 +1,7 @@
 import secrets
 import socket
 from typing import Literal
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import urlparse, urlsplit, urlunparse
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -9,6 +9,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 # Where a missing, short or known service secret must stop startup (design A.1).
 STRICT_ENVIRONMENTS = frozenset({"staging", "production"})
 MIN_SERVICE_SECRET_BYTES = 32
+# The one backend path AI-service ever reports to (design B.3).
+BACKEND_CALLBACK_PATH = "/content/ingestion/callbacks"
+DEVELOPMENT_BACKEND_CALLBACK_URL = "http://backend:8000" + BACKEND_CALLBACK_PATH
 # Values that have appeared in this repository, the backend's, or the M3
 # design's test vectors. None of them may sign anything in staging/production.
 KNOWN_DEVELOPMENT_SECRETS = frozenset(
@@ -79,6 +82,10 @@ class Settings(BaseSettings):
     BACKEND_TO_AI_SECRET_PREVIOUS: str | None = None
     AI_TO_BACKEND_SECRET: str | None = None
     AI_TO_BACKEND_SECRET_PREVIOUS: str | None = None
+    # Where ingestion callbacks go: operator configuration only, never request
+    # data. Required (https) in staging/production; development and testing
+    # default to the compose backend.
+    BACKEND_CALLBACK_URL: str | None = None
 
     CALLBACK_TIMEOUT_SECONDS: float = 10.0
     CALLBACK_MAX_ATTEMPTS: int = 3
@@ -92,6 +99,34 @@ class Settings(BaseSettings):
         super().__init__(**values)
         self.DATABASE_URL = _resolve_embedded_hostname(self.DATABASE_URL)
         self.REDIS_URL = _resolve_embedded_hostname(self.REDIS_URL)
+
+    @model_validator(mode="after")
+    def _validate_backend_callback_url(self) -> "Settings":
+        strict = self.APP_ENVIRONMENT in STRICT_ENVIRONMENTS
+        url = self.BACKEND_CALLBACK_URL
+        if not url:
+            if strict:
+                raise ValueError(
+                    f"BACKEND_CALLBACK_URL is required when APP_ENVIRONMENT={self.APP_ENVIRONMENT}"
+                )
+            self.BACKEND_CALLBACK_URL = DEVELOPMENT_BACKEND_CALLBACK_URL
+            return self
+
+        parts = urlsplit(url)
+        allowed_schemes = {"https"} if strict else {"http", "https"}
+        if parts.scheme not in allowed_schemes:
+            raise ValueError(
+                f"BACKEND_CALLBACK_URL must use {' or '.join(sorted(allowed_schemes))}"
+            )
+        if not parts.hostname:
+            raise ValueError("BACKEND_CALLBACK_URL must name a host")
+        if parts.username is not None or parts.password is not None:
+            raise ValueError("BACKEND_CALLBACK_URL must not carry credentials")
+        if parts.path != BACKEND_CALLBACK_PATH:
+            raise ValueError(f"BACKEND_CALLBACK_URL must target {BACKEND_CALLBACK_PATH}")
+        if "?" in url or "#" in url:
+            raise ValueError("BACKEND_CALLBACK_URL must not have a query or fragment")
+        return self
 
     @model_validator(mode="after")
     def _validate_service_secrets(self) -> "Settings":

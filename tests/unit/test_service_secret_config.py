@@ -11,8 +11,17 @@ A2B = "a2b-" + "z" * 40
 A2B_OLD = "a2b-old-" + "w" * 40
 
 
+# A valid callback URL, so strict environments fail only on the secret rules.
+CALLBACK_URL = "https://api.build.example/content/ingestion/callbacks"
+
+
 def make(environment, **secrets):
-    return Settings(_env_file=None, APP_ENVIRONMENT=environment, **secrets)
+    return Settings(
+        _env_file=None,
+        APP_ENVIRONMENT=environment,
+        BACKEND_CALLBACK_URL=CALLBACK_URL,
+        **secrets,
+    )
 
 
 @pytest.fixture(autouse=True)
