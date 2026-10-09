@@ -2,6 +2,7 @@ import abc
 import asyncio
 from typing import Any
 
+from app.services.tasks.ingestion_outcomes import PipelineUnavailableError
 from app.core.execution_context import AIExecutionContext
 
 
@@ -20,44 +21,23 @@ class TaskHandler(abc.ABC):
 
 class ContentIngestionTaskHandler(TaskHandler):
     """
-    Deterministic task handler for content ingestion pipelines (OCR, PDF/Doc parsing, chunking, indexing).
+    Content ingestion: asset retrieval, extraction, chunking, embedding and
+    durable indexing. Not implemented yet; until it is, every ingestion task
+    fails honestly with INGESTION_PIPELINE_UNAVAILABLE.
     """
 
     async def handle(self, ctx: AIExecutionContext, payload: dict[str, Any]) -> dict[str, Any]:
         if ctx.is_cancelled():
             raise asyncio.CancelledError(f"Task cancelled: {ctx.cancellation_reason}")
 
-        # Extract envelope properties
-        storage_uri = payload.get("storage_uri", "")
-        mime_type = payload.get("mime_type", "")
-        authority = payload.get("authority", "INSTITUTIONAL")
-        content_sha256 = payload.get("content_sha256", "")
-
-        ctx.set_metadata("pipeline_stage", "EXTRACTION_INITIALIZED")
-
-        # Check cooperative cancellation
-        if ctx.is_cancelled():
-            raise asyncio.CancelledError(f"Task cancelled: {ctx.cancellation_reason}")
-
-        # Result summary matching Backend 4B expectation
-        result = {
-            "status": "COMPLETED",
-            "job_id": ctx.job_id,
-            "asset_id": ctx.asset_id,
-            "tenant_id": ctx.tenant_id,
-            "storage_uri": storage_uri,
-            "mime_type": mime_type,
-            "authority": authority,
-            "content_sha256": content_sha256,
-            "chunks_count": 1,
-            "extracted_metadata": {
-                "execution_id": ctx.execution_id,
-                "processed_at": ctx.created_at,
-            },
-        }
-
-        ctx.set_metadata("pipeline_stage", "COMPLETED")
-        return result
+        # No ingestion pipeline exists yet: nothing fetches the asset from
+        # storage_uri, extracts it, or writes a durable index. Report that
+        # honestly instead of claiming work that never happened (M3-08).
+        # A real pipeline reports each stage through ctx.stage_reporter.
+        raise PipelineUnavailableError(
+            "The ingestion pipeline (asset retrieval, extraction, chunking, "
+            "embedding and durable indexing) is not available in this deployment."
+        )
 
 
 class AgentExecutionTaskHandler(TaskHandler):
