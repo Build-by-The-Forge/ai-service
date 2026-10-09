@@ -1,150 +1,244 @@
+"""Worker lifecycle callbacks (M3-08).
+
+Callbacks always carry the backend's attempt identity; ingestion completes
+only after the indexed stage was reported; failures are classified.
+"""
+
 import pytest
 
 from app.core.callbacks.dispatcher import InMemoryCallbackDispatcher
-from app.core.callbacks.events import CallbackEventType
+from app.core.callbacks.events import CallbackDeliveryResult, CallbackEventType
 from app.core.execution_context import AITask, TaskStatus
 from app.services.tasks.handlers import TaskHandler, TaskHandlerRegistry
+from app.services.tasks.ingestion_outcomes import (
+    PermanentIngestionError,
+    StageReporter,
+    TransientIngestionError,
+)
 from app.services.tasks.transport import InMemoryTaskTransport
 from app.services.tasks.worker import TaskWorker
 
+EVIDENCE = {
+    "extracted": {"characters": 900, "pages": 3, "method": "native_text"},
+    "chunked": {"chunks": 4},
+    "indexed": {"indexed_chunks": 4, "index": "pgvector"},
+}
 
-class IngestionTestHandler(TaskHandler):
+
+class StagedPipeline(TaskHandler):
+    """A pipeline that really reports each stage before finishing."""
+
+    def __init__(self, stages=("extracted", "chunked", "indexed")):
+        self.stages = stages
+
     async def handle(self, ctx, payload):
-        return {
-            "status": "COMPLETED",
-            "extracted_metadata": {"title": "Physics 101 Notes"},
-            "chunk_summary": {"total_chunks": 42},
-        }
+        for stage in self.stages:
+            await ctx.stage_reporter.report(stage, EVIDENCE[stage])
+        return {"extracted_metadata": {"title": "Physics 101"}, "chunk_summary": {"chunks": 4}}
 
 
-class CrashHandler(TaskHandler):
+class Raises(TaskHandler):
+    def __init__(self, exc):
+        self.exc = exc
+
     async def handle(self, ctx, payload):
-        raise RuntimeError("Fatal OCR engine crash")
+        raise self.exc
 
 
-@pytest.mark.asyncio
-async def test_worker_emits_started_and_completed_callbacks():
+def task(task_type="content.ingestion", **kwargs):
+    fields = dict(
+        task_id="task_1",
+        task_type=task_type,
+        execution_id="exec_1",
+        tenant_id="6f1c2a7e-4b3d-4c8e-9a1f-2d3e4f5a6b7c",
+        job_id="job_1",
+        asset_id="asset_1",
+        run_number=2,
+        attempt_count=3,
+        correlation_id="corr_1",
+        payload={},
+    )
+    fields.update(kwargs)
+    return AITask(**fields)
+
+
+def worker_with(handler, task_type="content.ingestion", dispatcher=None):
     transport = InMemoryTaskTransport()
     registry = TaskHandlerRegistry()
-    registry.register("content.ingestion", IngestionTestHandler())
-    cb_dispatcher = InMemoryCallbackDispatcher()
-
-    worker = TaskWorker(
-        transport=transport,
-        registry=registry,
-        callback_dispatcher=cb_dispatcher,
+    registry.register(task_type, handler)
+    dispatcher = dispatcher or InMemoryCallbackDispatcher()
+    return (
+        TaskWorker(transport=transport, registry=registry, callback_dispatcher=dispatcher),
+        transport,
+        dispatcher,
     )
 
-    task = AITask(
-        task_id="task_cb_flow",
-        task_type="content.ingestion",
-        execution_id="exec_cb_flow",
-        tenant_id="school_futa",
-        job_id="job_cb_flow",
-        asset_id="asset_cb_flow",
-        run_number=1,
-        attempt_count=1,
-        correlation_id="corr_cb_flow",
-        payload={"callback_url": "https://backend.build.edu/api/v1/callbacks/ingest"},
-    )
 
-    msg_id = await transport.publish(task)
-    status = await worker.process_single_task(msg_id, task)
+async def run(worker, transport, t):
+    """Process a task as if just consumed: the queue then holds only re-queues."""
+    msg_id = f"msg-{t.delivery_attempt}"
+    return msg_id, await worker.process_single_task(msg_id, t)
 
+
+def kinds(dispatcher):
+    return [(e.event_type, e.stage) for e in dispatcher.delivered_events]
+
+
+# --- success requires the indexed stage -------------------------------------------------
+
+
+async def test_a_staged_pipeline_reports_each_stage_then_completes():
+    worker, transport, dispatcher = worker_with(StagedPipeline())
+    _, status = await run(worker, transport, task())
     assert status == TaskStatus.SUCCEEDED
-
-    # Verify callbacks emitted: STARTED then COMPLETED
-    events = cb_dispatcher.delivered_events
-    assert len(events) == 2
-
-    started_evt = events[0]
-    assert started_evt.event_type == CallbackEventType.STARTED
-    assert started_evt.job_id == "job_cb_flow"
-    assert started_evt.tenant_id == "school_futa"
-    assert started_evt.progress_pct == 0
-
-    completed_evt = events[1]
-    assert completed_evt.event_type == CallbackEventType.COMPLETED
-    assert completed_evt.job_id == "job_cb_flow"
-    assert completed_evt.tenant_id == "school_futa"
-    assert completed_evt.progress_pct == 100
-    assert completed_evt.extracted_metadata == {"title": "Physics 101 Notes"}
-    assert completed_evt.chunk_summary == {"total_chunks": 42}
+    assert kinds(dispatcher) == [
+        (CallbackEventType.STARTED, None),
+        (CallbackEventType.STAGE_COMPLETED, "extracted"),
+        (CallbackEventType.STAGE_COMPLETED, "chunked"),
+        (CallbackEventType.STAGE_COMPLETED, "indexed"),
+        (CallbackEventType.COMPLETED, None),
+    ]
+    stage = dispatcher.delivered_events[1]
+    assert stage.metrics == EVIDENCE["extracted"]
+    # Every event carries the backend's attempt identity unchanged.
+    assert {
+        (e.run_number, e.attempt_count, e.external_task_id) for e in dispatcher.delivered_events
+    } == {(2, 3, "task_1")}
 
 
-@pytest.mark.asyncio
-async def test_worker_emits_failed_callback_on_terminal_failure():
-    transport = InMemoryTaskTransport()
-    registry = TaskHandlerRegistry()
-    registry.register("crash.task", CrashHandler())
-    cb_dispatcher = InMemoryCallbackDispatcher()
-
-    worker = TaskWorker(
-        transport=transport,
-        registry=registry,
-        callback_dispatcher=cb_dispatcher,
+@pytest.mark.parametrize("stages", [(), ("extracted",), ("extracted", "chunked")])
+async def test_finishing_without_the_indexed_stage_is_not_completion(stages):
+    worker, transport, dispatcher = worker_with(StagedPipeline(stages))
+    _, status = await run(worker, transport, task())
+    assert status == TaskStatus.FAILED
+    last = dispatcher.delivered_events[-1]
+    assert (last.event_type, last.error_code, last.retryable) == (
+        CallbackEventType.FAILED,
+        "INGESTION_INCOMPLETE",
+        False,
     )
+    assert CallbackEventType.COMPLETED not in [e.event_type for e in dispatcher.delivered_events]
 
-    # Task on max attempt (attempt_count=1, max_attempts=1) -> will fail terminally to DLQ
-    task = AITask(
-        task_id="task_fail_dlq",
-        task_type="crash.task",
-        execution_id="exec_fail_dlq",
-        tenant_id="school_1",
-        job_id="job_fail_1",
-        asset_id="asset_fail_1",
-        run_number=1,
-        attempt_count=1,
-        correlation_id="corr_fail_1",
-        payload={"callback_url": "https://backend.build.edu/api/v1/callbacks/ingest"},
-        max_attempts=1,
+
+async def test_stages_out_of_order_stop_the_pipeline():
+    worker, transport, dispatcher = worker_with(StagedPipeline(("chunked",)))
+    _, status = await run(worker, transport, task())
+    assert status == TaskStatus.FAILED
+    assert dispatcher.delivered_events[-1].error_code == "STAGE_OUT_OF_ORDER"
+    assert CallbackEventType.STAGE_COMPLETED not in [
+        e.event_type for e in dispatcher.delivered_events
+    ]
+
+
+# --- failure classification -----------------------------------------------------------------
+
+
+async def test_permanent_failures_are_not_retried():
+    worker, transport, dispatcher = worker_with(
+        Raises(PermanentIngestionError("UNSUPPORTED_FORMAT", "no"))
     )
+    _, status = await run(worker, transport, task(max_attempts=3))
+    assert status == TaskStatus.FAILED
+    failed = dispatcher.delivered_events[-1]
+    assert (failed.error_code, failed.retryable) == ("UNSUPPORTED_FORMAT", False)
+    assert transport._queue.empty()
 
-    msg_id = await transport.publish(task)
-    status = await worker.process_single_task(msg_id, task)
 
+async def test_transient_failures_retry_the_same_backend_attempt():
+    worker, transport, dispatcher = worker_with(
+        Raises(TransientIngestionError("STORAGE_TIMEOUT", "slow"))
+    )
+    _, status = await run(worker, transport, task(max_attempts=2))
+    assert status == TaskStatus.FAILED
+    _, requeued = transport._queue.get_nowait()
+    assert (requeued.attempt_count, requeued.run_number, requeued.delivery_attempt) == (3, 2, 2)
+    assert CallbackEventType.FAILED not in [e.event_type for e in dispatcher.delivered_events]
+
+    # Last delivery: reported as retryable for a new backend attempt.
+    _, status = await run(worker, transport, requeued)
     assert status == TaskStatus.DEAD_LETTER
-
-    events = cb_dispatcher.delivered_events
-    assert len(events) == 2
-    assert events[0].event_type == CallbackEventType.STARTED
-    assert events[1].event_type == CallbackEventType.FAILED
-    assert events[1].error_code == "MAX_ATTEMPTS_EXCEEDED"
-    assert "Fatal OCR engine crash" in events[1].error_message
-
-
-@pytest.mark.asyncio
-async def test_worker_callback_failure_does_not_fail_successful_task():
-    transport = InMemoryTaskTransport()
-    registry = TaskHandlerRegistry()
-    registry.register("content.ingestion", IngestionTestHandler())
-
-    # Simulate failing callback endpoint (e.g. backend returning 500 error)
-    cb_dispatcher = InMemoryCallbackDispatcher()
-    cb_dispatcher.simulate_failure(status_code=500)
-
-    worker = TaskWorker(
-        transport=transport,
-        registry=registry,
-        callback_dispatcher=cb_dispatcher,
+    failed = dispatcher.delivered_events[-1]
+    assert (failed.error_code, failed.retryable, failed.attempt_count) == (
+        "STORAGE_TIMEOUT",
+        True,
+        3,
     )
 
-    task = AITask(
-        task_id="task_cb_resilience",
-        task_type="content.ingestion",
-        execution_id="exec_cb_resilience",
-        tenant_id="school_1",
-        job_id="job_res_1",
-        asset_id="asset_res_1",
-        run_number=1,
-        attempt_count=1,
-        correlation_id="corr_res_1",
-        payload={"callback_url": "https://backend.build.edu/api/v1/callbacks/ingest"},
+
+async def test_unclassified_errors_end_non_retryable():
+    worker, transport, dispatcher = worker_with(
+        Raises(RuntimeError("Fatal OCR engine crash")), "crash.task"
     )
+    _, status = await run(worker, transport, task("crash.task", max_attempts=1))
+    assert status == TaskStatus.DEAD_LETTER
+    failed = dispatcher.delivered_events[-1]
+    assert (failed.error_code, failed.retryable) == ("AI_UNCLASSIFIED_ERROR", False)
+    assert "Fatal OCR engine crash" in failed.error_message
 
-    msg_id = await transport.publish(task)
-    status = await worker.process_single_task(msg_id, task)
 
-    # Task execution must REMAIN SUCCEEDED despite callback delivery failure
+# --- stage delivery --------------------------------------------------------------------------
+
+
+class RefusingDispatcher(InMemoryCallbackDispatcher):
+    """Refuses stage events with a given status; accepts everything else."""
+
+    def __init__(self, status_code: int, retryable: bool) -> None:
+        super().__init__()
+        self.status_code, self.retryable = status_code, retryable
+
+    async def dispatch(self, event):
+        if event.event_type == CallbackEventType.STAGE_COMPLETED:
+            return CallbackDeliveryResult(
+                success=False,
+                status_code=self.status_code,
+                retryable=self.retryable,
+                event_id=event.event_id,
+            )
+        return await super().dispatch(event)
+
+
+async def test_an_undeliverable_stage_stops_the_pipeline_and_retries_when_transient():
+    dispatcher = RefusingDispatcher(503, retryable=True)
+    worker, transport, _ = worker_with(StagedPipeline(), dispatcher=dispatcher)
+    _, status = await run(worker, transport, task(max_attempts=2))
+    assert status == TaskStatus.FAILED  # re-queued for another delivery
+    assert not transport._queue.empty()
+    assert CallbackEventType.COMPLETED not in [e.event_type for e in dispatcher.delivered_events]
+
+
+async def test_a_refused_stage_is_a_permanent_failure():
+    dispatcher = RefusingDispatcher(409, retryable=False)
+    worker, transport, _ = worker_with(StagedPipeline(), dispatcher=dispatcher)
+    _, status = await run(worker, transport, task(max_attempts=3))
+    assert status == TaskStatus.FAILED
+    assert transport._queue.empty()
+    assert dispatcher.delivered_events[-1].error_code == "CALLBACK_DELIVERY_FAILED"
+
+
+async def test_callback_failure_does_not_fail_a_non_ingestion_task():
+    class Succeeds(TaskHandler):
+        async def handle(self, ctx, payload):
+            return {"ok": True}
+
+    dispatcher = InMemoryCallbackDispatcher()
+    dispatcher.simulate_failure(status_code=500)
+    worker, transport, _ = worker_with(Succeeds(), "agent.execution", dispatcher=dispatcher)
+    msg_id, status = await run(worker, transport, task("agent.execution"))
     assert status == TaskStatus.SUCCEEDED
     assert msg_id in transport._acked
+
+
+async def test_stage_reporter_rejects_repeats_and_skips():
+    delivered = []
+
+    async def deliver(stage, metrics):
+        delivered.append(stage)
+        return True, False
+
+    reporter = StageReporter(deliver)
+    await reporter.report("extracted", {})
+    with pytest.raises(PermanentIngestionError):
+        await reporter.report("extracted", {})
+    with pytest.raises(PermanentIngestionError):
+        await reporter.report("indexed", {})
+    assert delivered == ["extracted"] and not reporter.indexed

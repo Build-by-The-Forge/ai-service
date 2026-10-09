@@ -305,3 +305,20 @@ async def test_in_memory_dispatcher_records_events():
     result = await memory.dispatch(event())
     assert result.success is True
     assert memory.delivered_events[0].event_type == CallbackEventType.COMPLETED
+
+
+async def test_stage_events_become_signed_stage_progress_with_evidence():
+    recorder = Recorder()
+    evidence = {"characters": 900, "pages": 3, "method": "ocr"}
+    await dispatcher(recorder).dispatch(
+        event(CallbackEventType.STAGE_COMPLETED, stage="extracted", metrics=evidence)
+    )
+    [request] = recorder.requests
+    verify(request)
+    body = json.loads(request.content)
+    assert (body["event_type"], body["stage"], body["metrics"]) == (
+        "stage_progress",
+        "extracted",
+        evidence,
+    )
+    assert (body["run_number"], body["attempt_count"]) == (1, 2)

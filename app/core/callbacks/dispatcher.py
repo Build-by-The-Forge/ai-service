@@ -41,17 +41,24 @@ _CORRELATION_ID = re.compile(r"[A-Za-z0-9._:\-]{1,128}")
 def backend_callback_body(event: CallbackEvent) -> dict[str, Any] | None:
     """Translate a worker lifecycle event into the backend's callback body.
 
-    Returns None for events the backend has no transition for (STARTED,
-    PROGRESS without a stage): the job is already ``processing`` once the
-    dispatch was accepted.
+    STAGE_COMPLETED -> stage_progress (with its evidence), COMPLETED ->
+    job_completed, FAILED -> job_failed. Returns None for events the backend
+    has no transition for (STARTED, PROGRESS): the job is already
+    ``processing`` once the dispatch was accepted.
     """
-    if event.event_type == CallbackEventType.COMPLETED:
-        metrics: dict[str, Any] = {}
+    if event.event_type == CallbackEventType.STAGE_COMPLETED:
+        body: dict[str, Any] = {
+            "event_type": "stage_progress",
+            "stage": event.stage,
+            "metrics": dict(event.metrics or {}),
+        }
+    elif event.event_type == CallbackEventType.COMPLETED:
+        metrics: dict[str, Any] = dict(event.metrics or {})
         if event.extracted_metadata is not None:
             metrics["extracted_metadata"] = event.extracted_metadata
         if event.chunk_summary is not None:
             metrics["chunk_summary"] = event.chunk_summary
-        body: dict[str, Any] = {"event_type": "job_completed", "metrics": metrics}
+        body = {"event_type": "job_completed", "metrics": metrics}
     elif event.event_type == CallbackEventType.FAILED:
         body = {
             "event_type": "job_failed",

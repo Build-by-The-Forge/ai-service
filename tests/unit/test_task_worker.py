@@ -3,6 +3,7 @@ import pytest
 from app.core.execution_context import AITask, TaskStatus
 from app.services.tasks.handlers import TaskHandler, TaskHandlerRegistry
 from app.services.tasks.transport import InMemoryTaskTransport
+from app.core.callbacks.dispatcher import InMemoryCallbackDispatcher
 from app.services.tasks.worker import TaskWorker
 
 
@@ -22,7 +23,12 @@ async def test_task_worker_processes_succeeding_task():
     registry = TaskHandlerRegistry()
     registry.register("test.success", SucceedingHandler())
 
-    worker = TaskWorker(worker_id="test_worker_1", transport=transport, registry=registry)
+    worker = TaskWorker(
+        worker_id="test_worker_1",
+        transport=transport,
+        registry=registry,
+        callback_dispatcher=InMemoryCallbackDispatcher(),
+    )
 
     task = AITask(
         task_id="task_s1",
@@ -49,7 +55,9 @@ async def test_task_worker_unregistered_handler_routes_to_dlq():
     transport = InMemoryTaskTransport()
     registry = TaskHandlerRegistry()  # Empty, no handler registered for 'unknown.task'
 
-    worker = TaskWorker(transport=transport, registry=registry)
+    worker = TaskWorker(
+        transport=transport, registry=registry, callback_dispatcher=InMemoryCallbackDispatcher()
+    )
 
     task = AITask(
         task_id="task_unreg",
@@ -78,7 +86,9 @@ async def test_task_worker_retries_then_dead_letters():
     registry = TaskHandlerRegistry()
     registry.register("test.fail", FailingHandler())
 
-    worker = TaskWorker(transport=transport, registry=registry)
+    worker = TaskWorker(
+        transport=transport, registry=registry, callback_dispatcher=InMemoryCallbackDispatcher()
+    )
 
     # Task on attempt 1 (max_attempts = 2) -> Should retry
     task_attempt_1 = AITask(
@@ -100,7 +110,12 @@ async def test_task_worker_retries_then_dead_letters():
 
     assert status1 == TaskStatus.FAILED
 
-    # Task on attempt 2 (max_attempts = 2) -> Should route to DLQ
+    # The worker re-queued the same backend attempt: only its own delivery
+    # count changed (M3-08).
+    [(_, requeued)] = [item for item in transport._queue._queue if item[1].delivery_attempt == 2]
+    assert (requeued.attempt_count, requeued.delivery_attempt) == (1, 2)
+
+    # Delivery 2 of 2 -> Should route to DLQ
     task_attempt_2 = AITask(
         task_id="task_f1",
         task_type="test.fail",
@@ -109,10 +124,11 @@ async def test_task_worker_retries_then_dead_letters():
         job_id="job_1",
         asset_id="asset_1",
         run_number=1,
-        attempt_count=2,
+        attempt_count=1,
         correlation_id="corr_1",
         payload={},
         max_attempts=2,
+        delivery_attempt=2,
     )
 
     msg_id2 = await transport.publish(task_attempt_2)
@@ -120,16 +136,18 @@ async def test_task_worker_retries_then_dead_letters():
 
     assert status2 == TaskStatus.DEAD_LETTER
     assert len(transport.dlq_items) == 1
-    assert "Exceeded max attempts" in transport.dlq_items[0]["error_reason"]
+    assert "Failed after 2 deliveries" in transport.dlq_items[0]["error_reason"]
 
 
 @pytest.mark.asyncio
 async def test_task_worker_run_once_loop():
     transport = InMemoryTaskTransport()
     registry = TaskHandlerRegistry()
-    registry.register("content.ingestion", SucceedingHandler())
+    registry.register("test.loop", SucceedingHandler())
 
-    worker = TaskWorker(transport=transport, registry=registry)
+    worker = TaskWorker(
+        transport=transport, registry=registry, callback_dispatcher=InMemoryCallbackDispatcher()
+    )
 
     # Empty run_once returns None
     result = await worker.run_once(block_ms=10)
@@ -138,7 +156,7 @@ async def test_task_worker_run_once_loop():
     # Publish task and run_once processes it
     task = AITask(
         task_id="task_ingest_loop",
-        task_type="content.ingestion",
+        task_type="test.loop",
         execution_id="exec_loop",
         tenant_id="school_1",
         job_id="job_1",

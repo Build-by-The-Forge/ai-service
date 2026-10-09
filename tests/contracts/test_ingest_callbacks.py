@@ -94,3 +94,23 @@ def test_required_fields(field):
 def test_wrong_values_are_rejected(change):
     with pytest.raises(ValidationError):
         IngestCallbackPayload.model_validate({**BASE, **change})
+
+
+@pytest.mark.parametrize("stage", ["extracted", "chunked", "indexed"])
+def test_stage_events_produce_valid_stage_progress_bodies(stage):
+    body = backend_callback_body(
+        _event(CallbackEventType.STAGE_COMPLETED, stage=stage, metrics={"chunks": 3})
+    )
+    parsed = IngestCallbackPayload.model_validate(body)
+    assert (parsed.event_type, parsed.stage, parsed.metrics) == (
+        "stage_progress",
+        stage,
+        {"chunks": 3},
+    )
+
+
+def test_an_unknown_stage_cannot_be_expressed():
+    with pytest.raises(ValidationError):
+        backend_callback_body(
+            _event(CallbackEventType.STAGE_COMPLETED, stage="embedded", metrics={})
+        )
