@@ -1,6 +1,6 @@
 import re
 from enum import Enum
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -17,13 +17,6 @@ class ContentAuthority(str, Enum):
 class DispatchStatus(str, Enum):
     ACCEPTED = "ACCEPTED"
     DUPLICATE = "DUPLICATE"
-
-
-class CallbackEventType(str, Enum):
-    STARTED = "STARTED"
-    PROGRESS = "PROGRESS"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
 
 
 class IngestDispatchRequest(BaseModel):
@@ -68,19 +61,27 @@ class IngestDispatchResponse(BaseModel):
 
 
 class IngestCallbackPayload(BaseModel):
-    model_config = ConfigDict(extra="ignore", from_attributes=True)
+    """Signed AI-service -> backend callback body (design B.3).
 
-    job_id: str
-    asset_id: str
-    tenant_id: str
-    run_number: int
-    attempt_count: int
-    external_task_id: str
-    correlation_id: str
-    event_type: CallbackEventType
-    progress_pct: int | None = Field(default=None, ge=0, le=100)
+    It describes one processing event. It carries no tenant, user, role or
+    destination: the tenant travels only in the signed system context, and the
+    destination is BACKEND_CALLBACK_URL. Unknown fields are rejected.
+    """
+
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+    event_id: str = Field(
+        ...,
+        pattern=r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+        description="UUIDv4 chosen by AI-service, unique per event",
+    )
+    job_id: str = Field(..., min_length=1)
+    external_task_id: str = Field(..., min_length=1)
+    run_number: int = Field(..., ge=1)
+    attempt_count: int = Field(..., ge=1)
+    event_type: Literal["stage_progress", "job_completed", "job_failed"]
+    stage: Literal["extracted", "chunked", "indexed"] | None = None
+    metrics: dict[str, Any] = Field(default_factory=dict)
     error_code: str | None = None
     error_message: str | None = None
-    retryable: bool | None = None
-    extracted_metadata: dict[str, Any] | None = None
-    chunk_summary: dict[str, Any] | None = None
+    is_retryable: bool = False

@@ -27,7 +27,7 @@ class CallbackEvent:
     external_task_id: str
     correlation_id: str
     event_type: CallbackEventType
-    event_id: str = field(default_factory=lambda: f"evt_{uuid.uuid4().hex}")
+    event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     progress_pct: int | None = None
     error_code: str | None = None
     error_message: str | None = None

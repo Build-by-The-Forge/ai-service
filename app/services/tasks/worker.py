@@ -46,14 +46,13 @@ class TaskWorker:
             return True
         return False
 
-    async def _emit_callback(self, callback_url: str | None, event: CallbackEvent) -> None:
+    async def _emit_callback(self, event: CallbackEvent) -> None:
         """
         Emits a callback event safely without allowing delivery exceptions to fail the task execution.
+        The callback destination is fixed by configuration and must never be chosen by the payload.
         """
-        if not callback_url:
-            return
         try:
-            result = await self.callback_dispatcher.dispatch(callback_url, event)
+            result = await self.callback_dispatcher.dispatch(event)
             if not result.success:
                 logger.warning(
                     "Callback delivery failed: event=%s type=%s status=%s error=%s",
@@ -70,8 +69,6 @@ class TaskWorker:
             )
 
     async def process_single_task(self, msg_id: str, task: AITask) -> TaskStatus:
-        callback_url = task.payload.get("callback_url") if isinstance(task.payload, dict) else None
-
         # 1. Check expiration
         if task.is_expired():
             logger.warning("Task %s is expired (deadline passed). Discarding.", task.task_id)
@@ -87,7 +84,6 @@ class TaskWorker:
 
         # 4. Emit STARTED lifecycle event
         await self._emit_callback(
-            callback_url,
             CallbackEvent(
                 job_id=task.job_id,
                 asset_id=task.asset_id,
@@ -113,7 +109,6 @@ class TaskWorker:
 
             # Emit terminal FAILED callback
             await self._emit_callback(
-                callback_url,
                 CallbackEvent(
                     job_id=task.job_id,
                     asset_id=task.asset_id,
@@ -145,7 +140,6 @@ class TaskWorker:
                 chunk_summary = handler_result.get("chunk_summary")
 
             await self._emit_callback(
-                callback_url,
                 CallbackEvent(
                     job_id=task.job_id,
                     asset_id=task.asset_id,
@@ -215,7 +209,6 @@ class TaskWorker:
                 self._active_contexts.pop(ctx.execution_id, None)
 
                 await self._emit_callback(
-                    callback_url,
                     CallbackEvent(
                         job_id=task.job_id,
                         asset_id=task.asset_id,
