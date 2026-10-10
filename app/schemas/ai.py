@@ -5,7 +5,7 @@ AI-service only in the signed context. Unknown fields are rejected (422), so a
 body that tries to name a tenant or user fails instead of being ignored (C29).
 """
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -15,6 +15,9 @@ MAX_MESSAGE_CHARS = 4000
 MAX_QUESTION_COUNT = 50
 MAX_TITLE_CHARS = 300
 MAX_TREE_TOPICS = 200
+MAX_MEMORY_TOPIC_CHARS = 255
+MAX_MEMORY_QUERY_TOPICS = 50
+MAX_MEMORY_OBSERVATIONS = 200
 
 
 class SignedAIRequest(BaseModel):
@@ -51,6 +54,22 @@ class TreeGenerateRequest(SignedAIRequest):
 
 class ReadStartRequest(SignedAIRequest):
     root: TreeNode
+
+
+MemoryTopic = Annotated[str, Field(min_length=1, max_length=MAX_MEMORY_TOPIC_CHARS)]
+
+
+class MemoryQueryRequest(SignedAIRequest):
+    topics: list[MemoryTopic] | None = Field(default=None, max_length=MAX_MEMORY_QUERY_TOPICS)
+
+
+class MemoryObservation(SignedAIRequest):
+    topic: MemoryTopic
+    correct: bool
+
+
+class MemoryUpsertRequest(SignedAIRequest):
+    observations: list[MemoryObservation] = Field(min_length=1, max_length=MAX_MEMORY_OBSERVATIONS)
 
 
 # --- Responses (M5): the `data` of each route, so OpenAPI is the contract --------------
@@ -123,3 +142,17 @@ class ExplainResponse(_Envelope):
 
 class GeneratedQuestionsResponse(_Envelope):
     data: GeneratedQuestionsData
+
+
+class MemoryItem(BaseModel):
+    topic: str
+    mastery_score: float
+    attempts: int
+
+
+class MemoryData(BaseModel):
+    items: list[MemoryItem]
+
+
+class MemoryResponse(_Envelope):
+    data: MemoryData
