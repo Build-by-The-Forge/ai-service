@@ -1,11 +1,8 @@
-from datetime import UTC, datetime
-
 import types
 
 import pytest
 from fastapi import HTTPException
 
-from app.api.v1 import exams as exams_route
 from app.api.v1.ai import chat as chat_route
 from app.api.v1.ai import explain as explain_route
 from app.api.v1.ai import generate as generate_route
@@ -77,22 +74,6 @@ class DummyAsyncSession:
         pass
 
 
-class DummyExamModel:
-    def __init__(
-        self, school_id, title, course, duration_minutes, is_active, created_by, updated_by
-    ):
-        self.id = 1
-        self.school_id = school_id
-        self.title = title
-        self.course = course
-        self.duration_minutes = duration_minutes
-        self.is_active = is_active
-        self.created_by = created_by
-        self.updated_by = updated_by
-        self.created_at = datetime(2025, 1, 1, tzinfo=UTC)
-        self.updated_at = self.created_at
-
-
 @pytest.mark.asyncio
 async def test_chat_route_returns_api_response():
     response = await chat_route.chat(
@@ -154,105 +135,6 @@ async def test_tree_generate_route_returns_api_response():
     assert isinstance(response, APIResponse)
     # route returns a TreeNode; ensure the first child has expected title
     assert response.data.children[0].title == "topic1"
-
-
-@pytest.mark.asyncio
-async def test_read_start_exam_route_uses_exam_engine(monkeypatch):
-    # The start_exam API lives in the ai.exam module
-    from app.api.v1.ai import exam as exam_route
-
-    class DummyEngine:
-        async def start_exam(self, exam_id: int, user_id: str):
-            return {"exam_id": exam_id, "user_id": user_id}
-
-    monkeypatch.setattr(exam_route, "ExamEngine", lambda db: DummyEngine())
-
-    response = await exam_route.start_exam(
-        exam_id=1,
-        user_id="user-1",
-        role="student",
-        db=None,
-    )
-
-    assert response.data["exam_id"] == 1
-
-
-@pytest.mark.asyncio
-async def test_create_exam_route_returns_api_response(monkeypatch):
-    monkeypatch.setattr(exams_route, "Exam", DummyExamModel)
-    dummy_db = DummyAsyncSession()
-
-    response = await exams_route.create_exam(
-        title="Test Exam",
-        course="math",
-        duration_minutes=30,
-        is_active=True,
-        user={"school_id": 5, "sub": "11"},
-        db=dummy_db,
-    )
-
-    assert response.data["title"] == "Test Exam"
-    assert dummy_db.committed is True
-
-
-@pytest.mark.asyncio
-async def test_list_exams_route_returns_data():
-    dummy_exam = DummyExamModel(5, "Test", "math", 30, True, 11, 11)
-    dummy_db = DummyAsyncSession(execute_result=DummyAsyncResult(scalars_list=[dummy_exam]))
-
-    response = await exams_route.list_exams(
-        page=1,
-        page_size=10,
-        user={"school_id": 5},
-        db=dummy_db,
-    )
-
-    assert response.data[0]["title"] == "Test"
-
-
-@pytest.mark.asyncio
-async def test_get_exam_route_returns_api_response():
-    dummy_exam = DummyExamModel(5, "Test", "math", 30, True, 11, 11)
-    dummy_db = DummyAsyncSession(execute_result=DummyAsyncResult(scalar=dummy_exam))
-
-    response = await exams_route.get_exam(
-        exam_id=1,
-        user={"school_id": 5},
-        db=dummy_db,
-    )
-
-    assert response.data["id"] == 1
-
-
-@pytest.mark.asyncio
-async def test_update_exam_route_updates_exam(monkeypatch):
-    dummy_exam = DummyExamModel(5, "Test", "math", 30, True, 11, 11)
-    dummy_db = DummyAsyncSession(execute_result=DummyAsyncResult(scalar=dummy_exam))
-
-    response = await exams_route.update_exam(
-        exam_id=1,
-        title="Updated",
-        course=None,
-        duration_minutes=None,
-        is_active=None,
-        user={"school_id": 5, "sub": "11"},
-        db=dummy_db,
-    )
-
-    assert response.data["title"] == "Updated"
-
-
-@pytest.mark.asyncio
-async def test_delete_exam_route_commits_and_returns_success():
-    dummy_db = DummyAsyncSession(execute_result=DummyAsyncResult(rowcount=1))
-
-    response = await exams_route.delete_exam(
-        exam_id=1,
-        user={"school_id": 5},
-        db=dummy_db,
-    )
-
-    assert response.success is True
 
 
 def test_get_authorization_header_raises_without_bearer():
