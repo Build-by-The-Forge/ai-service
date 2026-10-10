@@ -6,13 +6,14 @@ The dependency runs before body validation, so a caller without the
 permission gets 403 whatever its body contains.
 """
 
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 
 from fastapi import HTTPException, Request, status
 
 from app.core.middleware.service_auth import VERIFIED_CALL_STATE
 from app.core.service_context import PermissionNotGrantedError, require_permission
 from app.core.service_signature_v1 import VerifiedCall
+from app.core.tenant import set_request_scope
 
 
 def signed_call_with(permission: str) -> Callable[[Request], VerifiedCall]:
@@ -33,6 +34,25 @@ def signed_call_with(permission: str) -> Callable[[Request], VerifiedCall]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="permission not granted"
             ) from exc
+        return call
+
+    return dependency
+
+
+def signed_user_call_with(permission: str) -> Callable[[Request], Awaitable[VerifiedCall]]:
+    """``signed_call_with(permission)`` for a route acting for a user (design
+    B.4): the context must be a user context, and its tenant and user become
+    the request scope that memory and retrieval read. Async so that the scope
+    is set in the endpoint's own context."""
+    check = signed_call_with(permission)
+
+    async def dependency(request: Request) -> VerifiedCall:
+        call = check(request)
+        if call.context.is_system or not call.context.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="a user context is required"
+            )
+        set_request_scope(call.context.tenant_id, call.context.user_id)
         return call
 
     return dependency

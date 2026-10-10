@@ -1,5 +1,7 @@
 from datetime import UTC, datetime
 
+import types
+
 import pytest
 from fastapi import HTTPException
 
@@ -12,6 +14,7 @@ from app.api.v1.ai import retrieve as retrieve_route
 from app.api.v1.ai import tree as tree_route
 from app.auth import dependencies as auth_dependencies
 from app.core import metrics as core_metrics
+from app.schemas import ai as ai_schemas
 from app.schemas.common import APIResponse
 
 
@@ -22,8 +25,12 @@ class DummyOrchestrator:
     async def explain(self, subject: str):
         return {"explanation": f"explained {subject}"}
 
-    async def generate_questions(self, topic: str):
-        return {"questions": [f"question about {topic}"]}
+    async def generate_questions(self, topic: str, count: int = 5):
+        return {"questions": [f"question about {topic}"] * count}
+
+
+# What the signed-route dependency hands a route (a verified user call).
+USER_CALL = types.SimpleNamespace(context=types.SimpleNamespace(user_id="u1"))
 
 
 class DummyRetriever:
@@ -89,8 +96,8 @@ class DummyExamModel:
 @pytest.mark.asyncio
 async def test_chat_route_returns_api_response():
     response = await chat_route.chat(
-        user_id="u1",
-        question="What is AI?",
+        body=ai_schemas.ChatRequest(message="What is AI?"),
+        call=USER_CALL,
         orchestrator=DummyOrchestrator(),
     )
 
@@ -101,7 +108,8 @@ async def test_chat_route_returns_api_response():
 @pytest.mark.asyncio
 async def test_retrieve_route_returns_api_response():
     response = await retrieve_route.retrieve(
-        query="query",
+        body=ai_schemas.RetrieveRequest(query="query"),
+        call=USER_CALL,
         retriever=DummyRetriever(),
     )
 
@@ -112,7 +120,8 @@ async def test_retrieve_route_returns_api_response():
 @pytest.mark.asyncio
 async def test_explain_route_returns_api_response():
     response = await explain_route.explain(
-        subject="algebra",
+        body=ai_schemas.ExplainRequest(subject="algebra"),
+        call=USER_CALL,
         orchestrator=DummyOrchestrator(),
     )
 
@@ -122,11 +131,13 @@ async def test_explain_route_returns_api_response():
 @pytest.mark.asyncio
 async def test_generate_questions_route_returns_api_response():
     response = await generate_questions_route.generate_questions(
-        topic="geometry",
+        body=ai_schemas.GenerateQuestionsRequest(topic="geometry", count=2),
+        call=USER_CALL,
         orchestrator=DummyOrchestrator(),
     )
 
     assert response.data["questions"][0].startswith("question about geometry")
+    assert len(response.data["questions"]) == 2
 
 
 def test_generate_route_placeholder_returns_success():
@@ -136,7 +147,10 @@ def test_generate_route_placeholder_returns_success():
 
 @pytest.mark.asyncio
 async def test_tree_generate_route_returns_api_response():
-    response = await tree_route.generate_tree("course title", ["topic1"])
+    response = await tree_route.generate_tree(
+        body=ai_schemas.TreeGenerateRequest(course_title="course title", topics=["topic1"]),
+        call=USER_CALL,
+    )
     assert isinstance(response, APIResponse)
     # route returns a TreeNode; ensure the first child has expected title
     assert response.data.children[0].title == "topic1"

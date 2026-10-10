@@ -2,6 +2,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api.v1.ai.router import ai_router
 from app.api.v1.exams import router as exams_router
 from app.api.v1.ingest import router as ingest_router
 from app.api.v1.router import api_router, legacy_api_router
@@ -18,7 +19,7 @@ from app.core.service_signature_v1 import AI_SERVICE_ID, BACKEND_SERVICE_ID, Ser
 from app.db.session import reset_engine
 
 # Routes reachable only with a verified BUILD Service Signature v1 request.
-SIGNED_PATH_PREFIXES = ("/v1/ingest/",)
+SIGNED_PATH_PREFIXES = ("/v1/ingest/", "/v1/ai/")
 
 
 @asynccontextmanager
@@ -80,6 +81,7 @@ def create_app(
     # Routes
     app.include_router(api_router, prefix="/api/v1")
     app.include_router(ingest_router, prefix="/v1/ingest")
+    app.include_router(ai_router, prefix="/v1/ai")
 
     if legacy_user_routes:
         app.include_router(legacy_api_router, prefix="/api/v1")

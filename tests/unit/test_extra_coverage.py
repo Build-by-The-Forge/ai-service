@@ -11,6 +11,7 @@ from app.api.v1.ai import ocr as ocr_route
 from app.api.v1.ai import read as read_route
 from app.api.v1.ai import retrieve as retrieve_route
 from app.core import metrics as core_metrics
+from app.schemas.ai import ReadStartRequest, RetrieveRequest
 from app.schemas.tree import TreeNode
 from app.services.exam.redis_session_store import RedisSessionStore
 from app.services.exam.session_service import ExamSessionService
@@ -154,7 +155,9 @@ async def test_retrieve_route_returns_api_response_with_dummy_retriever():
         async def retrieve(self, query: str):
             return [{"text": f"dummy {query}"}]
 
-    response = await retrieve_route.retrieve(query="test", retriever=DummyRetriever())
+    response = await retrieve_route.retrieve(
+        body=RetrieveRequest(query="test"), call=None, retriever=DummyRetriever()
+    )
 
     assert response.success is True
     assert response.data[0]["text"] == "dummy test"
@@ -167,7 +170,7 @@ def test_start_reading_route_generates_path():
         level=0,
         children=[TreeNode(id="topic1", title="Topic 1", level=1)],
     )
-    response = asyncio.run(read_route.start_reading(root=root))
+    response = asyncio.run(read_route.start_reading(body=ReadStartRequest(root=root), call=None))
 
     assert response.success is True
     assert len(response.data) == 2

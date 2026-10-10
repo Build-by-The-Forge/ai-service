@@ -57,9 +57,9 @@ Explain the following subject in clear academic terms:
 
         return {"explanation": answer}
 
-    async def generate_questions(self, topic: str):
+    async def generate_questions(self, topic: str, count: int = 5):
         prompt = f"""
-Generate 5 CBT questions on: {topic}
+Generate {count} CBT questions on: {topic}
 
 Include:
 - multiple choice
