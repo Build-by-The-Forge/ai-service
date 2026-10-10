@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from app.api.v1.ai.router import ai_router
 from app.api.v1.ingest import router as ingest_router
 from app.api.v1.router import api_router
-from app.core.config import settings
+from app.core.config import STRICT_ENVIRONMENTS, settings
 from app.core.errors import app_exception_handler
 from app.core.logging import setup_logging
 from app.core.metrics import setup_metrics
@@ -39,11 +39,17 @@ def _inbound_verifier() -> ServiceVerifier | None:
 
 
 def create_app(replay_guard: ReplayGuard | None = None) -> FastAPI:
+    # Interactive docs and the OpenAPI document are for development and
+    # testing; staging and production expose neither (M6).
+    docs = settings.APP_ENVIRONMENT not in STRICT_ENVIRONMENTS
     app = FastAPI(
         title="AI Service - Build Core",
         version="1.0.0",
         description="AI engine for CBT + Learning Platform",
         lifespan=lifespan,
+        docs_url="/docs" if docs else None,
+        redoc_url="/redoc" if docs else None,
+        openapi_url="/openapi.json" if docs else None,
     )
 
     # Middleware stack (order matters)

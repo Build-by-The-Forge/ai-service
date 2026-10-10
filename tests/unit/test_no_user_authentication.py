@@ -46,3 +46,14 @@ def test_no_route_serves_a_websocket():
 def test_user_authentication_settings_are_gone(name):
     assert name not in Settings.model_fields
     assert not hasattr(settings, name)
+
+
+@pytest.mark.parametrize(
+    "environment,exposed",
+    [("development", True), ("testing", True), ("staging", False), ("production", False)],
+)
+async def test_docs_and_openapi_only_outside_strict_environments(monkeypatch, environment, exposed):
+    monkeypatch.setattr(settings, "APP_ENVIRONMENT", environment)
+    async with AsyncClient(transport=ASGITransport(app=create_app()), base_url="http://ai") as http:
+        for path in ("/docs", "/redoc", "/openapi.json"):
+            assert ((await http.get(path)).status_code == 200) is exposed, path
