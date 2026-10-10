@@ -39,7 +39,7 @@ The `ai-service` is the central intelligence, exam delivery, and agent orchestra
 - ✅ **AI-1E Tool / Capability Plane:** Policy-aware registry, schema/tenant validation, and sandboxed failure isolation.
 - ✅ **AI-1F Bounded Agent Runtime:** ReAct multi-step orchestration with hard step/token/runtime/cost budgets.
 - ✅ **AI-1G E2E Integration Suite:** Full-stack verification from dispatch to callback delivery with 208 passing tests.
-- ✅ **Tenant Context Isolation:** Multi-tenant scoping via `TenantMiddleware` and `x-school-id` header resolution.
+- ✅ **Tenant Context Isolation:** Tenant and user come only from the verified backend service context (BUILD Service Signature v1); `TenantMiddleware` and the `X-School-ID` header were removed in M3-10.
 - ✅ **Authentication & RBAC:** JWT authentication with role enforcement (`student`, `teacher`, `admin`) and secure password hashing.
 - ✅ **Exam State Machine & Timers:** Redis-backed and in-memory fallback exam session state, timestamped answer logs, and anomaly detection.
 

@@ -8,7 +8,6 @@ from datetime import datetime
 import pytest
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
-from starlette.requests import Request
 
 from app.api.v1 import exams as exams_route
 from app.api.v1 import system as system_route
@@ -19,7 +18,6 @@ from app.core import dependencies as core_dependencies
 from app.core import exceptions as core_exceptions
 from app.core import logging as core_logging
 from app.core import token_verifier
-from app.core.middleware.tenant import TenantMiddleware
 from app.core.prompt_builder import PromptBuilder
 from app.core.rbac import RBAC
 from app.core.token_verifier import TokenVerifier
@@ -393,7 +391,7 @@ async def test_get_db_generator_closes_session(monkeypatch):
         await generator.__anext__()
 
 
-def test_logging_and_exceptions_and_tenant_middleware(monkeypatch):
+def test_logging_and_exceptions(monkeypatch):
     logger = logging.getLogger()
     initial_handlers = len(logger.handlers)
     core_logging.setup_logging()
@@ -401,21 +399,6 @@ def test_logging_and_exceptions_and_tenant_middleware(monkeypatch):
 
     exc = core_exceptions.AppException("oops")
     assert str(exc) == "oops"
-
-    scope = {
-        "type": "http",
-        "method": "GET",
-        "headers": [(b"x-school-id", b"123")],
-        "query_string": b"",
-    }
-    request = Request(scope)
-
-    async def handler(req):
-        return types.SimpleNamespace(status_code=200)
-
-    middleware = TenantMiddleware(app=None)
-    response = asyncio.run(middleware.dispatch(request, handler))
-    assert response.status_code == 200
 
 
 def test_prompt_builder_rbac_and_token_verifier(monkeypatch):

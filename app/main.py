@@ -13,7 +13,6 @@ from app.core.logging import setup_logging
 from app.core.metrics import setup_metrics
 from app.core.middleware.request_id import RequestIDMiddleware
 from app.core.middleware.service_auth import ReplayGuard, SignedServiceRequestMiddleware
-from app.core.middleware.tenant import TenantMiddleware
 from app.core.replay_guard import RedisReplayGuard
 from app.core.service_signature_v1 import AI_SERVICE_ID, BACKEND_SERVICE_ID, ServiceVerifier
 from app.db.session import reset_engine
@@ -59,7 +58,6 @@ def create_app(
 
     # Middleware stack (order matters)
     app.add_middleware(RequestIDMiddleware)
-    app.add_middleware(TenantMiddleware)
     # Added last, so it runs first: nothing else sees an unverified request.
     app.add_middleware(
         SignedServiceRequestMiddleware,
