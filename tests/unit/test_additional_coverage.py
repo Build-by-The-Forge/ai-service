@@ -4,18 +4,12 @@ import logging
 import types
 
 import pytest
-from fastapi import HTTPException
 
 from app.api.v1 import system as system_route
-from app.auth import dependencies as auth_dependencies
-from app.auth import routes as auth_routes
 from app.core import dependencies as core_dependencies
 from app.core import exceptions as core_exceptions
 from app.core import logging as core_logging
-from app.core import token_verifier
 from app.core.prompt_builder import PromptBuilder
-from app.core.rbac import RBAC
-from app.core.token_verifier import TokenVerifier
 from app.db import session as db_session
 from app.rag.pipeline import RAGPipeline
 from app.schemas.chat import ChatRequest, ChatResponse
@@ -153,66 +147,6 @@ async def test_system_health_check_returns_service_status():
     assert result["data"]["status"] == "ok"
 
 
-def test_auth_header_and_role_requirements(monkeypatch):
-    with pytest.raises(HTTPException):
-        auth_dependencies.get_authorization_header(authorization=None)
-
-    with pytest.raises(HTTPException):
-        auth_dependencies.get_authorization_header(authorization="Invalid token")
-
-    monkeypatch.setattr(
-        auth_dependencies, "decode_jwt", lambda token: {"sub": "1", "school_id": "1"}
-    )
-    with pytest.raises(HTTPException):
-        asyncio.run(auth_dependencies.require_authenticated_user(token="Bearer token"))
-
-    monkeypatch.setattr(
-        auth_dependencies,
-        "decode_jwt",
-        lambda token: {"sub": "1", "school_id": "1", "role": "student"},
-    )
-    assert asyncio.run(auth_dependencies.require_student(user={"role": "student"})) == {
-        "role": "student"
-    }
-    with pytest.raises(HTTPException):
-        asyncio.run(auth_dependencies.require_teacher_or_admin(user={"role": "student"}))
-    with pytest.raises(HTTPException):
-        asyncio.run(auth_dependencies.require_admin(user={"role": "teacher"}))
-
-
-@pytest.mark.asyncio
-async def test_auth_routes_login_refresh_and_profile(monkeypatch):
-    dummy_user = DummyUser(email="user@test", hashed_password="hashed", school_id=1, role="student")
-
-    class LoginSession:
-        async def execute(self, stmt):
-            return DummyAsyncResult(scalar=dummy_user)
-
-    monkeypatch.setattr(
-        auth_routes, "pbkdf2_sha256", types.SimpleNamespace(verify=lambda password, hashed: False)
-    )
-    with pytest.raises(HTTPException):
-        await auth_routes.login(email="user@test", password="pass", db=LoginSession())
-
-    monkeypatch.setattr(
-        auth_routes, "pbkdf2_sha256", types.SimpleNamespace(verify=lambda password, hashed: True)
-    )
-    monkeypatch.setattr(auth_routes, "create_jwt", lambda subject, school_id, role: "token")
-
-    response = await auth_routes.login(email="user@test", password="pass", db=LoginSession())
-    assert response.data["access_token"] == "token"
-
-    payload = {"sub": "1", "school_id": 1, "role": "student"}
-    response = await auth_routes.refresh(user=payload)
-    assert response.data["access_token"] == "token"
-
-    response = await auth_routes.me(user=payload)
-    assert response.data["sub"] == "1"
-
-    response = await auth_routes.logout()
-    assert response.success is True
-
-
 async def test_get_db_generator_closes_session(monkeypatch):
     class DummySessionContext:
         def __init__(self):
@@ -251,7 +185,7 @@ def test_logging_and_exceptions(monkeypatch):
     assert str(exc) == "oops"
 
 
-def test_prompt_builder_rbac_and_token_verifier(monkeypatch):
+def test_prompt_builder():
     builder = PromptBuilder()
     chat_prompt = builder.build("chat_tutor", memory="m", context="c", question="q")
     assert "STUDENT MEMORY" in chat_prompt["user"]
@@ -263,21 +197,6 @@ def test_prompt_builder_rbac_and_token_verifier(monkeypatch):
 
     default_prompt = builder.build("unknown", question="hello")
     assert default_prompt["user"] == "hello"
-
-    rbac = RBAC()
-    assert rbac.can_create_exam("teacher") is True
-    assert rbac.can_take_exam("student") is True
-    assert rbac.can_manage_users("admin") is True
-    assert rbac.can_view_results("teacher") is True
-
-    monkeypatch.setattr(token_verifier.settings, "JWT_PUBLIC_KEY", "secret")
-    verifier = TokenVerifier()
-    payload = asyncio.run(verifier.verify("token"))
-    assert payload["sub"] == "user_id"
-
-    monkeypatch.setattr(token_verifier.settings, "JWT_PUBLIC_KEY", "")
-    with pytest.raises(HTTPException):
-        asyncio.run(TokenVerifier().verify("token"))
 
 
 def test_database_reset_engine(monkeypatch):

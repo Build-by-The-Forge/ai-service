@@ -1,7 +1,6 @@
 import types
 
 import pytest
-from fastapi import HTTPException
 
 from app.api.v1.ai import chat as chat_route
 from app.api.v1.ai import explain as explain_route
@@ -9,7 +8,6 @@ from app.api.v1.ai import generate as generate_route
 from app.api.v1.ai import generate_questions as generate_questions_route
 from app.api.v1.ai import retrieve as retrieve_route
 from app.api.v1.ai import tree as tree_route
-from app.auth import dependencies as auth_dependencies
 from app.core import metrics as core_metrics
 from app.schemas import ai as ai_schemas
 from app.schemas.common import APIResponse
@@ -135,42 +133,6 @@ async def test_tree_generate_route_returns_api_response():
     assert isinstance(response, APIResponse)
     # route returns a TreeNode; ensure the first child has expected title
     assert response.data.children[0].title == "topic1"
-
-
-def test_get_authorization_header_raises_without_bearer():
-    with pytest.raises(HTTPException) as exc:
-        auth_dependencies.get_authorization_header(authorization=None)
-
-    assert exc.value.detail == "Authorization header missing or malformed"
-
-
-def test_get_authorization_header_parses_bearer_token():
-    token = auth_dependencies.get_authorization_header(authorization="Bearer abc123")
-    assert token == "abc123"
-
-
-@pytest.mark.asyncio
-async def test_require_authenticated_user_sets_school_id(monkeypatch):
-    monkeypatch.setattr(
-        auth_dependencies,
-        "decode_jwt",
-        lambda token: {"sub": "1", "school_id": "42", "role": "student"},
-    )
-
-    payload = await auth_dependencies.require_authenticated_user(token="Bearer token")
-    assert payload["school_id"] == "42"
-
-
-@pytest.mark.asyncio
-async def test_role_requirements_call_rbac(monkeypatch):
-    monkeypatch.setattr(auth_dependencies.rbac, "can_take_exam", lambda role: True)
-    monkeypatch.setattr(auth_dependencies.rbac, "can_create_exam", lambda role: True)
-    monkeypatch.setattr(auth_dependencies.rbac, "can_manage_users", lambda role: True)
-
-    user = {"role": "admin"}
-    assert await auth_dependencies.require_student(user=user) == user
-    assert await auth_dependencies.require_teacher_or_admin(user=user) == user
-    assert await auth_dependencies.require_admin(user=user) == user
 
 
 def test_setup_metrics_handles_missing_package():

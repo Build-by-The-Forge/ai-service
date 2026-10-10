@@ -72,18 +72,6 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
 
-    # Legacy end-user routes (/auth, /exams, the exam AI routes, ws exam):
-    # unmounted unless enabled, and enabling them is refused outside
-    # development (design B.4, E.2). Deleted in M4.
-    LEGACY_USER_ROUTES_ENABLED: bool = False
-
-    # Used only by the legacy routes; must be a real secret when they are on.
-    JWT_SECRET: str = "dev-secret"
-    JWT_PRIVATE_KEY: str | None = None
-    JWT_PUBLIC_KEY: str | None = None
-    JWT_ALGORITHM: str = "HS256"
-    JWT_AUDIENCE: str | None = None
-
     # BUILD Service Signature v1: one secret per direction, each with an
     # optional previous secret accepted (never used to sign) during rotation.
     # No defaults: required in staging/production; random per process in
@@ -190,25 +178,6 @@ class Settings(BaseSettings):
         if self.MODEL_PROVIDER == "deterministic" and self.APP_ENVIRONMENT in STRICT_ENVIRONMENTS:
             raise ValueError(
                 f"MODEL_PROVIDER=deterministic is refused when APP_ENVIRONMENT={self.APP_ENVIRONMENT}"
-            )
-        return self
-
-    @model_validator(mode="after")
-    def _validate_legacy_user_routes(self) -> "Settings":
-        if not self.LEGACY_USER_ROUTES_ENABLED:
-            return self
-        if self.APP_ENVIRONMENT != "development":
-            raise ValueError(
-                "LEGACY_USER_ROUTES_ENABLED is refused when "
-                f"APP_ENVIRONMENT={self.APP_ENVIRONMENT}"
-            )
-        if (
-            self.JWT_SECRET in KNOWN_DEVELOPMENT_SECRETS
-            or len(self.JWT_SECRET.encode("utf-8")) < MIN_SERVICE_SECRET_BYTES
-        ):
-            raise ValueError(
-                "LEGACY_USER_ROUTES_ENABLED requires JWT_SECRET of at least "
-                f"{MIN_SERVICE_SECRET_BYTES} bytes, not a default"
             )
         return self
 
