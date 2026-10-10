@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost/build_ai"
 
     OPENAI_API_KEY: str | None = None
+    # Model behind chat, explain and question generation. "deterministic" is an
+    # offline stand-in (no network, no model) for development and tests, such
+    # as the two-service boundary suite; it is refused in staging/production.
+    MODEL_PROVIDER: Literal["openai", "deterministic"] = "openai"
 
     VECTOR_DB_TYPE: str = "faiss"
 
@@ -179,6 +183,14 @@ class Settings(BaseSettings):
         shared = {v for v in backend_to_ai.values() if v} & {v for v in ai_to_backend.values() if v}
         if shared:
             raise ValueError("BACKEND_TO_AI and AI_TO_BACKEND secrets must differ")
+        return self
+
+    @model_validator(mode="after")
+    def _validate_model_provider(self) -> "Settings":
+        if self.MODEL_PROVIDER == "deterministic" and self.APP_ENVIRONMENT in STRICT_ENVIRONMENTS:
+            raise ValueError(
+                f"MODEL_PROVIDER=deterministic is refused when APP_ENVIRONMENT={self.APP_ENVIRONMENT}"
+            )
         return self
 
     @model_validator(mode="after")
