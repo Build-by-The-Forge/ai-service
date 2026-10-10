@@ -1,7 +1,11 @@
 from abc import ABC, abstractmethod
 
 from app.core.rag.contracts import DocumentChunk, RetrievalFilter
-from app.core.rag.errors import TenantContextMissingError, VectorStoreError
+from app.core.rag.errors import (
+    TenantContextMissingError,
+    VectorStoreError,
+    VectorStoreNotImplementedError,
+)
 from app.services.rag.embedder import cosine_similarity
 
 
@@ -113,42 +117,35 @@ class InMemoryVectorStore(VectorStorePort):
 
 
 class PgVectorStore(VectorStorePort):
+    """PostgreSQL/pgvector vector store: NOT IMPLEMENTED yet.
+
+    There is no chunk table or pgvector migration (Phase 2 audit F1). Every
+    operation raises VectorStoreNotImplementedError rather than reporting
+    chunks as stored or returning an empty search as if it had run. The real
+    implementation arrives with durable indexing, where persistence and
+    retrieval are tested together.
     """
-    Production PostgreSQL Vector Store utilizing the pgvector extension and Row-Level Security.
-    """
+
+    store_type = "pgvector"
 
     def __init__(self, session_factory=None):
         self._session_factory = session_factory
 
     async def add_chunks(self, chunks: list[DocumentChunk]) -> int:
-        if not self._session_factory:
-            raise VectorStoreError(
-                "PgVectorStore session_factory is not configured", store_type="pgvector"
-            )
-        # In production this executes:
-        # INSERT INTO document_chunks (chunk_id, tenant_id, document_id, content, embedding, metadata)
-        # VALUES (:chunk_id, :tenant_id, :document_id, :content, :embedding, :metadata)
-        return len(chunks)
+        raise VectorStoreNotImplementedError(self.store_type, "add_chunks")
 
     async def query_dense(
         self, vector: list[float], filter: RetrievalFilter, top_k: int = 10
     ) -> list[tuple[DocumentChunk, float]]:
         if not filter.tenant_id:
             raise TenantContextMissingError("PgVectorStore query requires authoritative tenant_id")
-        if not self._session_factory:
-            # Fallback when database is unconfigured in non-DB testing
-            return []
-        return []
+        raise VectorStoreNotImplementedError(self.store_type, "query_dense")
 
     async def delete_document(self, tenant_id: str, document_id: str) -> int:
-        if not self._session_factory:
-            return 0
-        return 1
+        raise VectorStoreNotImplementedError(self.store_type, "delete_document")
 
     async def count(self, tenant_id: str) -> int:
-        if not self._session_factory:
-            return 0
-        return 0
+        raise VectorStoreNotImplementedError(self.store_type, "count")
 
 
 # Alias for backward compatibility

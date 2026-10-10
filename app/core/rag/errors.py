@@ -36,6 +36,22 @@ class VectorStoreError(RAGError):
         self.store_type = store_type
 
 
+class VectorStoreNotImplementedError(VectorStoreError):
+    """A vector store operation that is declared but not implemented.
+
+    Raised instead of reporting chunks as stored, or an empty search as a
+    valid result, when nothing was written or searched.
+    """
+
+    def __init__(self, store_type: str, operation: str):
+        super().__init__(
+            f"{operation} is not implemented; nothing was stored or searched",
+            store_type=store_type,
+        )
+        self.error_code = "VECTOR_STORE_NOT_IMPLEMENTED"
+        self.operation = operation
+
+
 class DocumentNotFoundError(RAGError):
     """Raised when a requested document ID or chunk ID does not exist."""
 
