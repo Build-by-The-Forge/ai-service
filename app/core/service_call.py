@@ -36,3 +36,20 @@ def signed_call_with(permission: str) -> Callable[[Request], VerifiedCall]:
         return call
 
     return dependency
+
+
+def signed_system_call(request: Request) -> VerifiedCall:
+    """A verified backend call made on the backend's own authority (a system
+    context: tenant only, no user, no permissions), such as reconciliation.
+    A user context is refused, whatever permissions it carries."""
+    call = getattr(request.state, VERIFIED_CALL_STATE, None)
+    if not isinstance(call, VerifiedCall):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="invalid service authentication",
+        )
+    if not call.context.is_system:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="a system context is required"
+        )
+    return call

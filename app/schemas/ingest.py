@@ -85,3 +85,16 @@ class IngestCallbackPayload(BaseModel):
     error_code: str | None = None
     error_message: str | None = None
     is_retryable: bool = False
+
+
+class IngestTaskStatusResponse(BaseModel):
+    """Signed status of one ingestion task, for backend reconciliation
+    (M3-09). ``events`` are the exact callback bodies the worker produced,
+    in order; the backend applies them through its callback rules."""
+
+    external_task_id: str
+    job_id: str
+    run_number: int
+    attempt_count: int
+    state: Literal["accepted", "running", "succeeded", "failed"]
+    events: list[IngestCallbackPayload]

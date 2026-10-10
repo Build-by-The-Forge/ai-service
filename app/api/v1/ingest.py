@@ -3,12 +3,13 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.idempotency import IdempotencyStore, get_idempotency_store
-from app.core.service_call import signed_call_with
+from app.core.service_call import signed_call_with, signed_system_call
 from app.core.service_signature_v1 import VerifiedCall
 from app.schemas.ingest import (
     DispatchStatus,
     IngestDispatchRequest,
     IngestDispatchResponse,
+    IngestTaskStatusResponse,
 )
 from app.services.tasks.dispatcher import TaskDispatcher, get_task_dispatcher
 from app.services.tasks.task_records import (
@@ -102,4 +103,40 @@ async def dispatch_ingest_task(
         status=DispatchStatus.ACCEPTED,
         message="Ingestion task accepted for processing",
         data=receipt,
+    )
+
+
+@router.get(
+    "/tasks/{external_task_id}",
+    response_model=IngestTaskStatusResponse,
+    summary="Ingestion Task Status",
+    description=(
+        "Signed backend-only status of one task, for reconciliation. Requires a system "
+        "context; answers only for a task of the context's tenant (404 otherwise)."
+    ),
+)
+async def get_ingest_task(
+    external_task_id: str,
+    call: VerifiedCall = Depends(signed_system_call),
+    task_records: TaskRecordStore = Depends(get_task_record_store),
+) -> IngestTaskStatusResponse:
+    try:
+        record = await task_records.get(external_task_id)
+    except TaskRecordUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="service temporarily unavailable",
+        ) from exc
+    # Unknown and other tenants' tasks look the same.
+    if record is None or record.tenant_id != call.context.tenant_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="task not found")
+    return IngestTaskStatusResponse.model_validate(
+        {
+            "external_task_id": record.external_task_id,
+            "job_id": record.job_id,
+            "run_number": record.run_number,
+            "attempt_count": record.attempt_count,
+            "state": record.state,
+            "events": record.events,
+        }
     )
