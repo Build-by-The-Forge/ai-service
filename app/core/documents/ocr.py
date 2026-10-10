@@ -6,6 +6,7 @@ from typing import Any
 
 from app.core.documents.analysis import DocumentAnalysisResult, PageContentType
 from app.core.documents.contracts import OCRBoundingBox
+from app.core.documents.errors import OCRNotImplementedError
 
 
 @dataclass(frozen=True)
@@ -107,18 +108,23 @@ class PaddleOCRProvider(OCRProvider):
             raise ValueError(f"Unsupported runtime for PaddleOCR provider: {runtime}")
 
     async def process(self, request: OCRRequest) -> OCRResult:
-        return OCRResult(
-            document_id=request.document_id,
-            tenant_id=request.tenant_id,
-            pages=[],
-            overall_confidence=1.0,
-            engine_version=self._model_name,
-            runtime_version=request.runtime_name,
-            metadata={"provider": self.name, "mode": "normalized"},
+        # No inference is wired to this adapter yet (Phase 2 audit F1). It used
+        # to return zero pages at confidence 1.0, which read as a successful,
+        # empty recognition.
+        raise OCRNotImplementedError(
+            "PaddleOCRProvider.process",
+            f"no OCR inference is wired to this provider ({len(request.pages)} page(s) "
+            f"of document {request.document_id} were not recognised)",
         )
 
     async def health_check(self) -> dict[str, Any]:
-        return {"status": "ok", "provider": self.name, "runtime": self._runtime.name}
+        return {
+            "status": "unavailable",
+            "implemented": False,
+            "reason": "PaddleOCRProvider.process has no OCR inference wired",
+            "provider": self.name,
+            "runtime": self._runtime.name,
+        }
 
     def normalize_output(self, raw: dict[str, Any]) -> OCRResult:
         pages: list[OCRPageResult] = []

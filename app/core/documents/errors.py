@@ -69,3 +69,17 @@ class InvalidBoundingBoxError(DocumentError):
 
     def __init__(self, message: str):
         super().__init__(message, error_code="INVALID_BOUNDING_BOX")
+
+
+class OCRNotImplementedError(DocumentError):
+    """An OCR component was asked to do work it does not implement yet.
+
+    Raised instead of returning an empty or fabricated result, so a caller can
+    never mistake "nothing was recognised" for "recognition never ran".
+    """
+
+    def __init__(self, component: str, detail: str):
+        super().__init__(
+            f"{component} is not implemented: {detail}", error_code="OCR_NOT_IMPLEMENTED"
+        )
+        self.component = component
