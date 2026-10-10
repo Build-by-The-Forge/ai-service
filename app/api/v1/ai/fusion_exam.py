@@ -6,8 +6,8 @@ from app.core.dependencies import get_db
 from app.schemas.common import APIResponse
 from app.services.ai.openai import OpenAILLM
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
-from app.services.exam.adaptive_engine import AdaptiveDifficultyEngine
-from app.services.exam.fusion_engine import CBTFusionEngine
+from app.services.generation.adaptive_engine import AdaptiveDifficultyEngine
+from app.services.generation.fusion_engine import CBTFusionEngine
 from app.services.generation.cbt_ai_generator import CBTAIGenerator
 from app.services.memory.memory_service import MemoryService
 

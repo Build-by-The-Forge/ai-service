@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.exam.adaptive_engine import AdaptiveDifficultyEngine
+from app.services.generation.adaptive_engine import AdaptiveDifficultyEngine
 
 
 class DummyMemoryRecord:

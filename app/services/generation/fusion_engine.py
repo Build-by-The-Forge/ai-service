@@ -1,4 +1,4 @@
-from app.services.exam.adaptive_engine import AdaptiveDifficultyEngine
+from app.services.generation.adaptive_engine import AdaptiveDifficultyEngine
 from app.services.generation.cbt_ai_generator import CBTAIGenerator
 
 

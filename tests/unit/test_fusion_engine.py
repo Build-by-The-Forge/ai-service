@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.exam.fusion_engine import CBTFusionEngine
+from app.services.generation.fusion_engine import CBTFusionEngine
 
 
 class DummyAdaptiveEngine:
