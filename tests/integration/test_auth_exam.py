@@ -3,8 +3,15 @@ import pytest_asyncio
 from httpx import AsyncClient
 
 from app.db.models.user import User
+from app.main import create_app
 from app.db.session import get_async_session_local
 from tests.integration.conftest import seed_user
+
+
+@pytest_asyncio.fixture
+async def app(app):
+    # The legacy routes are unmounted by default (M3-10) and deleted in M4.
+    return create_app(legacy_user_routes=True)
 
 
 @pytest_asyncio.fixture

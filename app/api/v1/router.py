@@ -24,8 +24,13 @@ api_router.include_router(tree_router, prefix="/ai/tree", tags=["Tree"])
 api_router.include_router(read_router, prefix="/ai/read", tags=["Read Mode"])
 api_router.include_router(explain_router, prefix="/ai", tags=["Explain"])
 api_router.include_router(questions_router, prefix="/ai", tags=["Generation"])
-api_router.include_router(exam_router, prefix="/ai/exam", tags=["Exam"])
-api_router.include_router(exam_submit_router, prefix="/ai/exam", tags=["Exam"])
-api_router.include_router(fusion_exam_router, prefix="/api/v1", tags=["AI Exam"])
-api_router.include_router(exams_router, prefix="/exams", tags=["Exam Management"])
-api_router.include_router(ws_router)
+
+# Legacy end-user routes (JWT + school id): mounted under /api/v1 only when
+# LEGACY_USER_ROUTES_ENABLED (development only). Deleted in M4.
+legacy_api_router = APIRouter()
+
+legacy_api_router.include_router(exam_router, prefix="/ai/exam", tags=["Exam"])
+legacy_api_router.include_router(exam_submit_router, prefix="/ai/exam", tags=["Exam"])
+legacy_api_router.include_router(fusion_exam_router, prefix="/api/v1", tags=["AI Exam"])
+legacy_api_router.include_router(exams_router, prefix="/exams", tags=["Exam Management"])
+legacy_api_router.include_router(ws_router)

@@ -4,7 +4,7 @@ from fastapi import FastAPI
 
 from app.api.v1.exams import router as exams_router
 from app.api.v1.ingest import router as ingest_router
-from app.api.v1.router import api_router
+from app.api.v1.router import api_router, legacy_api_router
 from app.auth.routes import router as auth_router
 from app.core.config import settings
 from app.core.errors import app_exception_handler
@@ -40,7 +40,15 @@ def _inbound_verifier() -> ServiceVerifier | None:
     return ServiceVerifier(accepted_sender=BACKEND_SERVICE_ID, secrets=secrets)
 
 
-def create_app(replay_guard: ReplayGuard | None = None) -> FastAPI:
+def create_app(
+    replay_guard: ReplayGuard | None = None,
+    legacy_user_routes: bool | None = None,
+) -> FastAPI:
+    """``legacy_user_routes`` defaults to LEGACY_USER_ROUTES_ENABLED, which the
+    settings refuse outside development; tests of the legacy code pass True."""
+    if legacy_user_routes is None:
+        legacy_user_routes = settings.LEGACY_USER_ROUTES_ENABLED
+
     app = FastAPI(
         title="AI Service - Build Core",
         version="1.0.0",
@@ -72,8 +80,11 @@ def create_app(replay_guard: ReplayGuard | None = None) -> FastAPI:
     # Routes
     app.include_router(api_router, prefix="/api/v1")
     app.include_router(ingest_router, prefix="/v1/ingest")
-    app.include_router(auth_router, prefix="/auth")
-    app.include_router(exams_router, prefix="/exams")
+
+    if legacy_user_routes:
+        app.include_router(legacy_api_router, prefix="/api/v1")
+        app.include_router(auth_router, prefix="/auth")
+        app.include_router(exams_router, prefix="/exams")
 
     return app
 
