@@ -394,3 +394,27 @@ async def test_bad_signature_is_401_even_when_redis_is_down(down_guard):
         response = await client.post(ROUTE, content=body_for("x"), headers=sign(body_for("y")))
     assert response.status_code == 401
     assert handled == []
+
+
+async def test_a_replay_guard_that_never_answers_times_out_closed():
+    import asyncio
+
+    async def silent(reader, writer):
+        await asyncio.sleep(30)
+
+    server = await asyncio.start_server(silent, "127.0.0.1", 0)
+    port = server.sockets[0].getsockname()[1]
+    stuck = RedisReplayGuard.connect(f"redis://127.0.0.1:{port}/0", timeout=0.2)
+    try:
+        app, handled = make_app(stuck)
+        body = body_for()
+        started = time.monotonic()
+        async with http(app) as client:
+            response = await client.post(ROUTE, content=body, headers=sign(body))
+        elapsed = time.monotonic() - started
+    finally:
+        await stuck.close()
+        server.close()
+    assert response.status_code == 503
+    assert handled == []
+    assert elapsed < 3

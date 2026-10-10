@@ -56,7 +56,10 @@ def create_app(replay_guard: ReplayGuard | None = None) -> FastAPI:
         SignedServiceRequestMiddleware,
         receiver_id=AI_SERVICE_ID,
         verifier=_inbound_verifier(),
-        replay_guard=replay_guard or RedisReplayGuard.connect(settings.REDIS_URL),
+        replay_guard=replay_guard
+        or RedisReplayGuard.connect(
+            settings.REDIS_URL, timeout=settings.SERVICE_REPLAY_TIMEOUT_SECONDS
+        ),
         applies_to=lambda path: path.startswith(SIGNED_PATH_PREFIXES),
     )
 

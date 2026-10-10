@@ -3,7 +3,7 @@ import socket
 from typing import Literal
 from urllib.parse import urlparse, urlsplit, urlunparse
 
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Where a missing, short or known service secret must stop startup (design A.1).
@@ -82,6 +82,10 @@ class Settings(BaseSettings):
     BACKEND_TO_AI_SECRET_PREVIOUS: str | None = None
     AI_TO_BACKEND_SECRET: str | None = None
     AI_TO_BACKEND_SECRET_PREVIOUS: str | None = None
+    # Connect/read timeout (seconds) of the Redis replay guard for signed
+    # backend requests. A timeout fails closed (503), never admits the
+    # request. Default 1.0; allowed 0.05-5.0.
+    SERVICE_REPLAY_TIMEOUT_SECONDS: float = Field(default=1.0, ge=0.05, le=5.0)
     # Where ingestion callbacks go: operator configuration only, never request
     # data. Required (https) in staging/production; development and testing
     # default to the compose backend.

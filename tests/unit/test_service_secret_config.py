@@ -171,3 +171,13 @@ def test_static_bearer_and_legacy_service_settings_are_gone():
         "AI_SERVICE_WEBHOOK_SECRET",
     ):
         assert not hasattr(settings, removed)
+
+
+def test_replay_guard_timeout_defaults_to_one_second():
+    assert make("development").SERVICE_REPLAY_TIMEOUT_SECONDS == 1.0
+
+
+@pytest.mark.parametrize("value", [0.0, 0.01, 5.5, -1])
+def test_replay_guard_timeout_is_bounded(value):
+    with pytest.raises(ValidationError):
+        make("development", SERVICE_REPLAY_TIMEOUT_SECONDS=value)
