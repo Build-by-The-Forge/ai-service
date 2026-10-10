@@ -20,7 +20,7 @@ class DummyOrchestrator:
     async def explain(self, subject: str):
         return {"explanation": f"explained {subject}"}
 
-    async def generate_questions(self, topic: str, count: int = 5):
+    async def generate_questions(self, topic: str, count: int = 5, **_options):
         return {"questions": [f"question about {topic}"] * count}
 
 

@@ -215,3 +215,31 @@ async def test_the_limits_themselves_are_accepted(app):
     path = "/v1/ai/generate-questions"
     response = await post(app, path, raw, signed(path, raw, "ai.questions.generate"))
     assert response.status_code == 200
+
+
+# --- M5: structured question generation -------------------------------------------------
+
+
+async def test_generated_questions_are_structured(app):
+    raw = encode(
+        {"topic": "cells", "count": 3, "difficulty": "hard", "question_type": "true_false"}
+    )
+    path = "/v1/ai/generate-questions"
+    response = await post(app, path, raw, signed(path, raw, "ai.questions.generate"))
+    assert response.status_code == 200, response.text
+    data = response.json()["data"]
+    assert data["discarded"] == 0
+    assert len(data["questions"]) == 3
+    for question in data["questions"]:
+        assert question["question_type"] == "true_false"
+        assert question["difficulty"] == "hard"
+        assert sorted(o["text"] for o in question["options"]) == ["False", "True"]
+        assert sum(o["is_correct"] for o in question["options"]) == 1
+
+
+@pytest.mark.parametrize("change", [{"difficulty": "extreme"}, {"question_type": "essay"}])
+async def test_unknown_difficulty_or_type_is_422(app, change):
+    raw = encode({"topic": "cells", **change})
+    path = "/v1/ai/generate-questions"
+    response = await post(app, path, raw, signed(path, raw, "ai.questions.generate"))
+    assert response.status_code == 422

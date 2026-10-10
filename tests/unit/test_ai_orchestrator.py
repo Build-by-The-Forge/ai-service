@@ -1,9 +1,10 @@
 import pytest
 
+from app.services.ai.llm import LLMProvider
 from app.services.ai.orchestrator import AIOrchestrator
 
 
-class DummyLLM:
+class DummyLLM(LLMProvider):
     async def generate(self, prompt: str) -> str:
         return f"answer:{prompt}"
 
@@ -48,4 +49,5 @@ async def test_generate_questions_returns_question_payload():
 
     result = await orchestrator.generate_questions("geometry")
 
-    assert "questions" in result
+    # A model that does not answer with JSON yields no questions, all discarded.
+    assert result == {"questions": [], "discarded": 5}

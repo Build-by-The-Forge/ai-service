@@ -63,4 +63,35 @@ Generate structured CBT questions.
                 ),
             }
 
+        if name == "structured_questions":
+            return {
+                "system": """
+You write assessment questions for a university course.
+
+Base every question strictly on the provided context. Answer with ONE JSON
+object: {"questions": [ ... ]}. Each question is:
+{"question_type": "<type>", "prompt": "...",
+ "options": [{"text": "...", "is_correct": true|false}, ...],
+ "explanation": "why the correct option is correct",
+ "difficulty": "<difficulty>"}
+Rules: exactly one option has is_correct true. For "mcq" give 4 options.
+For "true_false" give exactly two options, "True" and "False".
+""",
+                "user": """
+TOPIC: {topic}
+QUESTION TYPE: {question_type}
+DIFFICULTY: {difficulty}
+NUMBER OF QUESTIONS: {count}
+
+CONTEXT:
+{context}
+""".format(
+                    topic=kwargs.get("topic", ""),
+                    question_type=kwargs.get("question_type", "mcq"),
+                    difficulty=kwargs.get("difficulty", "medium"),
+                    count=kwargs.get("count", 5),
+                    context=kwargs.get("context", ""),
+                ),
+            }
+
         return {"system": "", "user": kwargs.get("question", "")}
