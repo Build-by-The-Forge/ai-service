@@ -4,7 +4,11 @@ import logging
 import uuid
 from typing import Any
 
-from app.core.callbacks.dispatcher import CallbackPort, get_callback_dispatcher
+from app.core.callbacks.dispatcher import (
+    CallbackPort,
+    backend_callback_body,
+    get_callback_dispatcher,
+)
 from app.core.callbacks.events import CallbackDeliveryResult, CallbackEvent, CallbackEventType
 from app.core.execution_context import AIExecutionContext, AITask, TaskStatus
 from app.services.tasks.handlers import TaskHandlerRegistry, get_task_handler_registry
@@ -14,6 +18,12 @@ from app.services.tasks.ingestion_outcomes import (
     PipelineUnavailableError,
     StageReporter,
     TransientIngestionError,
+)
+from app.services.tasks.task_records import (
+    TaskRecordStore,
+    TaskRecordUnavailableError,
+    TaskState,
+    get_task_record_store,
 )
 from app.services.tasks.transport import TaskTransport, get_task_transport
 
@@ -37,6 +47,7 @@ class TaskWorker:
         heartbeat_mgr: HeartbeatManager | None = None,
         callback_dispatcher: CallbackPort | None = None,
         group_name: str = "ai_worker_group",
+        task_records: TaskRecordStore | None = None,
     ):
         self.worker_id = worker_id or f"worker_{uuid.uuid4().hex[:8]}"
         self.transport = transport or get_task_transport()
@@ -44,6 +55,10 @@ class TaskWorker:
         self.heartbeat_mgr = heartbeat_mgr or get_heartbeat_manager()
         self.callback_dispatcher = callback_dispatcher or get_callback_dispatcher()
         self.group_name = group_name
+        self.task_records = task_records or get_task_record_store()
+        # Ingestion tasks whose backend-bound events are recorded for
+        # reconciliation (M3-09).
+        self._recorded_tasks: set[str] = set()
         self._active_contexts: dict[str, AIExecutionContext] = {}
 
     def get_active_context(self, execution_id: str) -> AIExecutionContext | None:
@@ -61,6 +76,7 @@ class TaskWorker:
         Emits a callback event safely without allowing delivery exceptions to fail the task execution.
         The callback destination is fixed by configuration and must never be chosen by the payload.
         """
+        await self._record(event)
         try:
             result = await self.callback_dispatcher.dispatch(event)
             if not result.success:
@@ -79,6 +95,34 @@ class TaskWorker:
                 exc_info=True,
             )
             return None
+
+    async def _record(self, event: CallbackEvent) -> None:
+        """Record the backend body of an ingestion event before delivery, so
+        an undelivered event can still be reconciled. A record-store outage
+        is logged; it never fails the task."""
+        if event.external_task_id not in self._recorded_tasks:
+            return
+        try:
+            body = backend_callback_body(event)
+        except Exception:
+            body = None
+        if body is None:
+            return
+        state = {
+            CallbackEventType.FAILED: TaskState.FAILED,
+            CallbackEventType.COMPLETED: TaskState.SUCCEEDED,
+        }.get(event.event_type)
+        try:
+            await self.task_records.update(event.external_task_id, state=state, event=body)
+        except TaskRecordUnavailableError as exc:
+            logger.warning(
+                "Task record not updated: task=%s event=%s error=%s",
+                event.external_task_id,
+                event.event_id,
+                exc,
+            )
+        if state is not None:  # terminal: nothing more to record for this task
+            self._recorded_tasks.discard(event.external_task_id)
 
     def _event(self, task: AITask, event_type: CallbackEventType, **fields) -> CallbackEvent:
         # run_number and attempt_count are the backend's attempt identity:
@@ -144,6 +188,11 @@ class TaskWorker:
         is_ingestion = task.task_type == INGESTION_TASK_TYPE
         if is_ingestion:
             ctx.stage_reporter = self._stage_reporter(task)
+            self._recorded_tasks.add(task.task_id)
+            try:
+                await self.task_records.update(task.task_id, state=TaskState.RUNNING)
+            except TaskRecordUnavailableError as exc:
+                logger.warning("Task record not updated: task=%s error=%s", task.task_id, exc)
         self._active_contexts[ctx.execution_id] = ctx
 
         # 3. Claim execution lease
