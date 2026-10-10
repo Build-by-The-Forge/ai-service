@@ -156,3 +156,25 @@ class MemoryData(BaseModel):
 
 class MemoryResponse(_Envelope):
     data: MemoryData
+
+
+class RetrievedItem(BaseModel):
+    text: str
+    chunk_id: str | None = None
+    document_title: str | None = None
+    course_code: str | None = None
+    hybrid_score: float | None = None
+    rank: int | None = None
+    provenance: dict | None = None
+
+
+class RetrieveResponse(_Envelope):
+    data: list[RetrievedItem]
+
+
+class TreeResponse(_Envelope):
+    data: TreeNode
+
+
+class ReadPathResponse(_Envelope):
+    data: list[TreeNode]
