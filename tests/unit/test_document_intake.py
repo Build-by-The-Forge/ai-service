@@ -10,22 +10,20 @@ from app.core.documents import (
     UnsupportedDocumentTypeError,
 )
 from app.core.documents.intake import DocumentIntakeService, UnsafeFilenameError
-from app.core.tenant import set_school_id
+from app.core.tenant import clear_request_scope, set_request_scope
 
 
 @pytest.fixture(autouse=True)
 def reset_tenant_context():
+    clear_request_scope()
     try:
         yield
     finally:
-        try:
-            set_school_id(0)
-        except Exception:
-            pass
+        clear_request_scope()
 
 
 def test_document_intake_uses_trusted_tenant_context_and_hash():
-    set_school_id(42)
+    set_request_scope("42")
     service = DocumentIntakeService(max_document_bytes=10 * 1024 * 1024)
 
     payload = b"%PDF-1.4\nThis is a minimal PDF payload"
@@ -59,7 +57,7 @@ def test_document_intake_requires_authoritative_tenant_context():
 
 
 def test_document_intake_rejects_unsafe_filename_and_unsupported_mime():
-    set_school_id(7)
+    set_request_scope("7")
     service = DocumentIntakeService(max_document_bytes=10 * 1024 * 1024)
 
     with pytest.raises(UnsafeFilenameError):
@@ -80,7 +78,7 @@ def test_document_intake_rejects_unsafe_filename_and_unsupported_mime():
 
 
 def test_document_intake_rejects_oversized_files():
-    set_school_id(9)
+    set_request_scope("9")
     service = DocumentIntakeService(max_document_bytes=32)
 
     with pytest.raises(DocumentSizeLimitExceededError):
@@ -93,7 +91,7 @@ def test_document_intake_rejects_oversized_files():
 
 
 def test_document_intake_uses_generated_storage_namespace_and_statuses():
-    set_school_id(10)
+    set_request_scope("10")
     service = DocumentIntakeService(max_document_bytes=128)
 
     result = service.submit_document(

@@ -251,7 +251,7 @@ async def test_exam_session_service_start_session_with_and_without_exam(monkeypa
 
 @pytest.mark.asyncio
 async def test_memory_service_get_user_memory_and_update_mastery(monkeypatch):
-    monkeypatch.setattr("app.services.memory.memory_service.get_school_id", lambda: 77)
+    monkeypatch.setattr("app.services.memory.memory_service.get_tenant_id", lambda: "77")
 
     dummy_record = types.SimpleNamespace(
         tenant_id="77",

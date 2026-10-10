@@ -5,10 +5,14 @@ from app.services.rag.retrieval import RetrievalService
 
 
 @pytest.mark.asyncio
-async def test_retrieval_service_uses_current_tenant_school_id(monkeypatch):
-    tenant.set_school_id(123)
-    service = RetrievalService()
+async def test_retrieval_service_uses_current_tenant():
+    tenant.set_request_scope("11111111-1111-4111-8111-111111111111")
+    try:
+        result = await RetrievalService().retrieve("algebra")
+    finally:
+        tenant.clear_request_scope()
 
-    result = await service.retrieve("algebra")
-
-    assert result[0]["text"] == "Tenant 123 retrieval placeholder for 'algebra'"
+    assert (
+        result[0]["text"]
+        == "Tenant 11111111-1111-4111-8111-111111111111 retrieval placeholder for 'algebra'"
+    )

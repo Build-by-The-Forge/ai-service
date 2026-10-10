@@ -201,10 +201,11 @@ class RetrievalService:
     async def retrieve(self, query: str) -> list[dict[str, Any]]:
         from app.core import tenant
 
-        school_id = tenant.get_school_id() or "default"
-        filter_obj = RetrievalFilter(tenant_id=str(school_id))
+        # Scoped to the verified tenant only; no scope means no retrieval.
+        tenant_id = tenant.get_tenant_id()
+        filter_obj = RetrievalFilter(tenant_id=tenant_id)
         ctx = await self.engine.retrieve(query, filter=filter_obj)
         citations = ctx.to_citation_summary()
         if not citations:
-            return [{"text": f"Tenant {school_id} retrieval placeholder for '{query}'"}]
+            return [{"text": f"Tenant {tenant_id} retrieval placeholder for '{query}'"}]
         return citations

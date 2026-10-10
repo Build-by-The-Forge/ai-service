@@ -14,7 +14,7 @@ from app.core.documents import (
     UnsupportedDocumentTypeError,
 )
 from app.core.rag.contracts import ContentAuthority
-from app.core.tenant import set_school_id
+from app.core.tenant import clear_request_scope
 
 
 @pytest.fixture(autouse=True)
@@ -22,7 +22,7 @@ def reset_tenant_context():
     try:
         yield
     finally:
-        set_school_id(0)
+        clear_request_scope()
 
 
 def _make_document(*, mime_type: str, title: str = "Sample", pages=None):

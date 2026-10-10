@@ -1,15 +1,14 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.tenant import get_school_id
+from app.core.tenant import get_tenant_id
 from app.db.models.learning_memory import LearningMemory
 
 
 def _current_tenant_id() -> str:
-    # Temporary bridge: the request tenant context is still the legacy integer
-    # school id. Phase 1 Item 3 replaces it with the authenticated backend
-    # tenant id; until then it is stored in tenant_id as a string.
-    return str(get_school_id())
+    # The verified context's tenant (a backend tenant UUID); raises when the
+    # request has no verified scope rather than reading another tenant's rows.
+    return get_tenant_id()
 
 
 class MemoryService:
