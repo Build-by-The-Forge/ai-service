@@ -128,7 +128,7 @@ async def test_health_routes_report_database_and_redis(monkeypatch):
             return fn(None)
 
     monkeypatch.setattr(system_route, "get_engine", lambda: DummyEngine())
-    monkeypatch.setattr(system_route, "redis_client", DummyRedisClient())
+    monkeypatch.setattr(system_route, "get_redis_client", lambda: DummyRedisClient())
 
     health = await system_route.health()
     assert health["success"] is True

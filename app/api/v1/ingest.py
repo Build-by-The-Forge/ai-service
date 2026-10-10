@@ -2,7 +2,11 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.core.idempotency import IdempotencyStore, get_idempotency_store
+from app.core.idempotency import (
+    IdempotencyStore,
+    IdempotencyUnavailableError,
+    get_idempotency_store,
+)
 from app.core.service_call import signed_call_with, signed_system_call
 from app.core.service_signature_v1 import VerifiedCall
 from app.schemas.ingest import (
@@ -53,11 +57,18 @@ async def dispatch_ingest_task(
     }
 
     candidate_task_id = f"task_{uuid.uuid4().hex}"
-    is_fresh, existing_record = await idempotency_store.set_if_absent(
-        tenant_id=tenant_id,
-        idempotency_key=payload.idempotency_key,
-        external_task_id=candidate_task_id,
-    )
+    try:
+        is_fresh, existing_record = await idempotency_store.set_if_absent(
+            tenant_id=tenant_id,
+            idempotency_key=payload.idempotency_key,
+            external_task_id=candidate_task_id,
+        )
+    except IdempotencyUnavailableError as exc:
+        # Fail closed: never dispatch without a shared idempotency decision.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="service temporarily unavailable",
+        ) from exc
 
     if not is_fresh and existing_record is not None:
         return IngestDispatchResponse(

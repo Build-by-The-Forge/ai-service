@@ -306,3 +306,20 @@ async def test_dispatch_is_refused_when_task_records_are_unavailable(guard):
         await down.close()
     assert response.status_code == 503
     assert recorder.tasks == []
+
+
+class UnavailableIdempotency:
+    async def set_if_absent(self, **kwargs):
+        from app.core.idempotency import IdempotencyUnavailableError
+
+        raise IdempotencyUnavailableError("down")
+
+
+@real_redis
+async def test_dispatch_fails_closed_when_idempotency_is_unavailable(guard):
+    set_idempotency_store(UnavailableIdempotency())
+    app, recorder = build(guard)
+    body = dispatch_body()
+    response = await post(app, body, signed_headers(body))
+    assert response.status_code == 503
+    assert recorder.tasks == []

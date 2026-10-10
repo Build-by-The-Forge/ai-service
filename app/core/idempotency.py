@@ -11,8 +11,14 @@ class IdempotencyRecord:
     tenant_id: str
     idempotency_key: str
     external_task_id: str
-    created_at: float = time.time()
+    created_at: float = 0.0
     status: str = "PROCESSING"
+
+
+class IdempotencyUnavailableError(RuntimeError):
+    """The idempotency store could not answer. Callers fail closed (503):
+    answering from a per-process fallback would let replicas disagree and
+    accept the same key twice."""
 
 
 class IdempotencyStore(abc.ABC):
@@ -76,10 +82,8 @@ class InMemoryIdempotencyStore(IdempotencyStore):
 
 
 class RedisIdempotencyStore(IdempotencyStore):
-    """Redis-backed atomic idempotency store using SET NX EX."""
-
-    def __init__(self):
-        self._in_memory_fallback = InMemoryIdempotencyStore()
+    """Redis-backed atomic idempotency store using SET NX EX. Fails closed:
+    any Redis error raises IdempotencyUnavailableError."""
 
     def _format_key(self, tenant_id: str, idempotency_key: str) -> str:
         return f"idempotency:{tenant_id}:{idempotency_key}"
@@ -87,14 +91,10 @@ class RedisIdempotencyStore(IdempotencyStore):
     async def get(self, tenant_id: str, idempotency_key: str) -> IdempotencyRecord | None:
         key = self._format_key(tenant_id, idempotency_key)
         try:
-            client = await get_redis_client()
-            data = await client.get(key)
-            if not data:
-                return None
-            parsed = json.loads(data)
-            return IdempotencyRecord(**parsed)
-        except Exception:
-            return await self._in_memory_fallback.get(tenant_id, idempotency_key)
+            data = await get_redis_client().get(key)
+        except Exception as exc:
+            raise IdempotencyUnavailableError("idempotency store unavailable") from exc
+        return IdempotencyRecord(**json.loads(data)) if data else None
 
     async def set_if_absent(
         self,
@@ -111,22 +111,17 @@ class RedisIdempotencyStore(IdempotencyStore):
             created_at=time.time(),
         )
         try:
-            client = await get_redis_client()
-            record_json = json.dumps(asdict(record))
-            # SET key value NX EX ttl_seconds
-            is_new = await client.set(key, record_json, ex=ttl_seconds, nx=True)
-            if is_new:
+            client = get_redis_client()
+            if await client.set(key, json.dumps(asdict(record)), ex=ttl_seconds, nx=True):
                 return True, None
-            # Fetch existing
-            existing_data = await client.get(key)
-            if existing_data:
-                parsed = json.loads(existing_data)
-                return False, IdempotencyRecord(**parsed)
-            return False, record
-        except Exception:
-            return await self._in_memory_fallback.set_if_absent(
-                tenant_id, idempotency_key, external_task_id, ttl_seconds
-            )
+            existing = await client.get(key)
+        except Exception as exc:
+            raise IdempotencyUnavailableError("idempotency store unavailable") from exc
+        if existing:
+            return False, IdempotencyRecord(**json.loads(existing))
+        # The key expired between SET and GET: report it as already taken
+        # rather than dispatching a second task for it.
+        return False, record
 
 
 # Default store singleton provider
