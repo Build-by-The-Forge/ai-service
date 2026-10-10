@@ -260,3 +260,49 @@ async def test_without_an_inbound_secret_every_dispatch_is_refused(monkeypatch):
         assert recorder.tasks == []
     finally:
         await dead.close()
+
+
+# --- M3-09: the dispatch records the task for reconciliation -------------------------
+
+
+@real_redis
+async def test_an_accepted_dispatch_records_the_task(guard, in_memory_task_records):
+    app, recorder = build(guard)
+    body = dispatch_body()
+    data = (await post(app, body, signed_headers(body))).json()
+    stored = await in_memory_task_records.get(data["external_task_id"])
+    assert (
+        stored.tenant_id,
+        stored.job_id,
+        stored.run_number,
+        stored.attempt_count,
+        stored.state,
+    ) == (
+        TENANT_A,
+        "job-1",
+        1,
+        1,
+        "accepted",
+    )
+    # A duplicate dispatch reuses the task; no second record appears.
+    await post(app, body, signed_headers(body))
+    assert len(in_memory_task_records.records) == 1
+
+
+@real_redis
+async def test_dispatch_is_refused_when_task_records_are_unavailable(guard):
+    from app.services.tasks.task_records import (
+        RedisTaskRecordStore,
+        get_task_record_store,
+    )
+
+    app, recorder = build(guard)
+    down = RedisTaskRecordStore.connect("redis://127.0.0.1:1/0", timeout=0.3)
+    app.dependency_overrides[get_task_record_store] = lambda: down
+    try:
+        body = dispatch_body()
+        response = await post(app, body, signed_headers(body))
+    finally:
+        await down.close()
+    assert response.status_code == 503
+    assert recorder.tasks == []

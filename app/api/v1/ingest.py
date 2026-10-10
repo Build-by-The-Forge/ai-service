@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.idempotency import IdempotencyStore, get_idempotency_store
 from app.core.service_call import signed_call_with
@@ -11,6 +11,12 @@ from app.schemas.ingest import (
     IngestDispatchResponse,
 )
 from app.services.tasks.dispatcher import TaskDispatcher, get_task_dispatcher
+from app.services.tasks.task_records import (
+    TaskRecord,
+    TaskRecordStore,
+    TaskRecordUnavailableError,
+    get_task_record_store,
+)
 
 router = APIRouter()
 
@@ -35,6 +41,7 @@ async def dispatch_ingest_task(
     call: VerifiedCall = Depends(signed_call_with(INGEST_DISPATCH_PERMISSION)),
     idempotency_store: IdempotencyStore = Depends(get_idempotency_store),
     dispatcher: TaskDispatcher = Depends(get_task_dispatcher),
+    task_records: TaskRecordStore = Depends(get_task_record_store),
 ) -> IngestDispatchResponse:
     tenant_id = call.context.tenant_id
     receipt = {
@@ -59,6 +66,24 @@ async def dispatch_ingest_task(
             message="Ingestion task already accepted for this idempotency key",
             data=receipt,
         )
+
+    # The record ties the task to the verified tenant and backend attempt;
+    # status reconciliation (M3-09) answers only from it.
+    try:
+        await task_records.create(
+            TaskRecord(
+                external_task_id=candidate_task_id,
+                tenant_id=tenant_id,
+                job_id=payload.job_id,
+                run_number=payload.run_number,
+                attempt_count=payload.attempt_count,
+            )
+        )
+    except TaskRecordUnavailableError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="service temporarily unavailable",
+        ) from exc
 
     await dispatcher.dispatch_ingest(
         job_id=payload.job_id,
