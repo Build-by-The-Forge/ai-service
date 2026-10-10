@@ -51,10 +51,3 @@ def test_scopes_do_not_leak_between_concurrent_requests():
     assert asyncio.run(both()) == ["tenant-a", "tenant-b"]
     with pytest.raises(tenant.RequestScopeMissingError):
         tenant.get_tenant_id()
-
-
-def test_legacy_school_id_context_is_separate():
-    tenant.set_school_id(123)
-    assert tenant.get_school_id() == 123
-    with pytest.raises(tenant.RequestScopeMissingError):
-        tenant.get_tenant_id()

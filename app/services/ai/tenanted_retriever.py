@@ -8,5 +8,5 @@ class TenantAwareRetrievalService(RetrievalService):
         self.retriever = retriever or RetrievalService()
 
     async def retrieve(self, query: str) -> list[dict[str, Any]]:
-        # Delegate to the tenant-aware retrieval service, which already scopes search by school_id.
+        # Delegate to RetrievalService, which scopes search to the verified request tenant.
         return await self.retriever.retrieve(query)
