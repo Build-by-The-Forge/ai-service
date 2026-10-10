@@ -3,13 +3,13 @@
 **Service:** `ai-service` (Build Core)  
 **Version:** 1.0.0 (AI Runtime Foundation v1.0)  
 **Current Test Status:** 208 passed, 2 skipped across unit, contract, and E2E integration suites (100% pass rate)  
-**Primary Focus:** CBT Examination Engine, Adaptive Learning Memory, Multi-Tenant RAG, Bounded Agent Orchestration & OCR Document Ingestion  
+**Primary Focus:** Adaptive Learning Memory, Multi-Tenant RAG, Bounded Agent Orchestration & OCR Document Ingestion  
 
 ---
 
 ## 1. Executive System Overview
 
-The `ai-service` is the central intelligence, exam delivery, and agent orchestration backbone of the BUILD platform. It provides:
+The `ai-service` is the central intelligence and agent orchestration backbone of the BUILD platform. It provides:
 1. **Authenticated Service Boundary (AI-1A):** HMAC-SHA256 authenticated dispatch, replay protection, and idempotency guarantees.
 2. **Distributed Asynchronous Execution Substrate (AI-1B):** Redis Streams / In-memory task transport, worker lease governance, retries, and dead-letter queues.
 3. **Signed Domain Callback Delivery (AI-1C):** Canonical JSON serialization and HMAC-signed webhook delivery to Backend.
@@ -17,7 +17,7 @@ The `ai-service` is the central intelligence, exam delivery, and agent orchestra
 5. **Tool Capability Plane & Sandbox (AI-1E):** Policy-aware Tool Registry, strict schema/tenant validation, byte ceilings, and isolated execution.
 6. **Bounded Agent Orchestration Engine (AI-1F):** Multi-step ReAct reasoning loop with strict ceilings on steps, tokens, model calls, tool calls, runtime, and cost.
 7. **End-to-End Verified Pipeline (AI-1G):** Comprehensive E2E integration covering dispatch $\to$ worker $\to$ agent $\to$ model $\to$ tool $\to$ signed callback.
-8. **Multi-Tenant CBT Examination Engine:** Timed session management, live answer persistence, auto-scoring, and anti-cheat activity anomaly detection.
+8. **CBT intelligence (not delivery):** question generation and adaptive difficulty. Exam delivery, timing, answers and scoring belong to the backend (removed from AI-service in M4).
 9. **Adaptive Tutoring & Memory:** Student mastery tracking (`LearningMemory`), dynamic difficulty calculation, and prompt-driven AI tutoring.
 10. **Knowledge Tree & Curriculum Engine:** Hierarchical topic breakdown, prerequisites tracking, and learning path traversal (DFS/BFS).
 
@@ -40,8 +40,7 @@ The `ai-service` is the central intelligence, exam delivery, and agent orchestra
 - ✅ **AI-1F Bounded Agent Runtime:** ReAct multi-step orchestration with hard step/token/runtime/cost budgets.
 - ✅ **AI-1G E2E Integration Suite:** Full-stack verification from dispatch to callback delivery with 208 passing tests.
 - ✅ **Tenant Context Isolation:** Tenant and user come only from the verified backend service context (BUILD Service Signature v1); `TenantMiddleware` and the `X-School-ID` header were removed in M3-10.
-- ✅ **Authentication & RBAC:** JWT authentication with role enforcement (`student`, `teacher`, `admin`) and secure password hashing.
-- ✅ **Exam State Machine & Timers:** Redis-backed and in-memory fallback exam session state, timestamped answer logs, and anomaly detection.
+- ✅ **No user authentication (M4):** AI-service authenticates services only (BUILD Service Signature v1). Its former JWT login, RBAC and exam runtime (sessions, timers, scoring, websocket) were removed; the backend owns users and the CBT lifecycle.
 
 ---
 
