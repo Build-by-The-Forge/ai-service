@@ -172,12 +172,18 @@ async def test_ocr_provider_can_be_subclassed():
 
 
 @pytest.mark.asyncio
-async def test_image_ocr_providers_return_data():
-    openvino = OpenVINOService()
-    paddle = PaddleOCRService()
+async def test_openvino_ocr_service_refuses_instead_of_fabricating_text():
+    from app.core.documents.errors import OCRNotImplementedError
 
-    openvino_data = await openvino.extract_text_from_image("image.png")
-    assert openvino_data[0]["text"] == "openvino extracted text"
+    with pytest.raises(OCRNotImplementedError) as exc:
+        await OpenVINOService().extract_text_from_image("page.png")
+    assert exc.value.error_code == "OCR_NOT_IMPLEMENTED"
+    assert "page.png" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_image_ocr_providers_return_data():
+    paddle = PaddleOCRService()
 
     paddle_data = await paddle.extract_text_from_image("image.png")
     assert paddle_data[0]["text"] == "sample extracted text"
