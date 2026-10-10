@@ -28,6 +28,7 @@ from typing import Protocol
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.core.correlation import current_correlation_id
 from app.core.replay_guard import ReplayGuardUnavailableError
 from app.core.service_signature_v1 import (
     ServiceVerifier,
@@ -102,7 +103,20 @@ class SignedServiceRequestMiddleware:
             return
 
         scope.setdefault("state", {})[VERIFIED_CALL_STATE] = call
-        await self.app(scope, _body_then(receive, body), send)
+        correlation_id = call.context.correlation_id
+        token = current_correlation_id.set(correlation_id)
+
+        async def send_with_correlation(message: Message) -> None:
+            if message["type"] == "http.response.start":
+                headers = list(message.get("headers", []))
+                headers.append((b"x-correlation-id", correlation_id.encode("latin-1")))
+                message = {**message, "headers": headers}
+            await send(message)
+
+        try:
+            await self.app(scope, _body_then(receive, body), send_with_correlation)
+        finally:
+            current_correlation_id.reset(token)
 
     async def _authenticate(self, scope: Scope, receive: Receive):
         if self.verifier is None:

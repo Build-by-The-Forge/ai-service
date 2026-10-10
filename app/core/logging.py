@@ -3,6 +3,7 @@ import logging
 import sys
 
 from app.core.config import settings
+from app.core.correlation import get_correlation_id
 
 
 class JsonFormatter(logging.Formatter):
@@ -13,6 +14,9 @@ class JsonFormatter(logging.Formatter):
             "module": record.module,
             "timestamp": self.formatTime(record),
         }
+        correlation_id = get_correlation_id()
+        if correlation_id:
+            log_obj["correlation_id"] = correlation_id
         return json.dumps(log_obj)
 
 

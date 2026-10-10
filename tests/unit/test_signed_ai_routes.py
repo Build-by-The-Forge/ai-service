@@ -243,3 +243,34 @@ async def test_unknown_difficulty_or_type_is_422(app, change):
     path = "/v1/ai/generate-questions"
     response = await post(app, path, raw, signed(path, raw, "ai.questions.generate"))
     assert response.status_code == 422
+
+
+# --- M6: correlation id -------------------------------------------------------------------
+
+
+async def test_the_verified_correlation_id_is_echoed_and_logged(app, caplog):
+    import logging
+
+    from app.core.logging import JsonFormatter
+
+    raw = encode({"message": "hello"})
+    response = await post(app, "/v1/ai/chat", raw, signed("/v1/ai/chat", raw, "ai.use"))
+    assert response.headers["x-correlation-id"] == "corr-test"
+
+    # A log line written while serving carries it too.
+    record = logging.LogRecord("t", logging.INFO, __file__, 1, "inside", None, None)
+    from app.core.correlation import current_correlation_id
+
+    token = current_correlation_id.set("corr-test")
+    try:
+        assert '"correlation_id": "corr-test"' in JsonFormatter().format(record)
+    finally:
+        current_correlation_id.reset(token)
+    assert '"correlation_id"' not in JsonFormatter().format(record)
+
+
+async def test_rejected_requests_carry_no_correlation_header(app):
+    raw = encode({"message": "hello"})
+    response = await post(app, "/v1/ai/chat", raw, {"Content-Type": "application/json"})
+    assert response.status_code == 401
+    assert "x-correlation-id" not in response.headers
