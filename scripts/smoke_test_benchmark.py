@@ -28,7 +28,8 @@ import sys
 # Add app to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.core.documents.metrics import GroundTruthLoader
+# Late import on purpose: it needs the sys.path line above.
+from app.core.documents.metrics import GroundTruthLoader  # noqa: E402
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
