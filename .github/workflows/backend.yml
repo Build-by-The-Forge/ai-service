@@ -126,6 +126,9 @@ jobs:
     name: Docker build
     runs-on: ubuntu-latest
     needs: tests
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -150,3 +153,17 @@ jobs:
       - name: Real OCR in the image with networking disabled
         run: |
           bash scripts/test_offline_ocr_image.sh ai-service:ci
+      # Production runs this exact, tested image (with its verified models),
+      # by immutable tag or digest; it never downloads models at startup.
+      - name: Publish the tested image
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          image="ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]'):sha-${{ github.sha }}"
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          docker tag ai-service:ci "$image"
+          docker push "$image"
+          digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$image")
+          echo "Published $image" >> "$GITHUB_STEP_SUMMARY"
+          echo "Digest: $digest" >> "$GITHUB_STEP_SUMMARY"
