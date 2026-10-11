@@ -56,12 +56,10 @@ class TaskRecordStore(abc.ABC):
         """Store a new record; an existing record for the task is kept."""
 
     @abc.abstractmethod
-    async def get(self, external_task_id: str) -> TaskRecord | None:
-        ...
+    async def get(self, external_task_id: str) -> TaskRecord | None: ...
 
     @abc.abstractmethod
-    async def save(self, record: TaskRecord) -> None:
-        ...
+    async def save(self, record: TaskRecord) -> None: ...
 
     async def update(
         self,

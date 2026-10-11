@@ -181,7 +181,9 @@ class SmokeTestBenchmark:
         # Load ground truth
         gt_data = self.gt_loader.load(gt_key)
         has_gt = gt_data is not None
-        logger.info(f"   Ground truth: {'✅ Found' if has_gt else '❌ Not found (skipping metrics)'}")
+        logger.info(
+            f"   Ground truth: {'✅ Found' if has_gt else '❌ Not found (skipping metrics)'}"
+        )
 
         for page_num in pages:
             self.result.documents_processed += 1

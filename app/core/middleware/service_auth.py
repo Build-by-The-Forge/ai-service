@@ -49,8 +49,7 @@ _REJECTIONS = {
 
 
 class ReplayGuard(Protocol):
-    async def first_use(self, receiver: str, sender: str, request_id: str) -> bool:
-        ...
+    async def first_use(self, receiver: str, sender: str, request_id: str) -> bool: ...
 
 
 class _Rejected(Exception):
