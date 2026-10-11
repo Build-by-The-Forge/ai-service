@@ -5,6 +5,8 @@ import types
 
 import pytest
 
+from app.core.documents.errors import OCRDependencyUnavailableError
+
 from app.api.v1.ai import ocr as ocr_route
 from app.api.v1.ai import read as read_route
 from app.api.v1.ai import retrieve as retrieve_route
@@ -174,5 +176,5 @@ def test_pdf_parser_raises_when_pymupdf_is_missing(monkeypatch):
     monkeypatch.setattr("app.services.ocr.pdf_parser.fitz", None)
 
     parser = PDFParser()
-    with pytest.raises(RuntimeError, match="PyMuPDF is required"):
+    with pytest.raises(OCRDependencyUnavailableError, match="PyMuPDF is not installed"):
         parser.extract_pages("dummy.pdf")

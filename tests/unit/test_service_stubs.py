@@ -2,6 +2,8 @@ from datetime import datetime
 
 import pytest
 
+from app.core.documents.errors import OCRDependencyUnavailableError
+
 from app.core import rate_limit
 from app.core.prompts import SYSTEM_PROMPT as CORE_PROMPT
 from app.services.ai.dependencies import get_ai_orchestrator
@@ -195,5 +197,5 @@ def test_pdf_parser_raises_when_pymupdf_missing(monkeypatch):
     monkeypatch.setattr(pdf_parser_module, "fitz", None)
     parser = PDFParser()
 
-    with pytest.raises(RuntimeError, match="PyMuPDF is required"):
+    with pytest.raises(OCRDependencyUnavailableError, match="PyMuPDF is not installed"):
         parser.extract_pages("missing.pdf")

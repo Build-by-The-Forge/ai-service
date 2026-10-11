@@ -81,3 +81,18 @@ def test_the_import_failure_is_captured_and_logged_at_import(monkeypatch, caplog
         monkeypatch.undo()
         importlib.reload(paddle_module)
     assert paddle_module.PaddleOCR is not None or paddle_module._IMPORT_ERROR is not None
+
+
+def test_a_pymupdf_import_failure_keeps_its_real_cause(monkeypatch):
+    import app.services.ocr.pdf_parser as pdf_parser_module
+
+    cause = OSError("[WinError 126] DLL load failed while importing _fitz")
+    monkeypatch.setattr(pdf_parser_module, "fitz", None)
+    monkeypatch.setattr(pdf_parser_module, "_IMPORT_ERROR", cause)
+
+    with pytest.raises(OCRDependencyUnavailableError) as exc:
+        pdf_parser_module.PDFParser().extract_pages("notes.pdf")
+
+    assert exc.value.missing is False
+    assert "PyMuPDF failed to load: OSError" in str(exc.value)
+    assert exc.value.__cause__ is cause
