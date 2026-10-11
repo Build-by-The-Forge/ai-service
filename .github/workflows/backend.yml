@@ -140,5 +140,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       - name: Build container
+        # OCR models come from the project's GitHub Release mirror
+        # (models/ocr/manifest.json), verified by SHA-256. The job token is a
+        # BuildKit secret, never an image layer.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          docker build .
+          DOCKER_BUILDKIT=1 docker build --secret id=github_token,env=GITHUB_TOKEN -t ai-service:ci .
+      - name: Real OCR in the image with networking disabled
+        run: |
+          bash scripts/test_offline_ocr_image.sh ai-service:ci
