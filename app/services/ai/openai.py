@@ -28,7 +28,9 @@ class OpenAILLM(LLMProvider):
     async def generate_json(self, prompt: str, *, kind: str, **hints: Any) -> dict[str, Any]:
         res = await self.client.chat.completions.create(
             model="gpt-4o-mini",
-            response_format={"type": "json_object"},
+            # JSON mode. The pinned openai client (1.0.0) predates the
+            # response_format parameter, so it travels in the request body.
+            extra_body={"response_format": {"type": "json_object"}},
             messages=[
                 {"role": "system", "content": "You answer with one JSON object only."},
                 {"role": "user", "content": prompt},
