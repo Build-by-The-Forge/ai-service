@@ -8,8 +8,6 @@ Does NOT depend on PaddleOCR or any specific model architecture.
 from __future__ import annotations
 
 import importlib
-import sys
-import types
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -23,25 +21,16 @@ from app.core.documents.openvino_errors import (
     OpenVINOPathValidationError,
 )
 
+# OpenVINO is imported lazily, on first use. This module used to plant an
+# empty fake "openvino" module in sys.modules when the package was absent,
+# which every later importer of OpenVINO would then receive (Phase 2 audit
+# F5). Nothing is injected any more.
 Core: Any | None = None
 __version__ = "unknown"
 
-try:
-    import openvino as _openvino_module  # type: ignore
-except ModuleNotFoundError:
-    _openvino_module = types.ModuleType("openvino")
-    sys.modules.setdefault("openvino", _openvino_module)
-else:
-    sys.modules.setdefault("openvino", _openvino_module)
-
-if not hasattr(sys.modules["openvino"], "Core"):
-    setattr(sys.modules["openvino"], "Core", Core)
-if not hasattr(sys.modules["openvino"], "__version__"):
-    setattr(sys.modules["openvino"], "__version__", __version__)
-
 
 def _resolve_openvino_core() -> Any:
-    """Return the runtime Core class without requiring OpenVINO to be installed."""
+    """Return the runtime Core class, importing OpenVINO on first use."""
     global Core
     if Core is not None:
         return Core
@@ -49,11 +38,20 @@ def _resolve_openvino_core() -> Any:
     try:
         module = importlib.import_module("openvino")
     except ModuleNotFoundError as exc:
-        raise ImportError("OpenVINO is not installed. Install with: pip install openvino") from exc
+        if (exc.name or "").split(".")[0] == "openvino":
+            raise ImportError(
+                "OpenVINO is not installed. Install with: pip install openvino"
+            ) from exc
+        raise ImportError(f"OpenVINO failed to load: {type(exc).__name__}: {exc}") from exc
+    except Exception as exc:  # installed but broken (native library, dependency)
+        raise ImportError(f"OpenVINO failed to load: {type(exc).__name__}: {exc}") from exc
 
-    Core = getattr(module, "Core", None)
-    if Core is None:
-        raise ImportError("OpenVINO is not installed. Install with: pip install openvino")
+    core = getattr(module, "Core", None)
+    if core is None:
+        raise ImportError(
+            f"The installed openvino module ({getattr(module, '__file__', 'unknown location')}) has no Core"
+        )
+    Core = core
     return Core
 
 
