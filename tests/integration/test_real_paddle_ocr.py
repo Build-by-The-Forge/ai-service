@@ -43,9 +43,21 @@ if MISSING and REQUIRE:
 pytestmark = pytest.mark.skipif(MISSING is not None, reason=MISSING or "")
 
 
+LOOPBACK = {"127.0.0.1", "::1", "localhost"}
+
+
+def _host(address) -> str:
+    return str(address[0] if isinstance(address, tuple) else address)
+
+
 @pytest.fixture(autouse=True)
 def no_network(monkeypatch):
-    """With packaged models nothing may reach the network."""
+    """With packaged models nothing may reach the network.
+
+    Name resolution and connections to anything but loopback are refused,
+    which is what a model download needs. Sockets themselves stay creatable:
+    the event loop builds a loopback socket pair for its own use.
+    """
     if not os.environ.get("OCR_MODEL_DIR"):
         yield
         return
@@ -53,12 +65,42 @@ def no_network(monkeypatch):
 
     monkeypatch.setattr(paddle_module.settings, "OCR_MODEL_DIR", os.environ["OCR_MODEL_DIR"])
 
-    def refuse(*args, **kwargs):
-        raise OSError("network access attempted during OCR")
+    real_getaddrinfo = socket.getaddrinfo
+    real_connect = socket.socket.connect
+    real_connect_ex = socket.socket.connect_ex
 
-    monkeypatch.setattr(socket, "socket", refuse)
-    monkeypatch.setattr(socket, "create_connection", refuse)
+    def refuse(what):
+        raise OSError(f"network access attempted during OCR: {what}")
+
+    def getaddrinfo(host, *args, **kwargs):
+        if str(host) not in LOOPBACK:
+            refuse(f"resolve {host}")
+        return real_getaddrinfo(host, *args, **kwargs)
+
+    def connect(self, address):
+        if _host(address) not in LOOPBACK:
+            refuse(f"connect {address}")
+        return real_connect(self, address)
+
+    def connect_ex(self, address):
+        if _host(address) not in LOOPBACK:
+            refuse(f"connect {address}")
+        return real_connect_ex(self, address)
+
+    monkeypatch.setattr(socket, "getaddrinfo", getaddrinfo)
+    monkeypatch.setattr(socket.socket, "connect", connect)
+    monkeypatch.setattr(socket.socket, "connect_ex", connect_ex)
     yield
+
+
+def test_the_network_guard_blocks_a_real_download_attempt():
+    """The guard itself works: an attempt to fetch a model is refused."""
+    if not os.environ.get("OCR_MODEL_DIR"):
+        pytest.skip("the network guard is active only with OCR_MODEL_DIR")
+    import urllib.request
+
+    with pytest.raises(OSError, match="network access attempted during OCR"):
+        urllib.request.urlopen("https://paddleocr.bj.bcebos.com/", timeout=5)
 
 
 def _font():
