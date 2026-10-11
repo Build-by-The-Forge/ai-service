@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "description": "PaddleOCR inference models baked into the AI-service image (Phase 2 Step 2). The only place model versions live. Archives are verified against sha256 and size before extraction.",
+  "mirror": {
+    "type": "github-release",
+    "repository": "Build-by-The-Forge/ai-service",
+    "tag": "ocr-models-2026.10.0"
+  },
+  "models": [
+    {
+      "role": "det",
+      "name": "en_PP-OCRv3_det_infer",
+      "version": "PP-OCRv3",
+      "archive": "en_PP-OCRv3_det_infer.tar",
+      "sha256": "e740eb522521827cc83da3ba33e1c70ccfd9b3cf7d9a24a420ce4ca5ebb8794f",
+      "size": 4003840,
+      "upstream_url": "https://paddleocr.bj.bcebos.com/PP-OCRv3/english/en_PP-OCRv3_det_infer.tar",
+      "license": "Apache-2.0 (PaddleOCR project); model-zoo redistribution terms pending confirmation (R4)",
+      "attribution": "PaddleOCR, Copyright (c) PaddlePaddle Authors"
+    },
+    {
+      "role": "rec",
+      "name": "en_PP-OCRv3_rec_infer",
+      "version": "PP-OCRv3",
+      "archive": "en_PP-OCRv3_rec_infer.tar",
+      "sha256": "94402088520ae3938c51eb8782da1cd7c1bc46d5531766de99f77ee9c2f23343",
+      "size": 9963520,
+      "upstream_url": "https://paddleocr.bj.bcebos.com/PP-OCRv3/english/en_PP-OCRv3_rec_infer.tar",
+      "license": "Apache-2.0 (PaddleOCR project); model-zoo redistribution terms pending confirmation (R4)",
+      "attribution": "PaddleOCR, Copyright (c) PaddlePaddle Authors"
+    },
+    {
+      "role": "cls",
+      "name": "ch_ppocr_mobile_v2.0_cls_infer",
+      "version": "PP-OCR mobile v2.0",
+      "archive": "ch_ppocr_mobile_v2.0_cls_infer.tar",
+      "sha256": "507352585040d035da3b1e6374694ad679a850acb0a36a8d0d47984176357717",
+      "size": 2188800,
+      "upstream_url": "https://paddleocr.bj.bcebos.com/dygraph_v2.0/ch/ch_ppocr_mobile_v2.0_cls_infer.tar",
+      "license": "Apache-2.0 (PaddleOCR project); model-zoo redistribution terms pending confirmation (R4)",
+      "attribution": "PaddleOCR, Copyright (c) PaddlePaddle Authors"
+    }
+  ]
+}

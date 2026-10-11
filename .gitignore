@@ -74,3 +74,6 @@ Thumbs.db
 # Keep model artifacts and ground truth (tracked in git)
 !data/ocr_evaluation/ground_truth/
 !models/ocr/openvino_models/
+
+# OCR model archive cache (scripts/fetch_ocr_models.py); archives are verified, never committed
+models/ocr/archives/
