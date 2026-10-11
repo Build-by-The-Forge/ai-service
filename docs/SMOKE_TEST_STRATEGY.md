@@ -1,5 +1,7 @@
 # OCR Baseline Benchmarking: Strategic Shift to Smoke Test First
 
+> **2026-10-11:** the model files this document refers to (`*_infer/`, `*.tar`, `*.onnx`, `models/ocr/openvino_models/`) were removed from the repository. Models now come only through `models/ocr/manifest.json` and `scripts/fetch_ocr_models.py` (checksum-verified). The OpenVINO IR conversions are no longer tracked; regenerate them from the fetched models for benchmarking.
+
 **Date**: 2026-09-01  
 **Status**: ⏳ Ready for Ground Truth Annotation Phase  
 **Decision Point**: After smoke test succeeds, proceed to corpus expansion

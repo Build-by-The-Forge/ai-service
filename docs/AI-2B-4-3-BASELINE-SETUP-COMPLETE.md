@@ -1,5 +1,7 @@
 # OCR Baseline Benchmarking: Infrastructure Setup Complete
 
+> **2026-10-11:** the model files this document refers to (`*_infer/`, `*.tar`, `*.onnx`, `models/ocr/openvino_models/`) were removed from the repository. Models now come only through `models/ocr/manifest.json` and `scripts/fetch_ocr_models.py` (checksum-verified). The OpenVINO IR conversions are no longer tracked; regenerate them from the fetched models for benchmarking.
+
 **Status**: ✅ Phase 1 Complete — Ready for Ground Truth Population  
 **Date**: 2026-09-01  
 **Next Action**: Populate ground truth JSON files for all 7 documents  
