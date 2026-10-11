@@ -1,29 +1,64 @@
-"""Real PaddleOCR execution on a valid image (Phase 2 Step 1).
+"""Real PaddleOCR execution on a valid image (Phase 2 Steps 1–2).
 
-The engine reads text rendered into a PNG and must return it. Runs only where
-paddleocr and its English PP-OCRv3 models are already present (it never
-triggers a download); otherwise it skips and says why.
+The engine reads text rendered into a PNG and must return it.
+
+Models: from OCR_MODEL_DIR when set (the verified install the image ships);
+then every socket is blocked, so a hidden download fails the test. Without
+OCR_MODEL_DIR the paddleocr cache is used if it is already populated. The
+test never downloads; it skips and says why, unless OCR_TEST_REQUIRE_MODELS=1
+(the offline container gate), which turns a skip into a failure.
 """
 
 import importlib.util
+import os
+import socket
 from pathlib import Path
 
 import pytest
 
-PADDLE_MODELS = Path.home() / ".paddleocr" / "whl"
+PADDLE_CACHE = Path.home() / ".paddleocr" / "whl"
 LINES = ["Photosynthesis converts light energy", "Question 3. What is osmosis?"]
+REQUIRE = os.environ.get("OCR_TEST_REQUIRE_MODELS") == "1"
 
 
-def _skip_reason() -> str | None:
+def _missing() -> str | None:
     if importlib.util.find_spec("paddleocr") is None:
         return "paddleocr is not installed"
+    model_dir = os.environ.get("OCR_MODEL_DIR")
+    if model_dir:
+        return (
+            None
+            if (Path(model_dir) / "installed.json").is_file()
+            else f"no installed models in {model_dir}"
+        )
     for part in ("det/en", "rec/en"):
-        if not any((PADDLE_MODELS / part).glob("*PP-OCRv3*")):
-            return f"PaddleOCR {part} PP-OCRv3 model is not present in {PADDLE_MODELS} (no download in tests)"
+        if not any((PADDLE_CACHE / part).glob("*PP-OCRv3*")):
+            return f"PaddleOCR {part} PP-OCRv3 model is not present in {PADDLE_CACHE} (no download in tests)"
     return None
 
 
-pytestmark = pytest.mark.skipif(_skip_reason() is not None, reason=_skip_reason() or "")
+MISSING = _missing()
+if MISSING and REQUIRE:
+    pytest.fail(f"OCR_TEST_REQUIRE_MODELS=1 but {MISSING}", pytrace=False)
+pytestmark = pytest.mark.skipif(MISSING is not None, reason=MISSING or "")
+
+
+@pytest.fixture(autouse=True)
+def no_network(monkeypatch):
+    """With packaged models nothing may reach the network."""
+    if not os.environ.get("OCR_MODEL_DIR"):
+        yield
+        return
+    import app.services.ocr.paddle as paddle_module
+
+    monkeypatch.setattr(paddle_module.settings, "OCR_MODEL_DIR", os.environ["OCR_MODEL_DIR"])
+
+    def refuse(*args, **kwargs):
+        raise OSError("network access attempted during OCR")
+
+    monkeypatch.setattr(socket, "socket", refuse)
+    monkeypatch.setattr(socket, "create_connection", refuse)
+    yield
 
 
 def _font():

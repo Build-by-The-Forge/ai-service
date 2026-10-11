@@ -1,6 +1,8 @@
+import json
 import logging
 from pathlib import Path
 
+from app.core.config import STRICT_ENVIRONMENTS, settings
 from app.core.documents.errors import OCRDependencyUnavailableError
 from app.services.ocr.base import OCRProvider
 
@@ -35,8 +37,11 @@ class PaddleOCRService(OCRProvider):
             self.model = PaddleOCR(
                 lang="en",
                 ocr_version="PP-OCRv3",
+                **model_directories(settings.OCR_MODEL_DIR),
             )
-        except Exception as exc:  # model download/load, native runtime
+        except OCRDependencyUnavailableError:
+            raise
+        except Exception as exc:  # model load, native runtime
             raise OCRDependencyUnavailableError("PaddleOCR model (en, PP-OCRv3)", exc) from exc
 
     async def extract_text_from_image(self, image_path: str) -> list[dict]:
@@ -76,3 +81,44 @@ class PaddleOCRService(OCRProvider):
                 )
 
         return extracted
+
+
+MODEL_FILES = ("inference.pdmodel", "inference.pdiparams", "inference.pdiparams.info")
+ROLES = {"det": "det_model_dir", "rec": "rec_model_dir", "cls": "cls_model_dir"}
+
+
+def model_directories(model_dir: str | None) -> dict[str, str]:
+    """PaddleOCR model directory arguments for the verified models installed by
+    scripts/fetch_ocr_models.py (Phase 2 Step 2).
+
+    With all three directories given and complete, paddleocr performs no
+    download. Without OCR_MODEL_DIR, staging/production refuse; development
+    and testing fall back to paddleocr's own cache, loudly.
+    """
+    if not model_dir:
+        if settings.APP_ENVIRONMENT in STRICT_ENVIRONMENTS:
+            cause = FileNotFoundError("OCR_MODEL_DIR is not set")
+            raise OCRDependencyUnavailableError(
+                "PaddleOCR models (OCR_MODEL_DIR is required; models are never downloaded at runtime)",
+                cause,
+            ) from cause
+        logger.warning("OCR_MODEL_DIR is not set: paddleocr may download models into its cache")
+        return {}
+
+    root = Path(model_dir)
+    record = root / "installed.json"
+    try:
+        installed = json.loads(record.read_text(encoding="utf-8"))["models"]
+        directories = {arg: root / role / installed[role]["name"] for role, arg in ROLES.items()}
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise OCRDependencyUnavailableError(
+            f"PaddleOCR models in {root} ({record.name} unreadable)", exc
+        ) from exc
+
+    for directory in directories.values():
+        for name in MODEL_FILES:
+            path = directory / name
+            if not path.is_file():
+                cause = FileNotFoundError(f"missing model file {path}")
+                raise OCRDependencyUnavailableError(f"PaddleOCR models in {root}", cause) from cause
+    return {arg: str(directory) for arg, directory in directories.items()}

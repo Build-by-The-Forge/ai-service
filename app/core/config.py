@@ -66,6 +66,11 @@ class Settings(BaseSettings):
     # as the two-service boundary suite; it is refused in staging/production.
     MODEL_PROVIDER: Literal["openai", "deterministic"] = "openai"
 
+    # Directory of the verified OCR models installed by
+    # scripts/fetch_ocr_models.py (the image sets it). Required wherever OCR
+    # runs in staging/production: models are never downloaded at runtime.
+    OCR_MODEL_DIR: str | None = None
+
     VECTOR_DB_TYPE: str = "faiss"
 
     REDIS_URL: str = "redis://localhost:6379"
