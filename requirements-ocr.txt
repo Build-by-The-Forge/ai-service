@@ -18,6 +18,9 @@
 paddlepaddle==2.6.2
 opencv-python-headless==4.6.0.66
 Pillow==10.4.0
+# Native PDF text (services/ocr/pdf_parser.py). 1.28.0 has CPython 3.12
+# abi3 wheels for Linux and Windows and no dependencies.
+PyMuPDF==1.28.0
 numpy==1.26.4
 protobuf==3.20.2
 setuptools==75.6.0

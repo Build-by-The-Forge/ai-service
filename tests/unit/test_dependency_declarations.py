@@ -63,3 +63,12 @@ def test_opencv_pin_satisfies_paddleocr():
     versions = {v for _, v in requirement_pins()["opencv-python-headless"]}
     versions |= {v for _, n, v in pyproject_pins() if n == "opencv-python-headless"}
     assert versions == {"4.6.0.66"}
+
+
+def test_pymupdf_is_one_version_everywhere_and_installed_in_the_image():
+    in_requirements = requirement_pins()["pymupdf"]
+    assert [f for f, _ in in_requirements] == ["requirements-ocr.txt"]  # the image installs it
+    versions = {v for _, v in in_requirements} | {
+        v for _, n, v in pyproject_pins() if n == "pymupdf"
+    }
+    assert versions == {"1.28.0"}
