@@ -1,7 +1,8 @@
 """MemoryService against real PostgreSQL (M5 design §3 memory semantics).
 
-Needs DATABASE_URL pointing at a database migrated with `alembic upgrade
-head` (the upsert relies on the unique key from a7c2e5d10b41).
+Needs DATABASE_URL pointing at PostgreSQL. The fixture creates the AI-owned
+tables if they are missing; the model carries the unique key that migration
+a7c2e5d10b41 adds, which the upsert relies on.
 """
 
 import asyncio
@@ -11,7 +12,7 @@ import uuid
 import pytest
 
 from app.core import tenant
-from app.db.session import get_async_session_local, reset_engine
+from app.db.session import get_async_session_local, initialize_database, reset_engine
 from app.services.memory.memory_service import MemoryService
 
 pytestmark = pytest.mark.skipif(
@@ -21,6 +22,9 @@ pytestmark = pytest.mark.skipif(
 
 @pytest.fixture
 async def scope():
+    # The AI-owned tables, including the unique key the upsert needs, whether
+    # or not this database was migrated (CI's ci.yml job does not run Alembic).
+    await initialize_database()
     yield str(uuid.uuid4()), str(uuid.uuid4())
     await reset_engine()
 
