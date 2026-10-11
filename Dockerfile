@@ -72,14 +72,14 @@ RUN chmod -R a-w /opt/build-ai/models
 # PaddleOCR loads only these verified models; nothing is downloaded at runtime.
 ENV OCR_MODEL_DIR=/opt/build-ai/models/paddleocr
 
-# Only what the service needs: no development model files, evaluation data,
-# local caches or build leftovers from the working tree.
-COPY pyproject.toml alembic.ini ./
+# Only what the service needs: no tests or test tooling, development model
+# files, evaluation data, local caches or build leftovers from the working
+# tree. scripts/ carries the runtime-only offline OCR check.
+COPY alembic.ini ./
 COPY alembic ./alembic
 COPY app ./app
 COPY docker ./docker
 COPY scripts ./scripts
-COPY tests ./tests
 COPY models/ocr/manifest.json ./models/ocr/manifest.json
 
 RUN chmod +x docker/entrypoint.sh
