@@ -9,7 +9,11 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+# What the production image installs.
 REQUIREMENT_FILES = ["requirements.txt", "requirements-ocr.txt", "requirements-ocr-nodeps.txt"]
+# Test and quality tools: CI and development only, never the image.
+DEV_FILE = "requirements-dev.txt"
+DEV_TOOLS = {"pytest", "pytest-asyncio", "pytest-cov", "black", "ruff", "mypy", "pre-commit"}
 # Installed on demand, never into the image.
 BENCHMARK_FILE = "requirements-ocr-benchmark.txt"
 OPENCV_DISTRIBUTIONS = {
@@ -79,8 +83,9 @@ def test_pymupdf_is_one_version_everywhere_and_installed_in_the_image():
 def test_every_pyproject_pin_agrees_with_the_requirements_files():
     image = requirement_pins()
     benchmark = requirement_pins([BENCHMARK_FILE])
+    dev = requirement_pins([DEV_FILE])
     for group, name, version in pyproject_pins():
-        source = benchmark if group == "ocr-benchmark" else image
+        source = {"ocr-benchmark": benchmark, "dev": dev}.get(group, image)
         assert name in source, f"{group}: {name} is not pinned in the requirements files"
         assert {v for _, v in source[name]} == {version}, (group, name, version, source[name])
 
@@ -95,3 +100,15 @@ def test_openvino_is_benchmark_only():
     assert [(g, n) for g, n, _ in pyproject_pins() if n == "openvino"] == [
         ("ocr-benchmark", "openvino")
     ]
+
+
+def test_no_development_tool_ships_in_the_image():
+    image = requirement_pins()
+    shipped = {name for name in image if name in DEV_TOOLS or name.startswith("types-")}
+    assert shipped == set(), shipped
+
+
+def test_the_dev_set_builds_on_the_runtime_set():
+    lines = (ROOT / DEV_FILE).read_text(encoding="utf-8").splitlines()
+    assert "-r requirements.txt" in [line.strip() for line in lines]
+    assert DEV_TOOLS <= set(requirement_pins([DEV_FILE]))

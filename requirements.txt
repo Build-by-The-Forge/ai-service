@@ -1,7 +1,7 @@
 # ============================================================
-# BUILD AI Service — Application Runtime Dependencies
-# Keep this file for the general app stack; OCR runtime is isolated
-# in requirements-ocr.txt for the PP-OCRv3 baseline proof.
+# BUILD AI Service — application RUNTIME dependencies only.
+# The production image installs this file and the OCR files; test and
+# quality tools live in requirements-dev.txt and never ship.
 # ============================================================
 
 # Core Framework & Server
@@ -34,16 +34,3 @@ httpx==0.27.2
 # Observability / Rate Limiting
 prometheus-fastapi-instrumentator==8.1.0
 slowapi==0.1.9
-
-# Development / Testing
-pytest==9.0.3
-pytest-asyncio==1.3.0
-pytest-cov==7.0.0
-black==26.3.1
-ruff==0.1.8
-mypy==1.7.1
-pre-commit==4.5.0
-
-# Type Definitions
-types-pyasn1==0.6.0.20260408
-types-redis==4.6.0.20241004

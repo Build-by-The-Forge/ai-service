@@ -46,7 +46,7 @@ The signed context carries the tenant, the user and the one permission the backe
 
 ```bash
 cp .env.example .env            # or set variables in the environment
-pip install -r requirements.txt
+pip install -r requirements-dev.txt
 alembic upgrade head            # AI-owned tables only: learning_memory, session_memory
 uvicorn app.main:app --reload   # API
 python -m app.worker            # task worker (separate process)

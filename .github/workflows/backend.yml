@@ -26,11 +26,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
       - name: Run pre-commit
         run: |
           python -m pre_commit run --all-files
@@ -52,11 +52,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt bandit pip-audit
+          pip install -r requirements-dev.txt bandit pip-audit
       - name: Pip audit
         run: |
           python -m pip_audit --progress=off
@@ -100,11 +100,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
       - name: Wait for dependent services
         run: |
           python scripts/wait_for_services.py
@@ -139,11 +139,11 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: ${{ env.PIP_CACHE_DIR }}
-          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('requirements.txt', 'requirements-dev.txt') }}
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-dev.txt
       - name: Build container
         # OCR models come from the project's GitHub Release mirror
         # (models/ocr/manifest.json), verified by SHA-256. The job token is a
