@@ -8,7 +8,9 @@ anything but loopback are refused for the whole run, so a hidden model
 download fails the check. Exit status 0 only if:
   - the verified models load,
   - real OCR reads back a rendered page exactly (confidence >= 0.8),
-  - a blank page yields no text, and
+  - a blank page yields no text,
+  - malformed and oversized images are refused with OCRExtractionError
+    before the engine decodes them, and
   - a download attempt is refused by the guard.
 
 Needs no pytest: the production image ships no test tooling.
@@ -19,8 +21,10 @@ from __future__ import annotations
 import asyncio
 import os
 import socket
+import struct
 import sys
 import tempfile
+import zlib
 from pathlib import Path
 
 LINES = ["Photosynthesis converts light energy", "Question 3. What is osmosis?"]
@@ -76,6 +80,48 @@ def render(path: Path, lines: list[str]) -> None:
     image.save(path)
 
 
+def png_header_only(width: int, height: int) -> bytes:
+    """A PNG that claims width x height but holds no pixel data."""
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        body = kind + data
+        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
+
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 0, 0, 0, 0)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", zlib.compress(b""))
+        + chunk(b"IEND", b"")
+    )
+
+
+def malformed_failures(service, tmp: Path, page: Path) -> list[str]:
+    from app.core.documents.errors import OCRExtractionError
+
+    data = page.read_bytes()
+    cases = {
+        "zero-bytes.png": b"",
+        "random.png": os.urandom(4096),
+        "truncated.png": data[: len(data) // 2],
+        "bomb-30000x30000.png": png_header_only(30000, 30000),
+        "bomb-5000x5000.png": png_header_only(5000, 5000),
+    }
+    failures = []
+    for name, content in cases.items():
+        path = tmp / name
+        path.write_bytes(content)
+        try:
+            result = asyncio.run(service.extract_text_from_image(str(path)))
+            failures.append(f"{name} was accepted: {result!r}")
+        except OCRExtractionError as exc:
+            if "bomb" in name and "pixel limit" not in str(exc):
+                failures.append(f"{name} refused for the wrong reason: {exc}")
+        except Exception as exc:
+            failures.append(f"{name} raised {type(exc).__name__}, not OCRExtractionError: {exc}")
+    return failures
+
+
 def main() -> int:
     if not os.environ.get("OCR_MODEL_DIR"):
         print("FAIL: OCR_MODEL_DIR is not set")
@@ -102,9 +148,9 @@ def main() -> int:
         render(blank, [])
         lines = asyncio.run(service.extract_text_from_image(str(page)))
         empty = asyncio.run(service.extract_text_from_image(str(blank)))
+        failures = malformed_failures(service, Path(tmp), page)
 
     texts = [line["text"].strip() for line in lines]
-    failures = []
     if [t.lower() for t in texts] != [t.lower() for t in LINES]:
         failures.append(f"read {texts!r}, expected {LINES!r}")
     if not all(line["confidence"] >= 0.8 for line in lines):
@@ -116,6 +162,7 @@ def main() -> int:
     if failures:
         return 1
     print(f"OK: offline OCR read {len(texts)} lines from {os.environ['OCR_MODEL_DIR']}: {texts}")
+    print("OK: malformed and oversized images refused with OCRExtractionError")
     return 0
 
 
