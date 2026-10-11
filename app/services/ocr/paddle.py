@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 from app.core.documents.errors import OCRDependencyUnavailableError
 from app.services.ocr.base import OCRProvider
@@ -50,6 +51,9 @@ class PaddleOCRService(OCRProvider):
         """
         if self.model is None:
             raise RuntimeError("PaddleOCR model not initialized")
+        if not Path(image_path).is_file():
+            # Checked here, not left to the engine's own error deep inside it.
+            raise FileNotFoundError(f"OCR input image not found: {image_path}")
 
         # Run OCR on image
         # result is a list of lists: [[text, score], [bbox], ...]
