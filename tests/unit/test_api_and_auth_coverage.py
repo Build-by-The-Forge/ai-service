@@ -135,17 +135,30 @@ async def test_tree_generate_route_returns_api_response():
     assert response.data.children[0].title == "topic1"
 
 
-def test_setup_metrics_handles_missing_package():
-    # Provide a minimal dummy app object so instrumentation can attach safely
-    class DummyApp:
-        def add_middleware(self, *args, **kwargs):
-            return None
+def test_setup_metrics_is_a_no_op_without_the_package(monkeypatch):
+    import builtins
 
-        def get(self, endpoint, include_in_schema=True, tags=None, **kwargs):
-            # Return a decorator that accepts a function and returns it unchanged
-            def decorator(func):
-                return func
+    from fastapi import FastAPI
 
-            return decorator
+    real_import = builtins.__import__
 
-    core_metrics.setup_metrics(app=DummyApp())
+    def without_instrumentator(name, *args, **kwargs):
+        if name == "prometheus_fastapi_instrumentator":
+            raise ImportError(name)
+        return real_import(name, *args, **kwargs)
+
+    app = FastAPI()
+    monkeypatch.setattr(builtins, "__import__", without_instrumentator)
+    core_metrics.setup_metrics(app)
+    assert all(getattr(route, "path", None) != "/metrics" for route in app.routes)
+
+
+def test_setup_metrics_exposes_prometheus_metrics_on_a_real_app():
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+
+    app = FastAPI()
+    core_metrics.setup_metrics(app)
+    response = TestClient(app).get("/metrics")
+    assert response.status_code == 200
+    assert "# HELP" in response.text
