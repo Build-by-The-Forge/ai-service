@@ -48,7 +48,7 @@ print('cv2', cv2.__version__, '| PyMuPDF', fitz.VersionBind, '| paddle', paddle.
 # (--secret id=github_token,...); it never reaches an image layer.
 FROM python:3.12-slim AS ocr-models
 ARG OCR_MODEL_SOURCE=mirror
-COPY models/ocr/manifest.json scripts/fetch_ocr_models.py /build/
+COPY models/ocr/manifest.json models/ocr/NOTICE.md scripts/fetch_ocr_models.py /build/
 RUN --mount=type=bind,source=models/ocr,target=/context-models \
     --mount=type=secret,id=github_token,required=false \
     mkdir -p /tmp/archives \
@@ -59,7 +59,7 @@ RUN --mount=type=bind,source=models/ocr,target=/context-models \
         --source "$OCR_MODEL_SOURCE" \
         --token-file /run/secrets/github_token \
         --dest /opt/build-ai/models/paddleocr \
-    && cp /build/manifest.json /opt/build-ai/models/paddleocr/manifest.json \
+    && cp /build/manifest.json /build/NOTICE.md /opt/build-ai/models/paddleocr/ \
     && rm -rf /tmp/archives
 
 
