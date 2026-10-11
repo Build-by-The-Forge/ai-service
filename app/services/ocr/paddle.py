@@ -1,23 +1,42 @@
+import logging
+
+from app.core.documents.errors import OCRDependencyUnavailableError
 from app.services.ocr.base import OCRProvider
 
+logger = logging.getLogger(__name__)
+
+# The import failure is kept, not replaced: paddleocr loads a large native
+# stack, and "not installed" was hiding failures that happen *inside* an
+# installed package (Phase 2 audit F5).
+_IMPORT_ERROR: BaseException | None = None
 try:
     from paddleocr import PaddleOCR
-except ImportError:
+except Exception as exc:  # any failure, not only ImportError
     PaddleOCR = None
+    _IMPORT_ERROR = exc
+    logger.warning("paddleocr import failed: %s: %s", type(exc).__name__, exc, exc_info=exc)
 
 
 class PaddleOCRService(OCRProvider):
     def __init__(self):
         """Initialize PaddleOCR for real OCR processing."""
         if PaddleOCR is None:
-            raise RuntimeError("PaddleOCR is not installed. Install with: pip install paddleocr")
+            cause = _IMPORT_ERROR or ModuleNotFoundError(
+                "No module named 'paddleocr'", name="paddleocr"
+            )
+            raise OCRDependencyUnavailableError(
+                "paddleocr", cause, install_hint="pip install paddleocr", module="paddleocr"
+            ) from cause
 
         # Use the actual installed PaddleOCR API signature.
         # The library exposes 'lang' and 'ocr_version'; it does not accept use_gpu.
-        self.model = PaddleOCR(
-            lang="en",
-            ocr_version="PP-OCRv3",
-        )
+        try:
+            self.model = PaddleOCR(
+                lang="en",
+                ocr_version="PP-OCRv3",
+            )
+        except Exception as exc:  # model download/load, native runtime
+            raise OCRDependencyUnavailableError("PaddleOCR model (en, PP-OCRv3)", exc) from exc
 
     async def extract_text_from_image(self, image_path: str) -> list[dict]:
         """
