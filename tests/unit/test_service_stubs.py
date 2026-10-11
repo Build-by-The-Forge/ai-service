@@ -201,6 +201,10 @@ async def test_paddle_ocr_service_normalizes_engine_output(monkeypatch, tmp_path
     import app.services.ocr.paddle as paddle_module
 
     monkeypatch.setattr(paddle_module, "PaddleOCR", FakePaddleEngine)
+    # Input validation needs Pillow and has its own tests
+    # (test_ocr_image_validation.py); here it is recorded, not run.
+    validated: list[str] = []
+    monkeypatch.setattr(paddle_module, "validate_image", validated.append)
     image = tmp_path / "page.png"
     image.write_bytes(b"fake image bytes; the fake engine never decodes them")
 
@@ -208,6 +212,7 @@ async def test_paddle_ocr_service_normalizes_engine_output(monkeypatch, tmp_path
     paddle_data = await paddle.extract_text_from_image(str(image))
 
     assert paddle.model.kwargs == {"lang": "en", "ocr_version": "PP-OCRv3"}
+    assert validated == [str(image)]
     assert paddle.model.calls == [str(image)]
     assert paddle_data == [
         {

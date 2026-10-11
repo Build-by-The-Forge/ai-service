@@ -3,7 +3,8 @@ import logging
 from pathlib import Path
 
 from app.core.config import STRICT_ENVIRONMENTS, settings
-from app.core.documents.errors import OCRDependencyUnavailableError
+from app.core.documents.config import OCRConfig
+from app.core.documents.errors import OCRDependencyUnavailableError, OCRExtractionError
 from app.services.ocr.base import OCRProvider
 
 logger = logging.getLogger(__name__)
@@ -59,10 +60,14 @@ class PaddleOCRService(OCRProvider):
         if not Path(image_path).is_file():
             # Checked here, not left to the engine's own error deep inside it.
             raise FileNotFoundError(f"OCR input image not found: {image_path}")
+        validate_image(image_path)
 
         # Run OCR on image
         # result is a list of lists: [[text, score], [bbox], ...]
-        result = self.model.ocr(image_path, cls=True)
+        try:
+            result = self.model.ocr(image_path, cls=True)
+        except Exception as exc:  # native decoder/runtime; the cause is kept
+            raise OCRExtractionError(f"{type(exc).__name__}: {exc}") from exc
 
         if not result or not result[0]:
             return []
@@ -81,6 +86,45 @@ class PaddleOCRService(OCRProvider):
                 )
 
         return extracted
+
+
+# Decoders Pillow may use for OCR input; the content decides, not the
+# file name. Anything else is rejected before it reaches a decoder.
+ALLOWED_IMAGE_FORMATS = ("PNG", "JPEG", "TIFF", "WEBP")
+
+
+def validate_image(image_path: str, max_pixels: int | None = None) -> None:
+    """Reject OCR input that is not a complete image of an allowed format and
+    size, with OCRExtractionError, before the OCR engine decodes it.
+
+    The pixel limit is checked from the header, before any decoding, so an
+    oversized image (a decompression bomb) is refused without allocating it.
+    """
+    try:
+        from PIL import Image
+    except Exception as exc:  # absent, or failing inside the package
+        raise OCRDependencyUnavailableError(
+            "Pillow", exc, install_hint="pip install Pillow", module="PIL"
+        ) from exc
+
+    limit = OCRConfig().max_image_pixels if max_pixels is None else max_pixels
+    try:
+        with Image.open(image_path, formats=ALLOWED_IMAGE_FORMATS) as image:
+            width, height = image.size
+            if width * height > limit:
+                raise OCRExtractionError(
+                    f"image is {width}x{height} ({width * height} pixels), "
+                    f"over the {limit} pixel limit"
+                )
+            image.load()  # full decode: truncated or corrupt data fails here
+    except OCRExtractionError:
+        raise
+    except Image.DecompressionBombError as exc:  # Pillow's own, far larger, limit
+        raise OCRExtractionError(f"image is over the {limit} pixel limit: {exc}") from exc
+    except Exception as exc:  # unidentified, truncated, corrupt
+        raise OCRExtractionError(
+            f"not a valid {'/'.join(ALLOWED_IMAGE_FORMATS)} image: {type(exc).__name__}: {exc}"
+        ) from exc
 
 
 MODEL_FILES = ("inference.pdmodel", "inference.pdiparams", "inference.pdiparams.info")

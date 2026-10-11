@@ -96,3 +96,16 @@ def test_a_pymupdf_import_failure_keeps_its_real_cause(monkeypatch):
     assert exc.value.missing is False
     assert "PyMuPDF failed to load: OSError" in str(exc.value)
     assert exc.value.__cause__ is cause
+
+
+def test_a_missing_pillow_is_typed_before_the_engine_runs(monkeypatch, tmp_path):
+    monkeypatch.setitem(sys.modules, "PIL", None)  # makes `from PIL import Image` raise
+    image = tmp_path / "page.png"
+    image.write_bytes(b"never decoded")
+
+    with pytest.raises(OCRDependencyUnavailableError) as exc:
+        paddle_module.validate_image(str(image))
+
+    assert exc.value.missing is True
+    assert "Pillow is not installed (pip install Pillow)" in str(exc.value)
+    assert isinstance(exc.value.__cause__, ModuleNotFoundError)
