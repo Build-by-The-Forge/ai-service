@@ -1,0 +1,15 @@
+# Advisories accepted in the AI-service image, checked by
+# scripts/audit_image_packages.py (CI "docker" job). One per line:
+#
+#   <advisory id> <package>  # reason
+#
+# Every entry needs a written assessment in
+# docs/phase2-ocr-stack-security.md. The audit fails on any advisory not
+# listed here, and on any entry here that no longer matches.
+
+# CVE-2026-31235: pickle deserialisation in imgaug.multicore's
+# BackgroundAugmenter. No fixed release exists. paddleocr 2.7 imports
+# imgaug unconditionally (training-time augmentation), but nothing in the
+# image references BackgroundAugmenter, and imgaug.multicore is not even
+# imported during real OCR.
+PYSEC-2026-356 imgaug

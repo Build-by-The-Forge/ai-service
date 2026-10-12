@@ -155,6 +155,14 @@ jobs:
       - name: Real OCR in the image with networking disabled
         run: |
           bash scripts/test_offline_ocr_image.sh ai-service:ci
+      # The security job audits the development environment, which has no
+      # OCR stack. This audits exactly what the image installs; accepted
+      # advisories are listed, with reasons, in
+      # security/accepted-image-advisories.txt.
+      - name: Audit the packages in the image
+        run: |
+          pip install pip-audit==2.10.1
+          python scripts/audit_image_packages.py ai-service:ci
       # Production runs this exact, tested image (with its verified models),
       # by immutable tag or digest; it never downloads models at startup.
       - name: Publish the tested image
