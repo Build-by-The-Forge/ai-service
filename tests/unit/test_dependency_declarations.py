@@ -64,11 +64,15 @@ def test_only_the_headless_opencv_is_declared_anywhere():
     assert declared == {"opencv-python-headless"}, declared
 
 
-def test_opencv_pin_satisfies_paddleocr():
-    # paddleocr 2.7 declares opencv-contrib-python<=4.6.0.66.
+def test_opencv_pin_is_the_reviewed_release_for_numpy_1():
+    # paddleocr 2.7 declares opencv<=4.6.0.66, which bundles a vulnerable
+    # libwebp. 4.11.0.86 is the reviewed exception: the newest release that
+    # accepts numpy 1.x (paddlepaddle 2.6), with identical OCR output. A
+    # different version needs the same review, not just a new number here.
     versions = {v for _, v in requirement_pins()["opencv-python-headless"]}
     versions |= {v for _, n, v in pyproject_pins() if n == "opencv-python-headless"}
-    assert versions == {"4.6.0.66"}
+    assert versions == {"4.11.0.86"}
+    assert {v for _, v in requirement_pins()["numpy"]} == {"1.26.4"}
 
 
 def test_pymupdf_is_one_version_everywhere_and_installed_in_the_image():

@@ -16,7 +16,12 @@
 # doesn't have. --no-deps plus exact pins avoids both.
 
 paddlepaddle==2.6.2
-opencv-python-headless==4.6.0.66
+# Deliberately above paddleocr 2.7's declared cap (<=4.6.0.66, not enforced
+# under --no-deps): 4.6.0.66 bundles a vulnerable libwebp (PYSEC-2023-184).
+# 4.11.0.86 is the newest release that accepts numpy 1.x, which
+# paddlepaddle 2.6 needs; 4.12+ require numpy>=2. Real OCR output on the
+# evaluation corpus is identical to 4.6.0.66 (OCR-stack security step).
+opencv-python-headless==4.11.0.86
 Pillow==12.3.0
 # Native PDF text (services/ocr/pdf_parser.py). 1.28.0 has CPython 3.12
 # abi3 wheels for Linux and Windows and no dependencies.
