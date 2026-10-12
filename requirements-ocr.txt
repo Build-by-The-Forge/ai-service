@@ -15,12 +15,21 @@
 # build below and reintroduces a libGL.so.1 dependency the slim image
 # doesn't have. --no-deps plus exact pins avoids both.
 
-paddlepaddle==2.6.2
+# 2.6.2 is affected by PYSEC-2026-1754 and PYSEC-2026-1756 (fixed in 3.0).
+# The image (Linux) runs 3.3.1: real OCR output on the evaluation corpus is
+# identical to 2.6.2. Windows development installs keep 2.6.2 for now:
+# Windows App Control on the development machine blocks paddle 3's native
+# library. Remove the markers once Windows can load it.
+paddlepaddle==3.3.1; sys_platform != "win32"
+paddlepaddle==2.6.2; sys_platform == "win32"
+# paddlepaddle 3.3 dependency (weights format; no advisories).
+safetensors==0.8.0; sys_platform != "win32"
 # Deliberately above paddleocr 2.7's declared cap (<=4.6.0.66, not enforced
 # under --no-deps): 4.6.0.66 bundles a vulnerable libwebp (PYSEC-2023-184).
-# 4.11.0.86 is the newest release that accepts numpy 1.x, which
-# paddlepaddle 2.6 needs; 4.12+ require numpy>=2. Real OCR output on the
-# evaluation corpus is identical to 4.6.0.66 (OCR-stack security step).
+# 4.11.0.86 is the newest release that accepts numpy 1.x, which this stack
+# is built against (scipy 1.11, and paddlepaddle 2.6 on Windows); 4.12+
+# require numpy>=2. Real OCR output on the evaluation corpus is identical
+# to 4.6.0.66 (OCR-stack security step).
 opencv-python-headless==4.11.0.86
 Pillow==12.3.0
 # Native PDF text (services/ocr/pdf_parser.py). 1.28.0 has CPython 3.12
@@ -29,9 +38,9 @@ PyMuPDF==1.28.0
 numpy==1.26.4
 # 3.20.2 is affected by PYSEC-2026-1805 and PYSEC-2026-1806; 5.29.6 is the
 # smallest upgrade that clears both, and switches to the compiled upb
-# backend. paddlepaddle 2.6 accepts it on Linux (the image), where real OCR
-# output on the evaluation corpus is identical to 3.20.2. On Windows it
-# declares protobuf<=3.20.2, so local Windows installs keep that.
+# backend. Real OCR output on the evaluation corpus is identical to 3.20.2
+# in the image. paddlepaddle 2.6 (Windows, above) declares
+# protobuf<=3.20.2 there, so Windows keeps 3.20.2.
 protobuf==5.29.6; sys_platform != "win32"
 protobuf==3.20.2; sys_platform == "win32"
 # paddle imports setuptools at load time, so it ships. 83.0.0 clears

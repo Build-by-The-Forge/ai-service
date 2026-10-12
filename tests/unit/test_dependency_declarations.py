@@ -30,11 +30,16 @@ def normalize(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
-def parse_pin(line: str) -> tuple[str, str] | None:
-    line = line.split("#", 1)[0].strip()
-    if not line or line.startswith("-"):
+def parse_pin(line: str, platform: str = "linux") -> tuple[str, str] | None:
+    # A line whose environment marker excludes `platform` is skipped; the
+    # default is the image's platform.
+    requirement, _, marker = line.split("#", 1)[0].partition(";")
+    requirement = requirement.strip()
+    if not requirement or requirement.startswith("-"):
         return None
-    match = re.fullmatch(r"([A-Za-z0-9_.\-]+)(\[[^\]]*\])?\s*==\s*([^\s;]+)", line)
+    if marker.strip() and not Marker(marker).evaluate({"sys_platform": platform}):
+        return None
+    match = re.fullmatch(r"([A-Za-z0-9_.\-]+)(\[[^\]]*\])?\s*==\s*(\S+)", requirement)
     assert match, f"every requirement must be an exact pin: {line!r}"
     return normalize(match.group(1)), match.group(3)
 
@@ -42,27 +47,22 @@ def parse_pin(line: str) -> tuple[str, str] | None:
 def requirement_pins(
     files: list[str] | None = None, platform: str = "linux"
 ) -> dict[str, list[tuple[str, str]]]:
-    # Lines whose environment marker excludes `platform` are skipped; the
-    # default is the image's platform.
     pins: dict[str, list[tuple[str, str]]] = {}
     for file in files or REQUIREMENT_FILES:
         for line in (ROOT / file).read_text(encoding="utf-8").splitlines():
-            requirement, _, marker = line.split("#", 1)[0].partition(";")
-            if marker.strip() and not Marker(marker).evaluate({"sys_platform": platform}):
-                continue
-            pin = parse_pin(requirement)
+            pin = parse_pin(line, platform)
             if pin:
                 pins.setdefault(pin[0], []).append((file, pin[1]))
     return pins
 
 
-def pyproject_pins() -> list[tuple[str, str, str]]:
+def pyproject_pins(platform: str = "linux") -> list[tuple[str, str, str]]:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     groups = {"dependencies": project["dependencies"], **project.get("optional-dependencies", {})}
     return [
         (group, *pin)
         for group, deps in groups.items()
-        for pin in (parse_pin(dep) for dep in deps)
+        for pin in (parse_pin(dep, platform) for dep in deps)
         if pin
     ]
 
@@ -76,20 +76,37 @@ def test_only_the_headless_opencv_is_declared_anywhere():
 def test_opencv_pin_is_the_reviewed_release_for_numpy_1():
     # paddleocr 2.7 declares opencv<=4.6.0.66, which bundles a vulnerable
     # libwebp. 4.11.0.86 is the reviewed exception: the newest release that
-    # accepts numpy 1.x (paddlepaddle 2.6), with identical OCR output. A
-    # different version needs the same review, not just a new number here.
+    # accepts numpy 1.x (scipy 1.11; paddlepaddle 2.6 on Windows), with
+    # identical OCR output. A different version needs the same review, not
+    # just a new number here.
     versions = {v for _, v in requirement_pins()["opencv-python-headless"]}
     versions |= {v for _, n, v in pyproject_pins() if n == "opencv-python-headless"}
     assert versions == {"4.11.0.86"}
     assert {v for _, v in requirement_pins()["numpy"]} == {"1.26.4"}
 
 
-def test_protobuf_is_the_fixed_release_in_the_image_and_paddles_cap_on_windows():
-    # paddlepaddle 2.6 declares protobuf<=3.20.2 on Windows only; the image
-    # (Linux) gets 5.29.6, reviewed against real OCR output.
-    assert requirement_pins()["protobuf"] == [("requirements-ocr.txt", "5.29.6")]
-    assert requirement_pins(platform="win32")["protobuf"] == [("requirements-ocr.txt", "3.20.2")]
-    assert {v for _, v in requirement_pins()["setuptools"]} == {"83.0.0"}
+def test_the_image_gets_the_fixed_ocr_engine_stack():
+    # Reviewed against real OCR output in the image (OCR-stack security step).
+    image = requirement_pins()
+    assert image["paddlepaddle"] == [("requirements-ocr.txt", "3.3.1")]
+    assert image["safetensors"] == [("requirements-ocr.txt", "0.8.0")]
+    assert image["protobuf"] == [("requirements-ocr.txt", "5.29.6")]
+    assert image["setuptools"] == [("requirements-ocr.txt", "83.0.0")]
+
+
+def test_windows_development_keeps_paddle_2_6_with_its_protobuf_cap():
+    # Windows App Control on the development machine blocks paddle 3's
+    # native library. paddlepaddle 2.6 declares protobuf<=3.20.2 on Windows.
+    windows = requirement_pins(platform="win32")
+    assert windows["paddlepaddle"] == [("requirements-ocr.txt", "2.6.2")]
+    assert windows["protobuf"] == [("requirements-ocr.txt", "3.20.2")]
+    assert "safetensors" not in windows
+
+
+def test_pyproject_follows_the_platform_split():
+    for platform, version in [("linux", "3.3.1"), ("win32", "2.6.2")]:
+        pins = [v for _, n, v in pyproject_pins(platform) if n == "paddlepaddle"]
+        assert pins == [version], platform
 
 
 def test_each_package_is_pinned_once_on_windows_too():
