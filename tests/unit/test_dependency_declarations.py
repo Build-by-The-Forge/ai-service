@@ -8,6 +8,8 @@ import re
 import tomllib
 from pathlib import Path
 
+from packaging.markers import Marker
+
 ROOT = Path(__file__).resolve().parents[2]
 # What the production image installs.
 REQUIREMENT_FILES = ["requirements.txt", "requirements-ocr.txt", "requirements-ocr-nodeps.txt"]
@@ -37,11 +39,18 @@ def parse_pin(line: str) -> tuple[str, str] | None:
     return normalize(match.group(1)), match.group(3)
 
 
-def requirement_pins(files: list[str] | None = None) -> dict[str, list[tuple[str, str]]]:
+def requirement_pins(
+    files: list[str] | None = None, platform: str = "linux"
+) -> dict[str, list[tuple[str, str]]]:
+    # Lines whose environment marker excludes `platform` are skipped; the
+    # default is the image's platform.
     pins: dict[str, list[tuple[str, str]]] = {}
     for file in files or REQUIREMENT_FILES:
         for line in (ROOT / file).read_text(encoding="utf-8").splitlines():
-            pin = parse_pin(line)
+            requirement, _, marker = line.split("#", 1)[0].partition(";")
+            if marker.strip() and not Marker(marker).evaluate({"sys_platform": platform}):
+                continue
+            pin = parse_pin(requirement)
             if pin:
                 pins.setdefault(pin[0], []).append((file, pin[1]))
     return pins
@@ -73,6 +82,21 @@ def test_opencv_pin_is_the_reviewed_release_for_numpy_1():
     versions |= {v for _, n, v in pyproject_pins() if n == "opencv-python-headless"}
     assert versions == {"4.11.0.86"}
     assert {v for _, v in requirement_pins()["numpy"]} == {"1.26.4"}
+
+
+def test_protobuf_is_the_fixed_release_in_the_image_and_paddles_cap_on_windows():
+    # paddlepaddle 2.6 declares protobuf<=3.20.2 on Windows only; the image
+    # (Linux) gets 5.29.6, reviewed against real OCR output.
+    assert requirement_pins()["protobuf"] == [("requirements-ocr.txt", "5.29.6")]
+    assert requirement_pins(platform="win32")["protobuf"] == [("requirements-ocr.txt", "3.20.2")]
+    assert {v for _, v in requirement_pins()["setuptools"]} == {"83.0.0"}
+
+
+def test_each_package_is_pinned_once_on_windows_too():
+    duplicates = {
+        n: places for n, places in requirement_pins(platform="win32").items() if len(places) > 1
+    }
+    assert duplicates == {}
 
 
 def test_pymupdf_is_one_version_everywhere_and_installed_in_the_image():

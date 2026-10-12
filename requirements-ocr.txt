@@ -27,5 +27,13 @@ Pillow==12.3.0
 # abi3 wheels for Linux and Windows and no dependencies.
 PyMuPDF==1.28.0
 numpy==1.26.4
-protobuf==3.20.2
-setuptools==75.6.0
+# 3.20.2 is affected by PYSEC-2026-1805 and PYSEC-2026-1806; 5.29.6 is the
+# smallest upgrade that clears both, and switches to the compiled upb
+# backend. paddlepaddle 2.6 accepts it on Linux (the image), where real OCR
+# output on the evaluation corpus is identical to 3.20.2. On Windows it
+# declares protobuf<=3.20.2, so local Windows installs keep that.
+protobuf==5.29.6; sys_platform != "win32"
+protobuf==3.20.2; sys_platform == "win32"
+# paddle imports setuptools at load time, so it ships. 83.0.0 clears
+# PYSEC-2025-49 and PYSEC-2026-3447.
+setuptools==83.0.0
