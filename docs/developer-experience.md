@@ -13,7 +13,7 @@ This document captures the local developer workflow, tooling, and quality gates 
 
 2. Install runtime and dev dependencies:
    ```bash
-   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
    ```
 
 3. Verify the environment:

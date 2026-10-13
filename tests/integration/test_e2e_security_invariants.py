@@ -1,22 +1,24 @@
-import json
-import time
+import os
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.core.config import settings
 from app.core.execution_context import AITask, TaskStatus
 from app.core.idempotency import InMemoryIdempotencyStore, set_idempotency_store
 from app.core.models.contracts import ModelDecision, ModelRequest, ModelResponse
 from app.core.models.gateway import ModelGateway
 from app.core.models.provider import ModelProviderAdapter
-from app.core.service_auth import compute_service_signature
-from app.main import app
+from app.core.replay_guard import RedisReplayGuard
+from app.main import create_app
 from app.services.agents.executor import AgentExecutor
 from app.services.tasks.dispatcher import TaskDispatcher
 from app.services.tasks.handlers import AgentExecutionTaskHandler, TaskHandlerRegistry
 from app.services.tasks.transport import InMemoryTaskTransport
 from app.services.tasks.worker import TaskWorker
+from tests.signing import DISPATCH_PATH, TENANT_B, dispatch_body, signed_headers, user_context
+
+REDIS_URL = os.getenv("TEST_REDIS_URL")
+real_redis = pytest.mark.skipif(not REDIS_URL, reason="TEST_REDIS_URL not set")
 
 
 @pytest.fixture(autouse=True)
@@ -25,102 +27,55 @@ def setup_idempotency():
     yield
 
 
-def generate_auth_headers(
-    body_bytes: bytes,
-    path: str = "/v1/ingest/dispatch",
-    method: str = "POST",
-    secret: str = settings.SERVICE_AUTH_SECRET,
-    identity: str = "build-backend",
-) -> dict:
-    timestamp = int(time.time())
-    signature = compute_service_signature(
-        method=method,
-        path=path,
-        timestamp=timestamp,
-        body=body_bytes,
-        secret=secret,
-    )
-    return {
-        "X-Service-Identity": identity,
-        "X-Timestamp": str(timestamp),
-        "X-Service-Signature": signature,
-        "Content-Type": "application/json",
-    }
+@pytest.fixture
+async def signed_app():
+    guard = RedisReplayGuard.connect(REDIS_URL, timeout=2.0)
+    yield create_app(replay_guard=guard)
+    await guard.close()
 
 
+@real_redis
 @pytest.mark.asyncio
-async def test_e2e_security_dispatch_hmac_tampering_rejected():
-    """
-    End-to-End Security Test:
-    Modifying any byte of the dispatch payload after signing must be rejected with 401.
-    """
-    payload = {
-        "job_id": "job_sec_001",
-        "asset_id": "asset_sec_001",
-        "tenant_id": "school_futa",
-        "source": "upload",
-        "storage_uri": "s3://school-assets/doc.pdf",
-        "mime_type": "application/pdf",
-        "authority": "INSTITUTIONAL",
-        "content_sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
-        "correlation_id": "corr_sec_001",
-        "callback_url": "https://api.build.internal/v1/callbacks",
-        "idempotency_key": "idemp_sec_001",
-    }
-    payload_bytes = json.dumps(payload).encode("utf-8")
-    headers = generate_auth_headers(payload_bytes)
+async def test_e2e_security_dispatch_tampering_rejected(signed_app):
+    """Changing the signed body or the signed tenant after signing is rejected with 401."""
+    body = dispatch_body(job_id="job_sec_001", idempotency_key="idemp_sec_001")
+    headers = signed_headers(body)
 
-    tampered_payload = dict(payload)
-    tampered_payload["tenant_id"] = "school_unilag"
-    tampered_bytes = json.dumps(tampered_payload).encode("utf-8")
+    swapped_context = signed_headers(body, context=user_context(TENANT_B))
+    tenant_swap = {**headers, "X-BUILD-Context": swapped_context["X-BUILD-Context"]}
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        response = await client.post(
-            "/v1/ingest/dispatch",
-            content=tampered_bytes,
-            headers=headers,
+    async with AsyncClient(
+        transport=ASGITransport(app=signed_app), base_url="http://testserver"
+    ) as client:
+        tampered_body = await client.post(
+            DISPATCH_PATH, content=dispatch_body(job_id="job_sec_002"), headers=headers
         )
-        assert response.status_code == 401
-        assert "Invalid service authentication signature" in response.text
+        tampered_tenant = await client.post(DISPATCH_PATH, content=body, headers=tenant_swap)
+
+    assert tampered_body.status_code == 401
+    assert tampered_tenant.status_code == 401
+    assert tampered_body.json() == {"error": "invalid service authentication"}
 
 
+@real_redis
 @pytest.mark.asyncio
-async def test_e2e_security_idempotency_deduplication():
-    """
-    End-to-End Security Test:
-    Replaying an identical dispatch job_id returns cached idempotent response without reprocessing.
-    """
-    payload = {
-        "job_id": "job_idem_9999",
-        "asset_id": "asset_idem_9999",
-        "tenant_id": "school_futa",
-        "source": "upload",
-        "storage_uri": "s3://school-assets/syllabus.pdf",
-        "mime_type": "application/pdf",
-        "authority": "INSTITUTIONAL",
-        "content_sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
-        "correlation_id": "corr_idem_9999",
-        "callback_url": "https://api.build.internal/v1/callbacks",
-        "idempotency_key": "idemp_9999",
-    }
-    payload_bytes = json.dumps(payload).encode("utf-8")
-    headers = generate_auth_headers(payload_bytes)
+async def test_e2e_security_idempotency_deduplication(signed_app):
+    """A second, freshly signed dispatch with the same idempotency key returns the first task."""
+    body = dispatch_body(job_id="job_idem_9999", idempotency_key="idemp_9999")
 
-    transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        resp1 = await client.post("/v1/ingest/dispatch", content=payload_bytes, headers=headers)
-        assert resp1.status_code == 202
-        body1 = resp1.json()
-        assert body1["success"] is True
-        assert body1["status"] == "ACCEPTED"
+    async with AsyncClient(
+        transport=ASGITransport(app=signed_app), base_url="http://testserver"
+    ) as client:
+        resp1 = await client.post(DISPATCH_PATH, content=body, headers=signed_headers(body))
+        resp2 = await client.post(DISPATCH_PATH, content=body, headers=signed_headers(body))
+        replay = await client.post(DISPATCH_PATH, content=body, headers=resp1.request.headers)
 
-        # Immediate replay with same job_id and headers
-        resp2 = await client.post("/v1/ingest/dispatch", content=payload_bytes, headers=headers)
-        assert resp2.status_code == 202
-        body2 = resp2.json()
-        assert body2["success"] is True
-        assert body2["external_task_id"] == body1["external_task_id"]
+    assert resp1.status_code == 202
+    assert resp1.json()["status"] == "ACCEPTED"
+    assert resp2.status_code == 202
+    assert resp2.json()["status"] == "DUPLICATE"
+    assert resp2.json()["external_task_id"] == resp1.json()["external_task_id"]
+    assert replay.status_code == 401  # the exact same signed request cannot be replayed
 
 
 @pytest.mark.asyncio

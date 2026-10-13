@@ -28,7 +28,8 @@ import sys
 # Add app to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.core.documents.metrics import GroundTruthLoader
+# Late import on purpose: it needs the sys.path line above.
+from app.core.documents.metrics import GroundTruthLoader  # noqa: E402
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -180,7 +181,9 @@ class SmokeTestBenchmark:
         # Load ground truth
         gt_data = self.gt_loader.load(gt_key)
         has_gt = gt_data is not None
-        logger.info(f"   Ground truth: {'✅ Found' if has_gt else '❌ Not found (skipping metrics)'}")
+        logger.info(
+            f"   Ground truth: {'✅ Found' if has_gt else '❌ Not found (skipping metrics)'}"
+        )
 
         for page_num in pages:
             self.result.documents_processed += 1

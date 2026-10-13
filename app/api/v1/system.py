@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.core.logging import logger
-from app.core.redis import redis_client
+from app.core.redis import get_redis_client
 from app.db.session import get_engine
 
 router = APIRouter()
@@ -33,7 +33,7 @@ async def readiness():
         logger.error(f"Database readiness check failed: {exc}")
 
     try:
-        await redis_client.ping()
+        await get_redis_client().ping()
         checks["redis"] = True
     except Exception as exc:
         logger.error(f"Redis readiness check failed: {exc}")

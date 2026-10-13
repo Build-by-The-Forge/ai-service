@@ -12,7 +12,7 @@ from app.core.documents.errors import (
     UnsupportedDocumentTypeError,
 )
 from app.core.rag.contracts import ContentAuthority
-from app.core.tenant import get_school_id
+from app.core.tenant import RequestScopeMissingError, get_tenant_id
 
 _SUPPORTED_MIME_TYPES = {
     "application/pdf": DocumentType.PDF,
@@ -64,10 +64,12 @@ class DocumentIntakeService:
         self.ocr_config = ocr_config or OCRConfig()
 
     def _require_authoritative_tenant(self) -> str:
-        tenant_id = str(get_school_id())
-        if not tenant_id or tenant_id == "0" or tenant_id == "None":
-            raise DocumentTenantMissingError("Document requires an authoritative tenant_id")
-        return tenant_id
+        try:
+            return get_tenant_id()
+        except RequestScopeMissingError as exc:
+            raise DocumentTenantMissingError(
+                "Document requires an authoritative tenant_id"
+            ) from exc
 
     def _validate_filename(self, filename: str) -> str:
         if not filename or not filename.strip():

@@ -24,10 +24,18 @@ class DummyParser:
         return ["page one", "page two"]
 
 
+@pytest.fixture(autouse=True)
+def no_real_engine(monkeypatch):
+    # OCRService builds its provider in __init__; inject the double before
+    # construction so no real model is loaded (or downloaded) and the tests
+    # run without the OCR stack installed.
+    monkeypatch.setattr("app.services.ocr.ocr_service.PaddleOCRService", DummyOCR)
+
+
 @pytest.mark.asyncio
 async def test_process_image_cleans_extracted_text(monkeypatch):
     service = OCRService()
-    monkeypatch.setattr(service, "ocr", DummyOCR())
+    assert isinstance(service.ocr, DummyOCR)
     monkeypatch.setattr(service, "cleaner", DummyCleaner())
 
     result = await service.process_image("image.png")

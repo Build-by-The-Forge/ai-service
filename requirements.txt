@@ -1,15 +1,18 @@
 # ============================================================
-# BUILD AI Service — Application Runtime Dependencies
-# Keep this file for the general app stack; OCR runtime is isolated
-# in requirements-ocr.txt for the PP-OCRv3 baseline proof.
+# BUILD AI Service — application RUNTIME dependencies only.
+# The production image installs this file and the OCR files; test and
+# quality tools live in requirements-dev.txt and never ship.
 # ============================================================
 
 # Core Framework & Server
-fastapi==0.104.1
+fastapi==0.141.1
+# Pinned directly (not left to fastapi's range): every known Starlette
+# advisory is fixed from 1.3.1 on.
+starlette==1.6.0
 uvicorn[standard]==0.24.0
-pydantic==2.5.0
-pydantic-settings==2.1.0
-python-dotenv==1.0.0
+pydantic==2.12.5
+pydantic-settings==2.11.0
+python-dotenv==1.2.2
 
 # Database & Caching
 sqlalchemy==2.0.23
@@ -18,32 +21,16 @@ alembic==1.18.5
 redis==5.0.0
 
 # Security & Authentication
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-bcrypt==4.1.3
 
 # AI / LLM
-openai==1.0.0
+openai==1.109.1
+# Pinned directly: the fix version for both AnyIO advisories (openai 1.0.0
+# required anyio<4).
+anyio==4.14.2
 httpx==0.27.2
 
-# Document Processing
-# Keep separate from OCR proof until PyMuPDF/3.12 compatibility is validated.
+# Document Processing: PyMuPDF is pinned in requirements-ocr.txt (one place).
 
 # Observability / Rate Limiting
-prometheus-fastapi-instrumentator==6.0.0
+prometheus-fastapi-instrumentator==8.1.0
 slowapi==0.1.9
-
-# Development / Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
-pytest-cov==4.1.0
-black==23.12.0
-ruff==0.1.8
-mypy==1.7.1
-pre-commit==4.5.0
-
-# Type Definitions
-types-python-jose==3.5.0.20260408
-types-passlib==1.7.7.20260211
-types-pyasn1==0.6.0.20260408
-types-redis==4.6.0.20241004

@@ -1,14 +1,14 @@
 """ai-owned memory baseline
 
 Revision ID: 3409868eb53a
-Revises: 
+Revises:
 Create Date: 2026-10-02 18:06:06.666891
 """
+
 from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-
 
 # revision identifiers, used by Alembic.
 revision: str = "3409868eb53a"

@@ -71,6 +71,9 @@ nul
 .DS_Store
 Thumbs.db
 
-# Keep model artifacts and ground truth (tracked in git)
+# Keep ground truth (tracked in git). OCR models are not tracked: see
+# models/ocr/manifest.json and scripts/fetch_ocr_models.py.
 !data/ocr_evaluation/ground_truth/
-!models/ocr/openvino_models/
+
+# OCR model archive cache (scripts/fetch_ocr_models.py); archives are verified, never committed
+models/ocr/archives/

@@ -1,0 +1,6 @@
+# OCR benchmark tooling only (scripts/benchmark_ocr_baseline.py and the
+# OpenVINO runtime adapter's model compilation). Never installed into the
+# production image: no production path imports OpenVINO.
+#   pip install -r requirements-ocr-benchmark.txt
+# or, from pyproject: pip install ".[ocr-benchmark]"
+openvino==2026.3.1

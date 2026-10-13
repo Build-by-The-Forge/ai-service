@@ -1,418 +1,128 @@
 # AI Service - Build Core
 
-Production-grade AI service for CBT + Learning Platform.
+The intelligence subsystem of BUILD: retrieval, explanation, question generation, learning memory and document ingestion. It runs behind the backend.
 
 ## Architecture
 
 ```
-Internet
-   ↓
-Nginx (Reverse Proxy)
-   ↓
-FastAPI (ai-service)
-   ↓
-PostgreSQL + Redis
-   ↓
-AI/RAG/OCR/Tree/CBT
+Client
+   ↓  (user authentication, tenant, membership, permission)
+build-backend
+   ↓  signed request (BUILD Service Signature v1)
+ai-service ──→ PostgreSQL (AI-owned tables only) + Redis
+   ↑
+   └── signed ingestion callbacks to the backend
 ```
+
+AI-service **does not authenticate users** and has no client-facing routes. It accepts only requests signed by the backend:
+- HMAC-SHA256 over a canonical request;
+- directional secrets;
+- ±60 s timestamp window;
+- Redis replay protection.
+
+The signed context carries the tenant, the user and the one permission the backend checked. Tenant and user are never taken from a request body, header or query. The backend owns users, tenants, memberships, questions, assessments, attempts and results. See `build-backend/docs/phase1-m3-boundary-design.md`.
 
 ## Features
 
-### Platform Core
-- **FastAPI** - Modern async web framework with OpenAPI/Swagger
-- **Multi-tenancy** - School-scoped request context + database isolation
-- **RBAC** - Role-based access control (student/teacher/admin)
-- **JWT** - Token verification ready for external auth services
+### Boundary
+- **Signed service requests only**: `/v1/ai/*` and `/v1/ingest/*` refuse anything else with 401. Redis down → 503 (fail closed). Bodies are capped at 1 MiB.
+- **Context narrows only**: each route declares one permission; a context without it gets 403.
+- **Request scope**: tenant and user from the verified context. Memory and retrieval fail closed without it.
+
+### Intelligence
+- **Chat**: LLM answer with tenant-scoped retrieval and the signed user's learning memory.
+- **Explain** and **question generation** (1–50 questions).
+- **Retrieval**: tenant-scoped hybrid retrieval (placeholder results until the real index exists).
+- **Knowledge tree** generation and **reading path**.
+- **Adaptive difficulty** and **personalised generation** (`app/services/generation/`).
+- **Ingestion worker**: consumes dispatched tasks and reports signed callbacks to `BACKEND_CALLBACK_URL`. Phase 1 has no real pipeline, so tasks fail with `INGESTION_PIPELINE_UNAVAILABLE`.
+- **Model provider**: `MODEL_PROVIDER=openai` (default) or `deterministic`, an offline stand-in for development and tests that is refused in staging/production.
 
 ### Observability
-- **Structured Logging** - JSON log format for production parsing
-- **Request Tracing** - Unique request ID on every request
-- **Metrics** - Prometheus `/metrics` endpoint
-- **Health Checks** - `/api/v1/system/health` and `/api/v1/system/ready` with dependency probes
-
-### AI/ML Pipelines
-- **RAG** - Retrieval-Augmented Generation with tenant-aware retrieval
-- **OCR** - Document parsing and text extraction foundation
-- **Tree Generation** - Knowledge tree generation and traversal
-- **AI Orchestration** - LLM integration with memory + retrieval context
-- **CBT Engine** - Computer-based testing with adaptive difficulty
-- **Exam Engine** - Real-time exam sessions with Redis pub/sub
-
-### Reliability
-- **Rate Limiting** - Configurable per-endpoint via slowapi
-- **Error Handling** - Central exception handler with request context
-- **Database Pooling** - Async SQLAlchemy with connection pooling
-- **Redis Resilience** - Distributed session store and pub/sub
-- **Readiness Probes** - Actual DB + Redis connectivity checks
-
-### Deployment
-- **Docker** - Multi-stage Dockerfile with entrypoint migration
-- **Compose** - PostgreSQL + Redis + Nginx orchestration
-- **Makefile** - Simple targets: `make up`, `make down`, `make logs`
-- **Kubernetes-Ready** - Health checks and structured configuration
-- **CI/CD** - GitHub Actions with linting, type checking, tests, coverage
+- JSON logging, request IDs, Prometheus `/metrics`.
+- `/api/v1/system/health` and `/api/v1/system/ready` (unauthenticated; reveal no configuration).
 
 ## Setup
 
-### Local Development
-
 ```bash
-# Clone and enter
-git clone <repo>
-cd ai-service
-
-# Create environment
-cp .env.example .env
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run with Uvicorn
-uvicorn app.main:app --reload
+cp .env.example .env            # or set variables in the environment
+pip install -r requirements-dev.txt
+alembic upgrade head            # AI-owned tables only: learning_memory, session_memory
+uvicorn app.main:app --reload   # API
+python -m app.worker            # task worker (separate process)
 ```
 
-### Docker Compose
+To run both services together, use the combined development topology in build-backend: `deploy/compose.m3.yml`, run with `scripts/m3_boundary_gate.sh`. It has least-privilege database roles, an unpublished AI-service and the worker.
 
 ```bash
-# Start full stack
-make up
-
-# View logs
-make logs
-
-# Stop services
-make down
-
-# Run migrations
-make migrate
-
-# Seed database
-make seed
-
-# Run linting and type checks
-make lint
-
-# Run tests
+make lint        # ruff, black --check, mypy
 make test
-
-# Run coverage report
-make coverage
-
-# Install git pre-commit hooks
-make precommit
+make precommit   # install the git hooks (ruff --fix, black, mypy)
 ```
 
-### Pre-commit
+## API
 
-Install the repo hooks locally with:
+All routes below except System require a signed backend request.
 
-```bash
-make precommit
-```
+### System (unauthenticated)
+- `GET /`, `GET /api/v1/system/health`, `GET /api/v1/system/ready`, `GET /api/v1/health/`, `GET /metrics`
 
-This runs `ruff --fix`, `black`, and `mypy` automatically on every commit.
+### AI (signed, user context)
+| Route | Permission | Body |
+|---|---|---|
+| `POST /v1/ai/chat` | `ai.use` | `{message}` (≤ 4000) |
+| `POST /v1/ai/explain` | `ai.use` | `{subject}` (≤ 4000) |
+| `POST /v1/ai/generate-questions` | `ai.questions.generate` | `{topic, count}` (count 1–50) |
+| `POST /v1/ai/retrieve` | `ai.use` | `{query}` |
+| `POST /v1/ai/tree/generate` | `ai.use` | `{course_title, topics}` |
+| `POST /v1/ai/read/start` | `ai.use` | `{root}` |
 
-> Note: the repo uses the same tool versions as `pyproject.toml` and `requirements.txt` to avoid version drift.
+Bodies reject unknown fields. Naming `tenant_id`, `user_id`, `membership_id` or `role` is 422.
 
-## API Endpoints
+### Ingestion (signed)
+- `POST /v1/ingest/dispatch`: user context with `content.job.manage`.
+- `GET /v1/ingest/tasks/{external_task_id}`: system context; answers only for the context's tenant.
 
-### System
-- `GET /` - Root status
-- `GET /api/v1/system/health` - Liveness probe
-- `GET /api/v1/system/ready` - Readiness probe with dependency checks
-- `GET /metrics` - Prometheus metrics
+## Configuration
 
-### Health & Legacy
-- `GET /api/v1/health/` - Legacy health check
+| Setting | Rule |
+|---|---|
+| `APP_ENVIRONMENT` | `development` / `testing` / `staging` / `production`; strict validation in the last two |
+| `BACKEND_TO_AI_SECRET`, `AI_TO_BACKEND_SECRET` (+ `_PREVIOUS`) | Required in staging/production; ≥ 32 bytes; the two directions must differ; no known development values |
+| `BACKEND_CALLBACK_URL` | Fixed `…/content/ingestion/callbacks`; https in staging/production |
+| `REDIS_URL` | Replay protection, task queue and task records |
+| `DATABASE_URL` | Runtime role with DML on the AI-owned tables only |
+| `MODEL_PROVIDER`, `OPENAI_API_KEY` | See above |
+| `SERVICE_REPLAY_TIMEOUT_SECONDS` | Replay-guard Redis timeout, 0.05–5.0 (default 1.0) |
 
-### AI Chat
-- `POST /api/v1/ai/chat` - Conversational AI with context
-- `GET /api/v1/ai/explain` - Subject explanation
-- `GET /api/v1/ai/generate-questions` - Question generation
-
-### RAG & Retrieval
-- `GET /api/v1/ai/retrieve/` - Tenant-scoped document retrieval
-
-### Tree & Knowledge
-- `POST /api/v1/ai/tree/generate` - Generate learning tree
-- `GET /api/v1/ai/read/start` - Reading mode
-
-### Exams
-- `POST /api/v1/ai/exam/start` - Start exam session (requires student role)
-- `POST /api/v1/ai/exam/submit` - Submit answers (requires student role)
-- `POST /api/v1/ai/generate` - Generate AI exam (requires teacher/admin role)
-
-### WebSocket
-- `WS /ws/exam/{session_id}` - Real-time exam state sync with tenant scoping
-
-## Environment Variables
-
-### Development (`.env`)
-```
-APP_NAME=build-ai-service
-ENV=development
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@postgres/build_ai
-REDIS_URL=redis://redis:6379
-OPENAI_API_KEY=<your-key>
-LOG_LEVEL=INFO
-```
-
-### Production (`.env.prod`)
-```
-ENV=production
-LOG_LEVEL=WARNING
-```
-
-### Optional
-```
-JWT_PUBLIC_KEY=<your-rsa-public-key>
-JWT_ALGORITHM=RS256
-JWT_AUDIENCE=ai-service
-```
-
-## Project Structure
+## Project structure
 
 ```
 app/
-├── api/
-│   └── v1/
-│       ├── ai/              # AI/LLM endpoints
-│       │   ├── chat.py
-│       │   ├── exam.py
-│       │   ├── fusion_exam.py
-│       │   ├── generate_questions.py
-│       │   ├── retrieve.py
-│       │   ├── tree.py
-│       │   └── ...
-│       ├── ws/              # WebSocket
-│       │   └── exam_ws.py
-│       ├── system.py        # Health/ready endpoints
-│       ├── health.py
-│       └── router.py        # Route aggregation
+├── api/v1/
+│   ├── ai/            # signed /v1/ai routes (router.py mounts them)
+│   ├── ingest.py      # signed dispatch + task status
+│   ├── system.py, health.py
+│   └── router.py      # unauthenticated system routes
 ├── core/
-│   ├── auth.py              # RBAC guards (header-based)
-│   ├── config.py            # Settings + JWT config
-│   ├── errors.py            # Central error handler
-│       ├── logging.py        # JSON structured logging
-│   ├── metrics.py           # Prometheus setup
-│   ├── rate_limit.py        # slowapi limiter
-│   ├── redis.py             # Redis client
-│   ├── rbac.py              # Role definitions
-│   ├── tenant.py            # Multi-tenant context
-│   ├── token_verifier.py    # JWT verification
-│   └── middleware/
-│       ├── request_id.py    # Request tracing
-│       └── tenant.py        # Tenant header extraction
-├── db/
-│   ├── base.py              # SQLAlchemy declarative base
-│   ├── models/
-│   │   ├── exam.py
-│   │   ├── question.py
-│   │   ├── user.py          # With school_id FK
-│   │   ├── school.py
-│   │   ├── learning_memory.py
-│   │   └── ...
-│   └── session.py           # Async session factory
-├── schemas/
-│   ├── common.py            # APIResponse base
+│   ├── service_signature_v1.py, service_context.py, service_call.py
+│   ├── replay_guard.py, middleware/service_auth.py
+│   ├── tenant.py      # verified request scope (tenant, user)
+│   ├── callbacks/     # signed callbacks to the backend
+│   ├── config.py
 │   └── ...
+├── db/                # learning_memory, session_memory (AI-owned)
 ├── services/
-│   ├── ai/
-│   │   ├── dependencies.py  # AI orchestrator DI
-│   │   ├── llm.py           # LLMProvider interface
-│   │   ├── openai.py        # OpenAI implementation
-│   │   ├── orchestrator.py  # Chat/explain/generation
-│   │   └── tenanted_retriever.py
-│   ├── exam/
-│   │   ├── exam_engine.py
-│   │   ├── session_service.py
-│   │   ├── redis_session_store.py
-│   │   ├── redis_timer.py
-│   │   └── ...
-│   ├── memory/              # Student learning memory
-│   │   └── memory_service.py
-│   ├── rag/                 # Retrieval-Augmented Generation
-│   │   ├── retrieval.py
-│   │   └── vector_store.py
-│   ├── tree/                # Knowledge tree
-│   ├── realtime/            # Real-time sync
-│   │   ├── pubsub.py
-│   │   └── sync_bridge.py
-│   └── generation/          # Question/exam generation
-└── main.py                  # FastAPI app factory
-
-docker/
-├── entrypoint.sh            # Migration + startup
-└── nginx/
-    └── nginx.conf           # Reverse proxy config
-
-tests/                       # Test suite (pytest)
-
-.github/
-└── workflows/
-    └── backend.yml          # CI/CD pipeline
-
-Dockerfile
-docker-compose.yml
-Makefile
-requirements.txt
-.env
-.env.prod
-README.md
+│   ├── ai/            # orchestrator, model providers
+│   ├── generation/    # question generation, adaptive difficulty
+│   ├── memory/, rag/, tree/
+│   └── tasks/         # worker, task records, ingestion outcomes
+├── main.py            # app factory
+└── worker.py          # python -m app.worker
 ```
 
-## Development
+## Security notes
 
-### Local quality checks
-Run the fast-fail quality gates first:
-
-```bash
-make lint
-```
-
-### Local tests
-Run unit and integration tests locally:
-
-```bash
-make test
-```
-
-### Developer experience docs
-For full workflow and tooling guidance, see `docs/developer-experience.md`.
-
-### Coverage
-```bash
-pytest --cov=app --cov-report=xml tests/integration tests/contracts
-```
-
-### Code formatting
-```bash
-black app/
-```
-
-### CI workflow
-The repository uses GitHub Actions to enforce the following stages:
-
-1. Quality
-   - `ruff check .`
-   - `black --check .`
-   - `mypy app`
-2. Security
-   - `pip-audit`
-   - `bandit -r app -ll`
-3. Infrastructure
-   - Start PostgreSQL and Redis
-   - `python scripts/wait_for_services.py`
-4. Database
-   - `alembic upgrade head`
-5. Tests
-   - integration tests
-   - contract tests
-6. Coverage
-   - enforce `--cov-fail-under=80`
-7. Docker
-   - `docker build .`
-
-These stages are intentionally ordered so fast failures happen first, and infrastructure-heavy checks only run after code quality and security.
-
-## Deployment
-
-### Local Docker
-```bash
-make up
-```
-Visit `http://localhost` for Nginx → FastAPI.
-
-### Health Checks
-- **Liveness**: `curl http://localhost/api/v1/system/health`
-- **Readiness**: `curl http://localhost/api/v1/system/ready`
-
-### Logs
-```bash
-make logs
-```
-
-### Migrations
-```bash
-make migrate
-# Or manually in container:
-docker compose exec ai-service alembic upgrade head
-```
-
-### Database
-```bash
-# Access PostgreSQL
-docker compose exec postgres psql -U postgres -d build_ai
-
-# Access Redis
-docker compose exec redis redis-cli
-```
-
-## Production Status
-
-### ✅ Implemented
-- **Architecture**: FastAPI + SQLAlchemy + Redis + PostgreSQL
-- **Database**: Async ORM with models for all entities
-- **Multi-tenancy**: Request-scoped tenant context + school_id enforcement
-- **Authentication**: RBAC guards + JWT verification ready
-- **Observability**: Structured JSON logging + request IDs + metrics + health checks
-- **RAG**: Tenant-aware retrieval pipeline
-- **OCR**: Document parsing foundation
-- **Tree**: Knowledge graph generation
-- **AI Orchestration**: LLM + memory + retrieval coordination
-- **CBT Engine**: Adaptive question selection + scoring
-- **Real-time**: WebSocket exam sync with Redis pub/sub
-- **Deployment**: Docker + Compose + Nginx + Makefile
-- **CI/CD**: GitHub Actions linting + tests + build
-- **Error Handling**: Central exception handler
-- **Rate Limiting**: Per-endpoint configurable limits
-
-### 🎯 Next Engineering Steps
-1. **Implementation Verification** - End-to-end integration tests
-2. **Repository Cleanup** - ADRs (Architecture Decision Records) for key patterns
-3. **Load Testing** - Benchmark horizontal scaling behavior
-4. **Security Audit** - Penetration testing + OWASP validation
-5. **Documentation** - API contract docs + deployment runbooks
-
-### 🚀 Future Microservices
-```
-ai-service (core + exam)
-ocr-worker (document processing)
-embedding-worker (vector generation)
-retrieval-worker (RAG optimization)
-```
-
-## Security Notes
-
-- Secrets (JWT, API keys, DB passwords) must be in environment variables
-- HTTPS required for production (configure in Nginx)
-- CORS configured by default (adjust as needed)
-- Rate limiting enabled on AI endpoints
-- Tenant isolation enforced at request + database layer
-
-## Support
-
-For issues, questions, or contributions:
-1. Review `Architecture Decision Records` in `/docs/adr`
-2. Check test suite in `/tests`
-3. Review health/readiness responses
-4. Check structured logs for context
-
-## Release: v1.0.0 — Production Ready
-
-This repository has reached the v1.0.0 milestone and is considered production-ready given the current verification steps below.
-
-- **Version:** v1.0.0
-- **Status:** Production Ready
-- **Key confirmations:** 100 tests passing, 91%+ coverage, release tag pushed to origin
-
-Quick next steps after tagging:
-
-- Run the observability checklist (enable Prometheus instrumentator, verify `/metrics`, validate structured logs).
-- Run the security checklist (pip-audit, bandit, pre-commit, container image scan).
-- Create a GitHub Release from the `v1.0.0` tag and attach changelog or release notes as needed.
-
-
----
-
-**Status**: Production-ready platform with AI, RAG, OCR, CBT, real-time sync, multi-tenancy, and observability.
+- Secrets come from the environment only. Production refuses missing, short, equal or default secrets.
+- The service must not be reachable from clients. In the combined topology it is unpublished, and the backend is its only caller.
+- Responses are not signed. Transport security (TLS/mTLS) is a Phase 1 M6 item.

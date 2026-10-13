@@ -16,7 +16,7 @@ WER (Word Error Rate):
 
 Ground Truth Format:
     JSON file with expected OCR output text and regional annotations.
-    
+
 Example:
     {
         "full_text": "Expected transcription...",

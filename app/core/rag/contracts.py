@@ -136,7 +136,7 @@ class RetrievedContext:
     def to_citation_summary(self) -> list[dict[str, Any]]:
         citations: list[dict[str, Any]] = []
         for rc in self.chunks:
-            item = {
+            item: dict[str, Any] = {
                 "chunk_id": rc.chunk.chunk_id,
                 "document_title": rc.chunk.document_title,
                 "course_code": rc.chunk.course_code,

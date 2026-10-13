@@ -338,3 +338,39 @@ class TestOpenVINORuntimeLifecycle:
 
         assert len(runtime._compiled_models) == 0
         assert runtime._core is None
+
+
+# --- Phase 2 Step 1: no fake module, real cause kept ---------------------------------
+
+
+class TestNoFakeOpenVINOModule:
+    def test_importing_the_adapter_injects_nothing_when_openvino_is_absent(self, monkeypatch):
+        import importlib
+        import sys
+
+        import app.core.documents.openvino as adapter
+
+        monkeypatch.setitem(sys.modules, "openvino", None)  # simulate "not installed"
+        try:
+            reloaded = importlib.reload(adapter)
+            assert sys.modules["openvino"] is None  # untouched: no fake module planted
+            with pytest.raises(ImportError, match="OpenVINO is not installed") as exc:
+                reloaded._resolve_openvino_core()
+            assert isinstance(exc.value.__cause__, ModuleNotFoundError)
+        finally:
+            monkeypatch.undo()
+            importlib.reload(adapter)
+
+    def test_a_broken_installation_reports_its_real_cause(self, monkeypatch):
+        import app.core.documents.openvino as adapter
+
+        cause = OSError("[WinError 126] openvino_c.dll not found")
+
+        def broken(name):
+            raise cause
+
+        monkeypatch.setattr(adapter, "Core", None)
+        monkeypatch.setattr(adapter.importlib, "import_module", broken)
+        with pytest.raises(ImportError, match="OpenVINO failed to load: OSError") as exc:
+            adapter._resolve_openvino_core()
+        assert exc.value.__cause__ is cause

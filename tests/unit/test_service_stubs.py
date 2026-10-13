@@ -2,6 +2,8 @@ from datetime import datetime
 
 import pytest
 
+from app.core.documents.errors import OCRDependencyUnavailableError
+
 from app.core import rate_limit
 from app.core.prompts import SYSTEM_PROMPT as CORE_PROMPT
 from app.services.ai.dependencies import get_ai_orchestrator
@@ -172,15 +174,65 @@ async def test_ocr_provider_can_be_subclassed():
 
 
 @pytest.mark.asyncio
-async def test_image_ocr_providers_return_data():
-    openvino = OpenVINOService()
+async def test_openvino_ocr_service_refuses_instead_of_fabricating_text():
+    from app.core.documents.errors import OCRNotImplementedError
+
+    with pytest.raises(OCRNotImplementedError) as exc:
+        await OpenVINOService().extract_text_from_image("page.png")
+    assert exc.value.error_code == "OCR_NOT_IMPLEMENTED"
+    assert "page.png" in str(exc.value)
+
+
+class FakePaddleEngine:
+    """Explicit test double for paddleocr.PaddleOCR: returns the 2.7 result
+    shape without loading a model."""
+
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+        self.calls: list[str] = []
+
+    def ocr(self, image_path, cls=True):
+        self.calls.append(image_path)
+        return [[[[[0, 0], [10, 0], [10, 5], [0, 5]], ("sample extracted text", 0.97)]]]
+
+
+@pytest.mark.asyncio
+async def test_paddle_ocr_service_normalizes_engine_output(monkeypatch, tmp_path):
+    import app.services.ocr.paddle as paddle_module
+
+    monkeypatch.setattr(paddle_module, "PaddleOCR", FakePaddleEngine)
+    # Input validation needs Pillow and has its own tests
+    # (test_ocr_image_validation.py); here it is recorded, not run.
+    validated: list[str] = []
+    monkeypatch.setattr(paddle_module, "validate_image", validated.append)
+    image = tmp_path / "page.png"
+    image.write_bytes(b"fake image bytes; the fake engine never decodes them")
+
+    paddle = PaddleOCRService()
+    paddle_data = await paddle.extract_text_from_image(str(image))
+
+    assert paddle.model.kwargs == {"lang": "en", "ocr_version": "PP-OCRv3"}
+    assert validated == [str(image)]
+    assert paddle.model.calls == [str(image)]
+    assert paddle_data == [
+        {
+            "text": "sample extracted text",
+            "confidence": 0.97,
+            "bbox": [[0.0, 0.0], [10.0, 0.0], [10.0, 5.0], [0.0, 5.0]],
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_paddle_ocr_service_rejects_a_missing_file_before_the_engine(monkeypatch, tmp_path):
+    import app.services.ocr.paddle as paddle_module
+
+    monkeypatch.setattr(paddle_module, "PaddleOCR", FakePaddleEngine)
     paddle = PaddleOCRService()
 
-    openvino_data = await openvino.extract_text_from_image("image.png")
-    assert openvino_data[0]["text"] == "openvino extracted text"
-
-    paddle_data = await paddle.extract_text_from_image("image.png")
-    assert paddle_data[0]["text"] == "sample extracted text"
+    with pytest.raises(FileNotFoundError, match="OCR input image not found"):
+        await paddle.extract_text_from_image(str(tmp_path / "missing.png"))
+    assert paddle.model.calls == []
 
 
 def test_pdf_parser_raises_when_pymupdf_missing(monkeypatch):
@@ -189,5 +241,5 @@ def test_pdf_parser_raises_when_pymupdf_missing(monkeypatch):
     monkeypatch.setattr(pdf_parser_module, "fitz", None)
     parser = PDFParser()
 
-    with pytest.raises(RuntimeError, match="PyMuPDF is required"):
+    with pytest.raises(OCRDependencyUnavailableError, match="PyMuPDF is not installed"):
         parser.extract_pages("missing.pdf")

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import Any, cast
 
 from app.core.documents.contracts import Document
 from app.core.documents.enums import DocumentType
@@ -60,7 +60,9 @@ class DocumentAnalyzer:
         else:
             raise UnsupportedDocumentTypeError(mime_type, tenant_id=document.tenant_id)
 
-        pages = list(document.pages) if document.pages else []
+        # Callers supply per-page analysis here, although Document.pages is typed
+        # as DocumentPage (which has no content_type). Kept as-is; not narrowed.
+        pages = cast(list[PageAnalysis], list(document.pages)) if document.pages else []
         if not pages:
             pages = [
                 PageAnalysis(

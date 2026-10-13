@@ -69,3 +69,48 @@ class InvalidBoundingBoxError(DocumentError):
 
     def __init__(self, message: str):
         super().__init__(message, error_code="INVALID_BOUNDING_BOX")
+
+
+class OCRNotImplementedError(DocumentError):
+    """An OCR component was asked to do work it does not implement yet.
+
+    Raised instead of returning an empty or fabricated result, so a caller can
+    never mistake "nothing was recognised" for "recognition never ran".
+    """
+
+    def __init__(self, component: str, detail: str):
+        super().__init__(
+            f"{component} is not implemented: {detail}", error_code="OCR_NOT_IMPLEMENTED"
+        )
+        self.component = component
+
+
+class OCRDependencyUnavailableError(DocumentError):
+    """An OCR/document dependency (library or model) could not be loaded.
+
+    Carries the original exception (also chained as ``__cause__``), so the
+    real reason is never replaced by a generic "not installed". A missing
+    package and a package that is installed but fails while importing (a
+    native library, a broken dependency) are reported differently.
+    """
+
+    def __init__(
+        self,
+        dependency: str,
+        cause: BaseException,
+        install_hint: str | None = None,
+        module: str | None = None,
+    ):
+        # "Missing" only when the package itself is absent; a missing module
+        # *inside* an installed package is a load failure, reported in full.
+        missing = isinstance(cause, ModuleNotFoundError) and (cause.name or "").split(".")[0] == (
+            module or dependency
+        )
+        if missing:
+            detail = "is not installed" + (f" ({install_hint})" if install_hint else "")
+        else:
+            detail = f"failed to load: {type(cause).__name__}: {cause}"
+        super().__init__(f"{dependency} {detail}", error_code="OCR_DEPENDENCY_UNAVAILABLE")
+        self.dependency = dependency
+        self.cause = cause
+        self.missing = missing

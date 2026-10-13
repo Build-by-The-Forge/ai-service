@@ -8,6 +8,7 @@ from typing import Any
 class CallbackEventType(str, Enum):
     STARTED = "STARTED"
     PROGRESS = "PROGRESS"
+    STAGE_COMPLETED = "STAGE_COMPLETED"  # a real pipeline stage finished
     COMPLETED = "COMPLETED"
     FAILED = "FAILED"
 
@@ -27,13 +28,15 @@ class CallbackEvent:
     external_task_id: str
     correlation_id: str
     event_type: CallbackEventType
-    event_id: str = field(default_factory=lambda: f"evt_{uuid.uuid4().hex}")
+    event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
     progress_pct: int | None = None
     error_code: str | None = None
     error_message: str | None = None
     retryable: bool | None = None
     extracted_metadata: dict[str, Any] | None = None
     chunk_summary: dict[str, Any] | None = None
+    stage: str | None = None
+    metrics: dict[str, Any] | None = None
     timestamp: float = field(default_factory=time.time)
 
     def to_dict(self) -> dict[str, Any]:
@@ -65,6 +68,10 @@ class CallbackEvent:
             data["extracted_metadata"] = self.extracted_metadata
         if self.chunk_summary is not None:
             data["chunk_summary"] = self.chunk_summary
+        if self.stage is not None:
+            data["stage"] = self.stage
+        if self.metrics is not None:
+            data["metrics"] = self.metrics
         return data
 
 

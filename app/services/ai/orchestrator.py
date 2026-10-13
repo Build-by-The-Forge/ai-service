@@ -1,5 +1,6 @@
 from app.core.prompt_builder import PromptBuilder
 from app.services.ai.llm import LLMProvider
+from app.services.generation.structured_questions import StructuredQuestionGenerator
 from app.services.memory.memory_service import MemoryService
 from app.services.rag.retrieval import RetrievalService
 
@@ -57,16 +58,17 @@ Explain the following subject in clear academic terms:
 
         return {"explanation": answer}
 
-    async def generate_questions(self, topic: str):
-        prompt = f"""
-Generate 5 CBT questions on: {topic}
-
-Include:
-- multiple choice
-- answers
-- difficulty level
-"""
-
-        result = await self.llm.generate(prompt)
-
-        return {"questions": result}
+    async def generate_questions(
+        self,
+        topic: str,
+        count: int = 5,
+        difficulty: str = "medium",
+        question_type: str = "mcq",
+    ):
+        result = await StructuredQuestionGenerator(self.llm, self.retriever).generate(
+            topic, count=count, difficulty=difficulty, question_type=question_type
+        )
+        return {
+            "questions": [q.model_dump() for q in result.questions],
+            "discarded": result.discarded,
+        }

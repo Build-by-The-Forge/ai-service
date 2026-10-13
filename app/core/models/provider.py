@@ -29,7 +29,7 @@ class ModelProviderAdapter(abc.ABC):
         """Executes a non-streaming completion and returns a normalized ModelResponse."""
 
     @abc.abstractmethod
-    async def generate_stream(
+    def generate_stream(
         self, request: ModelRequest, decision: ModelDecision
     ) -> AsyncIterator[ModelStreamChunk]:
         """Executes a streaming completion and yields ModelStreamChunk instances."""

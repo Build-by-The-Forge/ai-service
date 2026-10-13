@@ -35,7 +35,10 @@ class AITask:
     payload: dict[str, Any]
     created_at: float = field(default_factory=time.time)
     deadline: float | None = None
+    # Internal delivery bookkeeping. run_number and attempt_count are the
+    # backend's attempt identity and are never changed by worker retries.
     max_attempts: int = 3
+    delivery_attempt: int = 1
 
     def is_expired(self) -> bool:
         if self.deadline is None:
@@ -57,6 +60,7 @@ class AITask:
             "created_at": self.created_at,
             "deadline": self.deadline,
             "max_attempts": self.max_attempts,
+            "delivery_attempt": self.delivery_attempt,
         }
 
     @classmethod
@@ -75,6 +79,7 @@ class AITask:
             created_at=float(data.get("created_at", time.time())),
             deadline=float(data["deadline"]) if data.get("deadline") is not None else None,
             max_attempts=int(data.get("max_attempts", 3)),
+            delivery_attempt=int(data.get("delivery_attempt", 1)),
         )
 
 
@@ -114,6 +119,8 @@ class AIExecutionContext:
         self._is_cancelled = False
         self._cancellation_reason: str | None = None
         self._metadata: dict[str, Any] = {}
+        # Set by the worker for ingestion tasks: reports real pipeline stages.
+        self.stage_reporter: Any = None
 
     @classmethod
     def from_task(

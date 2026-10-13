@@ -2,13 +2,9 @@
 
 The backend owns the platform schema (users, tenants, questions, assessments, ...)
 and migrates it with its own Alembic chain. The AI service may only create or
-migrate the tables listed here.
-
-`Base.metadata` still contains legacy models (users, schools, exams,
-exam_sessions, answer_sheets, questions) that pre-date the shared database and
-are kept only for existing runtime code until the identity work replaces them.
-They are deliberately absent from this set, so Alembic never creates, alters,
-or proposes dropping them -- nor any backend table it reflects from the database.
+migrate the tables listed here. `Base.metadata` holds only these tables since
+M4 removed the legacy models; this filter still keeps Alembic from touching
+any backend table it reflects from the shared database.
 """
 
 from typing import Any

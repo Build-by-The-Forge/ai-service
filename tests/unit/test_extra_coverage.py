@@ -5,18 +5,16 @@ import types
 
 import pytest
 
-from app.api.v1.ai import exam_submit as exam_submit_route
-from app.api.v1.ai import fusion_exam as fusion_exam_route
+from app.core.documents.errors import OCRDependencyUnavailableError
+
 from app.api.v1.ai import ocr as ocr_route
 from app.api.v1.ai import read as read_route
 from app.api.v1.ai import retrieve as retrieve_route
 from app.core import metrics as core_metrics
+from app.schemas.ai import ReadStartRequest, RetrieveRequest
 from app.schemas.tree import TreeNode
-from app.services.exam.redis_session_store import RedisSessionStore
-from app.services.exam.session_service import ExamSessionService
 from app.services.memory.memory_service import MemoryService
 from app.services.ocr.pdf_parser import PDFParser
-from app.services.realtime.pubsub import RedisPubSub
 
 
 class DummyResult:
@@ -88,60 +86,6 @@ class DummyPubSubHandler:
         yield {"type": "message", "data": json.dumps({"foo": "bar"})}
 
 
-class DummyExam:
-    def __init__(self, school_id):
-        self.id = 1
-        self.school_id = school_id
-
-
-@pytest.mark.asyncio
-async def test_submit_answer_route_grades_correct_and_incorrect_answers():
-    correct_response = await exam_submit_route.submit_answer(
-        correct_answer="42",
-        user_answer="42",
-        role="student",
-        db=None,
-    )
-    incorrect_response = await exam_submit_route.submit_answer(
-        correct_answer="42",
-        user_answer="24",
-        role="student",
-        db=None,
-    )
-
-    assert correct_response.success is True
-    assert correct_response.data["is_correct"] is True
-    assert incorrect_response.data["is_correct"] is False
-
-
-@pytest.mark.asyncio
-async def test_generate_ai_exam_route_uses_engine_and_returns_payload(monkeypatch):
-    class DummyFusionEngine:
-        def __init__(self, ai_generator, adaptive_engine):
-            self.ai_generator = ai_generator
-            self.adaptive_engine = adaptive_engine
-
-        async def generate_personalized_exam(self, user_id, course, topic):
-            return {"difficulty": "easy", "exam": {"course": course, "topic": topic}}
-
-    monkeypatch.setattr(fusion_exam_route, "CBTFusionEngine", DummyFusionEngine)
-    monkeypatch.setattr(fusion_exam_route, "OpenAILLM", lambda: object())
-    monkeypatch.setattr(fusion_exam_route, "TenantAwareRetrievalService", lambda: object())
-    monkeypatch.setattr(fusion_exam_route, "MemoryService", lambda db: object())
-
-    response = await fusion_exam_route.generate_ai_exam(
-        user_id="user-1",
-        course="history",
-        topic="world",
-        role="admin",
-        db=None,
-    )
-
-    assert response.success is True
-    assert response.data["difficulty"] == "easy"
-    assert response.data["exam"]["topic"] == "world"
-
-
 def test_ocr_route_placeholder_returns_success():
     result = ocr_route.ocr()
     assert result["success"] is True
@@ -154,7 +98,9 @@ async def test_retrieve_route_returns_api_response_with_dummy_retriever():
         async def retrieve(self, query: str):
             return [{"text": f"dummy {query}"}]
 
-    response = await retrieve_route.retrieve(query="test", retriever=DummyRetriever())
+    response = await retrieve_route.retrieve(
+        body=RetrieveRequest(query="test"), call=None, retriever=DummyRetriever()
+    )
 
     assert response.success is True
     assert response.data[0]["text"] == "dummy test"
@@ -167,7 +113,7 @@ def test_start_reading_route_generates_path():
         level=0,
         children=[TreeNode(id="topic1", title="Topic 1", level=1)],
     )
-    response = asyncio.run(read_route.start_reading(root=root))
+    response = asyncio.run(read_route.start_reading(body=ReadStartRequest(root=root), call=None))
 
     assert response.success is True
     assert len(response.data) == 2
@@ -198,60 +144,8 @@ def test_setup_metrics_instrumentator_is_used(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_redis_session_store_create_get_and_update_answer(monkeypatch):
-    dummy_client = DummyRedisClient()
-    monkeypatch.setattr(
-        "app.services.exam.redis_session_store.redis_client",
-        dummy_client,
-    )
-
-    store = RedisSessionStore()
-    await store.create_session("s1", {"user_id": "u1", "answers": {"q1": "a"}})
-    stored = await store.get_session("s1")
-    assert stored["user_id"] == "u1"
-    assert stored["answers"]["q1"] == "a"
-
-    updated = await store.update_answer("s1", "q2", "b")
-    assert updated["answers"]["q2"] == "b"
-    assert updated["last_activity"] >= 0
-
-
-@pytest.mark.asyncio
-async def test_redis_session_store_update_answer_returns_none_when_missing(monkeypatch):
-    import app.services.exam.redis_session_store as redis_session_store_module
-
-    dummy_client = DummyRedisClient()
-    monkeypatch.setattr(redis_session_store_module, "redis_client", dummy_client)
-
-    store = RedisSessionStore()
-    result = await store.update_answer("unknown", "q1", "a")
-
-    assert result is None
-
-
-@pytest.mark.asyncio
-async def test_exam_session_service_start_session_with_and_without_exam(monkeypatch):
-    monkeypatch.setattr("app.services.exam.session_service.get_school_id", lambda: 100)
-
-    service = ExamSessionService(
-        db=DummyAsyncSession(execute_result=DummyResult(scalar=DummyExam(school_id=100)))
-    )
-    session = await service.start_session(exam_id=1, user_id="user-1")
-
-    assert session.exam_id == 1
-    assert session.user_id == "user-1"
-    assert session.status == "active"
-
-    with pytest.raises(ValueError):
-        service_missing = ExamSessionService(
-            db=DummyAsyncSession(execute_result=DummyResult(scalar=None))
-        )
-        await service_missing.start_session(exam_id=1, user_id="user-1")
-
-
-@pytest.mark.asyncio
 async def test_memory_service_get_user_memory_and_update_mastery(monkeypatch):
-    monkeypatch.setattr("app.services.memory.memory_service.get_school_id", lambda: 77)
+    monkeypatch.setattr("app.services.memory.memory_service.get_tenant_id", lambda: "77")
 
     dummy_record = types.SimpleNamespace(
         tenant_id="77",
@@ -282,26 +176,5 @@ def test_pdf_parser_raises_when_pymupdf_is_missing(monkeypatch):
     monkeypatch.setattr("app.services.ocr.pdf_parser.fitz", None)
 
     parser = PDFParser()
-    with pytest.raises(RuntimeError, match="PyMuPDF is required"):
+    with pytest.raises(OCRDependencyUnavailableError, match="PyMuPDF is not installed"):
         parser.extract_pages("dummy.pdf")
-
-
-@pytest.mark.asyncio
-async def test_pubsub_publish_and_subscribe(monkeypatch):
-    dummy_client = DummyRedisClient()
-    monkeypatch.setattr(
-        "app.services.realtime.pubsub.redis_client",
-        dummy_client,
-    )
-
-    published_messages = []
-
-    async def handler(message):
-        published_messages.append(message)
-
-    pubsub = RedisPubSub()
-    await pubsub.publish("channel", {"hello": "world"})
-    assert dummy_client.published == [("channel", json.dumps({"hello": "world"}))]
-
-    await pubsub.subscribe("channel", handler)
-    assert published_messages == [{"hello": "world"}, {"foo": "bar"}]

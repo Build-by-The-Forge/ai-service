@@ -230,3 +230,36 @@ def test_wrong_runtime_is_rejected():
 def test_wrong_provider_is_rejected():
     with pytest.raises(TypeError):
         OCRRouter(provider="not-a-provider")
+
+
+# --- Phase 2 Step 1: no fabricated success --------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_paddle_ocr_provider_process_fails_explicitly():
+    from app.core.documents.errors import OCRNotImplementedError
+    from app.core.documents.ocr import OCRPageRequest, OCRRequest
+
+    provider = PaddleOCRProvider(runtime=OpenVINORuntime())
+    request = OCRRequest(
+        document_id="doc_1",
+        tenant_id="t1",
+        pages=[
+            OCRPageRequest(1, "doc://t1/doc_1/page/1", "application/pdf", PageContentType.SCANNED)
+        ],
+        provider_name="paddleocr",
+        runtime_name="openvino",
+        model_name="PP-OCRv3",
+    )
+
+    with pytest.raises(OCRNotImplementedError) as exc:
+        await provider.process(request)
+    assert exc.value.error_code == "OCR_NOT_IMPLEMENTED"
+    assert "doc_1" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_paddle_ocr_provider_health_reports_it_is_not_implemented():
+    health = await PaddleOCRProvider(runtime=OpenVINORuntime()).health_check()
+    assert health["status"] == "unavailable"
+    assert health["implemented"] is False

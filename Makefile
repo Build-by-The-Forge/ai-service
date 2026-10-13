@@ -11,9 +11,6 @@ migrate:
 	docker compose exec ai-service \
 	alembic upgrade head
 
-seed:
-	python scripts/seed.py
-
 PYTHON=.venv/Scripts/python.exe
 
 lint:

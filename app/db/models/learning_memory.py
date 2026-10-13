@@ -1,4 +1,4 @@
-from sqlalchemy import Float, Integer, String
+from sqlalchemy import Float, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -6,6 +6,12 @@ from app.db.base import Base
 
 class LearningMemory(Base):
     __tablename__ = "learning_memory"
+    # One row per learner and topic within a tenant (memory upserts, M5).
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "user_id", "topic", name="uq_learning_memory_tenant_user_topic"
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     # Backend `tenants.id` value. Deliberately not a foreign key: the backend
