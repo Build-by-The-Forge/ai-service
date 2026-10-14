@@ -1,6 +1,6 @@
 # Phase 2 release gate R4 — model licences and evaluation material
 
-**Status: OPEN.** Must be closed before the first production AI-service image is published or deployed. Section 1 (OCR model licences) was reviewed on 2026-10-14 and signed off by the owner the same day (section 3); section 2 (evaluation material) is still open.
+**Status: CLOSED on 2026-10-14.** The owner signed off both sections (section 3): the OCR model licences (section 1) and the evaluation material (section 2). The gate had to close before the first production AI-service image could be published or deployed. Publishing still needs a separate, deliberate step: setting the repository variable `PUBLISH_IMAGES` to `true` (`.github/workflows/backend.yml`).
 **Recorded:** 2026-10-11, during Phase 2 Step 2.
 
 ## 1. OCR model redistribution
@@ -75,6 +75,28 @@ These files were committed on 2026-09-01 (`43aeb56`) for the AI-2B.4.3 OCR bench
 2. Where that basis is unclear, remove the file from the repository (history needs a separate decision). Replace it with a permitted fixture, such as a document we author, a public-domain text or a properly licensed sample, so that benchmark coverage of each layout (native PDF, scanned exam, phone photo) survives.
 3. Check the messaging-app photo specifically for personal data before any further use.
 
+### Owner decision, 2026-10-14
+
+The owner (AI-MLGuru) confirms that this material is meant for the public and is cleared for public distribution, including in this repository. The owner made this decision after seeing the privacy review below, including the phone-number-like string in `MTS102_Solutions.pdf`. No file needs removing or replacing (step 2).
+
+**Privacy review (step 3 and every other file), 2026-10-14:**
+- Both images were inspected visually.
+- Image metadata was checked for EXIF and GPS.
+- PDF metadata and text were scanned for email addresses, phone numbers, matriculation or registration numbers, and URLs.
+- Ground-truth transcriptions were scanned for the same patterns.
+- Only kinds and counts were recorded, not values.
+
+| File | Provenance | Basis for distribution | Privacy review |
+|---|---|---|---|
+| `pdfs/MTS 102  Multiple Choice Questions on Limits and Continuity BY ROTIMI.pdf` | Course material; author named in the file name | Owner confirmation: meant for the public | 18 pages with almost no text layer (scanned). Nothing found in the extractable text; the page images were not read. No author metadata |
+| `pdfs/MTS 102 - Differentiation Exercise  BY PHOTOCHEM.pdf` | Course material; author or handle in the file name | Owner confirmation: meant for the public | Nothing found. No author metadata |
+| `pdfs/MTS 102 Cheat sheet.pdf_20250907_152115_0000.pdf` | Not recorded beyond the owner's confirmation | Owner confirmation: meant for the public | Nothing found in the text. The PDF author field holds a two-word personal name |
+| `pdfs/MTS102_Solutions.pdf` | Not recorded beyond the owner's confirmation | Owner confirmation: meant for the public | Page 16 ends with a sign-off, "Emerald", followed by an 11-digit number shaped like a mobile number. The owner confirms it is part of the published material |
+| `pdfs/PHY 102 PRACTICE MULTIPLE CHOICE QUESTIONS BY GRACE..pdf` | Course material; author named in the file name | Owner confirmation: meant for the public | Nothing found in the text. The PDF author field holds a single name |
+| `images/DTS SECOND SEMESTER 20252026 EXAMINATION.jpeg` | Federal University of Technology, Akure: DTS 104 examination paper, April 2025 | Owner confirmation: meant for the public | No personal data visible. No EXIF or GPS metadata |
+| `images/IMG-20260627-WA0036.jpg` | Messaging-app photo of a handwritten practical worksheet (boiling time against salt) on WAEC/NECO graph paper | Owner confirmation: meant for the public | No names, faces, phone numbers or ID numbers visible. No EXIF or GPS metadata |
+| `ground_truth/*.json` (7 files) | Our own transcriptions of the documents above | Follows the source documents | Nothing found |
+
 ## 3. Sign-off
 
 | Item | Confirmed by | Date | Source / basis |
@@ -82,4 +104,4 @@ These files were committed on 2026-09-01 (`43aeb56`) for the AI-2B.4.3 OCR bench
 | `en_PP-OCRv3_det_infer` redistribution | AI-MLGuru (owner) | 2026-10-14 | Apache-2.0, inferred: PaddleOCR LICENSE, official model list, PP-OCRv3 detection-series card, issue #8780 (sibling `ch_PP-OCRv3_det`). The owner accepts this documented inference and its limitation: no upstream statement names this exact archive. Section 1 |
 | `en_PP-OCRv3_rec_infer` redistribution | AI-MLGuru (owner) | 2026-10-14 | Apache-2.0, stated: issue #8780; section 1 |
 | `ch_ppocr_mobile_v2.0_cls_infer` redistribution | AI-MLGuru (owner) | 2026-10-14 | Apache-2.0, stated: issue #8780; section 1 |
-| `data/ocr_evaluation` files (each) | | | |
+| `data/ocr_evaluation` files (each) | AI-MLGuru (owner) | 2026-10-14 | Owner confirms each file is meant for the public and cleared for public distribution; per-file provenance and privacy review in section 2 |
