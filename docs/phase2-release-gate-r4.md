@@ -1,6 +1,6 @@
 # Phase 2 release gate R4 — model licences and evaluation material
 
-**Status: OPEN.** Must be closed before the first production AI-service image is published or deployed. Section 1 (OCR model licences) was reviewed on 2026-10-14 and awaits sign-off; section 2 (evaluation material) is still open.
+**Status: OPEN.** Must be closed before the first production AI-service image is published or deployed. Section 1 (OCR model licences) was reviewed on 2026-10-14 and signed off by the owner the same day (section 3); section 2 (evaluation material) is still open.
 **Recorded:** 2026-10-11, during Phase 2 Step 2.
 
 ## 1. OCR model redistribution
@@ -79,7 +79,7 @@ These files were committed on 2026-09-01 (`43aeb56`) for the AI-2B.4.3 OCR bench
 
 | Item | Confirmed by | Date | Source / basis |
 |---|---|---|---|
-| `en_PP-OCRv3_det_infer` redistribution | | 2026-10-14 | Apache-2.0, inferred: PaddleOCR LICENSE, official model list, PP-OCRv3 detection-series card, issue #8780 (sibling `ch_PP-OCRv3_det`); section 1 |
-| `en_PP-OCRv3_rec_infer` redistribution | | 2026-10-14 | Apache-2.0, stated: issue #8780; section 1 |
-| `ch_ppocr_mobile_v2.0_cls_infer` redistribution | | 2026-10-14 | Apache-2.0, stated: issue #8780; section 1 |
+| `en_PP-OCRv3_det_infer` redistribution | AI-MLGuru (owner) | 2026-10-14 | Apache-2.0, inferred: PaddleOCR LICENSE, official model list, PP-OCRv3 detection-series card, issue #8780 (sibling `ch_PP-OCRv3_det`). The owner accepts this documented inference and its limitation: no upstream statement names this exact archive. Section 1 |
+| `en_PP-OCRv3_rec_infer` redistribution | AI-MLGuru (owner) | 2026-10-14 | Apache-2.0, stated: issue #8780; section 1 |
+| `ch_ppocr_mobile_v2.0_cls_infer` redistribution | AI-MLGuru (owner) | 2026-10-14 | Apache-2.0, stated: issue #8780; section 1 |
 | `data/ocr_evaluation` files (each) | | | |
