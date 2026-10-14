@@ -15,7 +15,7 @@ The image ships three pretrained PaddleOCR models (`models/ocr/manifest.json`, `
 
 **Established:**
 - the `paddleocr` 2.7.0 package declares Apache License 2.0 (package metadata);
-- the attribution "PaddleOCR, Copyright (c) PaddlePaddle Authors" ships with the models.
+- the attribution "PaddleOCR, Copyright (c) 2016 PaddlePaddle Authors. All Rights Reserved." ships with the models.
 
 **Open on 2026-10-11:** the redistribution terms of the pretrained weights themselves. A software licence on the package does not by itself cover every model artifact.
 
