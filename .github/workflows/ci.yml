@@ -57,9 +57,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
+      # Collect from tests/ only: a bare `pytest` also collects the helpers in
+      # scripts/run_smoke_test.py, whose parameters are not fixtures. The XML
+      # report is the coverage.xml the next step uploads.
       - name: Run tests
         run: |
-          pytest -v --cov=app --cov-report=term-missing
+          pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
 
       - name: Upload coverage
         if: always()
