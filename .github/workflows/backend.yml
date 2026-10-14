@@ -165,11 +165,20 @@ jobs:
           python scripts/audit_image_packages.py ai-service:ci
       # Production runs this exact, tested image (with its verified models),
       # by immutable tag or digest; it never downloads models at startup.
+      # Publishing is off unless the repository variable PUBLISH_IMAGES is
+      # exactly "true"; it stays unset until release gate R4 is closed
+      # (docs/phase2-release-gate-r4.md). Expression comparisons ignore case,
+      # so the step checks the exact value again before it logs in.
       - name: Publish the tested image
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLISH_IMAGES == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_IMAGES: ${{ vars.PUBLISH_IMAGES }}
         run: |
+          if [ "$PUBLISH_IMAGES" != "true" ]; then
+            echo "::error::PUBLISH_IMAGES must be exactly 'true' to publish; nothing was published"
+            exit 1
+          fi
           image="ghcr.io/$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]'):sha-${{ github.sha }}"
           echo "$GITHUB_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
           docker tag ai-service:ci "$image"
@@ -177,3 +186,8 @@ jobs:
           digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$image")
           echo "Published $image" >> "$GITHUB_STEP_SUMMARY"
           echo "Digest: $digest" >> "$GITHUB_STEP_SUMMARY"
+      - name: Image publication is off
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.PUBLISH_IMAGES != 'true'
+        run: |
+          echo "::notice::Image built and tested, not published: PUBLISH_IMAGES is not 'true' (release gate R4)"
+          echo "Not published: the repository variable PUBLISH_IMAGES is not 'true' (release gate R4)." >> "$GITHUB_STEP_SUMMARY"
