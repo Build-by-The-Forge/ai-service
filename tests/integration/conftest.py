@@ -17,7 +17,18 @@ async def engine_disposed_on_the_test_loop():
     belong to the loop that opened them. An engine left open is disposed by a
     later test on a different loop, where closing those connections fails
     with "Event loop is closed".
+
+    The check also runs before the test, so an engine left open by a test
+    that ran earlier (outside tests/integration, which this fixture does not
+    cover) is reported as such, instead of being blamed on this test or
+    silently disposed by it.
     """
+    if session_module.engine is not None:
+        await reset_engine()
+        pytest.fail(
+            "app.db.session.engine was already open when this test started: "
+            "a test that ran earlier left it open"
+        )
     yield
     if session_module.engine is not None:
         await reset_engine()
