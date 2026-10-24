@@ -43,6 +43,6 @@ numpy==1.26.4
 # protobuf<=3.20.2 there, so Windows keeps 3.20.2.
 protobuf==5.29.6; sys_platform != "win32"
 protobuf==3.20.2; sys_platform == "win32"
-# paddle imports setuptools at load time, so it ships. 83.0.0 clears
-# PYSEC-2025-49 and PYSEC-2026-3447.
-setuptools==83.0.0
+# paddle imports setuptools at load time, so it ships. 83.0.0 cleared
+# PYSEC-2025-49 and PYSEC-2026-3447; 84.1.0 clears GHSA-xmj3-9gf7-h52w.
+setuptools==84.1.0
