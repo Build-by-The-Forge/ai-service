@@ -162,6 +162,7 @@ Each milestone is a series of small PRs, merged in order.
   - automatic dispatch of queued jobs;
   - due retries;
   - reconciliation of jobs in `processing` past a deadline;
+  - **orphaned-object reconciliation**, a tracked requirement from P3-1 PR 2 (build-backend `docs/p3-1-pr2-upload-design.md` §6). An upload stores the object before committing its row, so a crash between the two, with no retry using the same key and bytes, leaves an object no asset references. The job lists objects under the asset prefixes, compares them with `content_assets`, and deletes only objects that have no row and are older than a grace period, so that in-flight uploads are never touched. It is safe to rerun, and the storage adapter gains listing for it. **Until it exists, orphan cleanup is not automatic**: PR 2 only compensates immediately, and logs and counts any compensation that fails;
   - safe with several worker instances.
 - **Boundary tests:**
   - C22 becomes upload → `ready`, with stage evidence and a retrieval hit;
@@ -171,6 +172,7 @@ Each milestone is a series of small PRs, merged in order.
 1. The happy path needs no manual endpoint call.
 2. Stopping the AI worker mid-job leads to reconciliation and a retry, not a stuck job.
 3. The boundary gate is green with C22 as designed.
+4. An object stored without a committed row is deleted by reconciliation once it is older than the grace period. An in-flight upload's object is not. Running reconciliation twice changes nothing more.
 
 ## 5. Order
 
