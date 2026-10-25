@@ -31,7 +31,7 @@ safetensors==0.8.0; sys_platform != "win32"
 # require numpy>=2. Real OCR output on the evaluation corpus is identical
 # to 4.6.0.66 (OCR-stack security step).
 opencv-python-headless==4.11.0.86
-Pillow==12.3.0
+Pillow==13.0.0
 # Native PDF text (services/ocr/pdf_parser.py). 1.28.0 has CPython 3.12
 # abi3 wheels for Linux and Windows and no dependencies.
 PyMuPDF==1.28.0
