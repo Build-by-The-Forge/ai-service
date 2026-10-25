@@ -37,6 +37,11 @@ class IngestDispatchRequest(BaseModel):
     content_sha256: str = Field(
         ..., min_length=64, max_length=64, description="Hex-encoded SHA-256 hash of content"
     )
+    # Optional until build-backend sends it (P3-1 PR 4): when present, the
+    # fetched object's size must equal it, as its SHA-256 must.
+    file_size_bytes: int | None = Field(
+        default=None, ge=1, description="Size in bytes of the uploaded content"
+    )
     run_number: int = Field(default=1, ge=1, description="Execution run number")
     attempt_count: int = Field(default=1, ge=1, description="Execution attempt count")
     correlation_id: str = Field(..., min_length=1, description="Distributed tracing correlation ID")
