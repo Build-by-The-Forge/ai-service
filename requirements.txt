@@ -31,6 +31,11 @@ httpx==0.27.2
 
 # Document Processing: PyMuPDF is pinned in requirements-ocr.txt (one place).
 
+# Object storage (P3-1 PR 4): read-only fetch of uploaded documents over the
+# S3 API. The same versions as build-backend, which writes the objects.
+boto3==1.43.108
+botocore==1.43.108
+
 # Observability / Rate Limiting
 prometheus-fastapi-instrumentator==8.1.0
 slowapi==0.1.9

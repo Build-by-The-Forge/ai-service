@@ -27,6 +27,7 @@ BACKEND_DISPATCH_BODY = {
     "idempotency_key": "job_01j9a8b7c6d5e4f3a2b1c0d9e8-r1-a1",
     "mime_type": "application/pdf",
     "content_sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+    "file_size_bytes": 204800,
     "storage_uri": "s3://build-assets-prod/futa/cos102/2026/course_pack.pdf",
     "correlation_id": "corr_01j9a8b7c6d5e4f3a2b1c0d9ea",
 }
@@ -42,6 +43,12 @@ def test_dispatch_contract_fields_are_exactly_the_backend_body():
     assert set(IngestDispatchRequest.model_fields) == set(BACKEND_DISPATCH_BODY)
     parsed = IngestDispatchRequest(**BACKEND_DISPATCH_BODY)
     assert parsed.run_number == 1
+
+
+def test_a_backend_body_without_the_size_is_still_accepted():
+    """file_size_bytes is optional until build-backend sends it (P3-1 PR 4)."""
+    body = {k: v for k, v in BACKEND_DISPATCH_BODY.items() if k != "file_size_bytes"}
+    assert IngestDispatchRequest(**body).file_size_bytes is None
 
 
 @pytest.mark.parametrize("field", ["tenant_id", "callback_url", "user_id", "metadata"])

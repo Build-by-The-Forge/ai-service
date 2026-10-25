@@ -3,7 +3,7 @@ import socket
 from typing import Literal
 from urllib.parse import urlparse, urlsplit, urlunparse
 
-from pydantic import Field, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Where a missing, short or known service secret must stop startup (design A.1).
@@ -99,6 +99,25 @@ class Settings(BaseSettings):
     CALLBACK_INITIAL_BACKOFF_SECONDS: float = 0.5
     CALLBACK_MAX_BACKOFF_SECONDS: float = 5.0
     CALLBACK_JITTER: bool = True
+
+    # Object storage (P3-1 PR 4): read-only access to uploaded documents.
+    # The identity is the AI's own, with read permission only; the bucket is
+    # the one build-backend writes. Operator configuration only: a storage
+    # reference from a request is accepted only if it names this bucket.
+    OBJECT_STORAGE_ENDPOINT_URL: str = ""
+    OBJECT_STORAGE_BUCKET: str = ""
+    OBJECT_STORAGE_REGION: str = "us-east-1"
+    OBJECT_STORAGE_ACCESS_KEY_ID: str | None = None
+    OBJECT_STORAGE_SECRET_ACCESS_KEY: SecretStr | None = None
+    OBJECT_STORAGE_ADDRESSING_STYLE: Literal["path", "virtual", "auto"] = "path"
+    OBJECT_STORAGE_CONNECT_TIMEOUT_SECONDS: float = Field(default=3.0, gt=0, le=60)
+    OBJECT_STORAGE_READ_TIMEOUT_SECONDS: float = Field(default=30.0, gt=0, le=600)
+    OBJECT_STORAGE_MAX_ATTEMPTS: int = Field(default=3, ge=1, le=10)
+    # Largest object fetched, checked while streaming. The default is the
+    # backend's upload ceiling, so nothing the backend accepted is refused.
+    ASSET_FETCH_MAX_BYTES: int = Field(default=100 * 1024 * 1024, ge=1024, le=1024 * 1024 * 1024)
+    # Deadline for one whole fetch (connect, stream, verify).
+    ASSET_FETCH_TIMEOUT_SECONDS: float = Field(default=120.0, gt=0, le=1800)
 
     LOG_LEVEL: str = "INFO"
 
