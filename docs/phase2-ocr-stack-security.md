@@ -42,6 +42,7 @@ input handling in OCR, the CI gate for both, and the backend image.
 | opencv-python-headless | 4.6.0.66 | 4.11.0.86 | 2 (PYSEC-2023-184, GHSA-jh2j-j4j9-crg3: bundled libwebp) | corpus identical; offline image check (aa8b6e9) |
 | protobuf | 3.20.2 | 5.29.6 (Linux) | 2 (PYSEC-2026-1805, -1806) | corpus identical; backend changes from pure Python to the compiled `upb` (092a028) |
 | setuptools | 75.6.0 | 83.0.0 | 2 (PYSEC-2025-49, PYSEC-2026-3447) | corpus identical (092a028) |
+| setuptools | 83.0.0 | 84.1.0 | 1 (GHSA-xmj3-9gf7-h52w, low, published 2026-10-23) | corpus identical; offline image check; image audit clean (see the setuptools 84.1.0 note) |
 | paddlepaddle | 2.6.2 | 3.3.1 (Linux) | 2 (PYSEC-2026-1754, -1756) | corpus identical; offline image check (60f4e0a) |
 | safetensors | absent | 0.8.0 (Linux) | new dependency of paddle 3.3; no advisories | |
 | imgaug | 0.4.0 | 0.4.0 | none: no fixed release; accepted below | |
@@ -60,6 +61,19 @@ Notes on the choices:
   fixes will land, and it declares the setuptools dependency that paddle
   already needed at runtime. Corpus run time in one run each: 2.6.2 381 s,
   3.0.0 200 s, 3.3.1 280 s (not a benchmark; same machine, sequential).
+- **setuptools 84.1.0** (2026-10-19, 5 days old when adopted; accepted as
+  the first fixing release). GHSA-xmj3-9gf7-h52w is a Windows-only path
+  escape in setuptools' legacy `install_as_egg` wheel path. The Linux image
+  never installs wheels through setuptools, so it was not exposed, but a
+  fix exists. paddle declares setuptools without a bound, and no other
+  runtime requirement constrains it. Evidence, from the image with only
+  setuptools changed: paddle and paddleocr load; `pip check` output is
+  unchanged (its 20 lines are the deliberate `--no-deps` paddleocr
+  install); the corpus digest is identical (7 documents, 63 pages, 3416
+  lines); the offline image check passes with the same probe lines; and the
+  image audit shows only the accepted imgaug entry. Hosted CI ran the full
+  chain on main plus Pillow 13, black 26.10.1 and this change together:
+  green.
 - **setuptools and imgaug must ship.** paddle imports setuptools when it
   loads, and paddleocr 2.7 imports imgaug unconditionally. Blocking either
   stops paddleocr loading, so neither can be removed.
