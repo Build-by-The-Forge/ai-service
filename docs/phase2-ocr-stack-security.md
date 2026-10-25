@@ -39,9 +39,11 @@ input handling in OCR, the CI gate for both, and the backend image.
 | Package | Before | After | Advisories cleared | Evidence |
 |---|---|---|---|---|
 | Pillow | 10.4.0 | 12.3.0 | 17 (PYSEC-2026-165, -2249, -2250, -2252 to -2257, -2874, -3451, -3453, -3454, -3493 to -3496) | real-OCR tests, full suite, offline image check (36f3354) |
+| Pillow | 12.3.0 | 13.0.0 | 35 reported by the image audit against 12.3.0 on 2026-10-23 (34 CVE-2026-*, GHSA-78g4-xqwv-q3g8), 37 by 2026-10-25 as more were published; all fixed in 13.0.0 | corpus identical to a 12.3.0 baseline; offline image check; image audit clean; full suite (see the Pillow 13 note) |
 | opencv-python-headless | 4.6.0.66 | 4.11.0.86 | 2 (PYSEC-2023-184, GHSA-jh2j-j4j9-crg3: bundled libwebp) | corpus identical; offline image check (aa8b6e9) |
 | protobuf | 3.20.2 | 5.29.6 (Linux) | 2 (PYSEC-2026-1805, -1806) | corpus identical; backend changes from pure Python to the compiled `upb` (092a028) |
 | setuptools | 75.6.0 | 83.0.0 | 2 (PYSEC-2025-49, PYSEC-2026-3447) | corpus identical (092a028) |
+| setuptools | 83.0.0 | 84.1.0 | 1 (GHSA-xmj3-9gf7-h52w, low, published 2026-10-23) | corpus identical; offline image check; image audit clean (see the setuptools 84.1.0 note) |
 | paddlepaddle | 2.6.2 | 3.3.1 (Linux) | 2 (PYSEC-2026-1754, -1756) | corpus identical; offline image check (60f4e0a) |
 | safetensors | absent | 0.8.0 (Linux) | new dependency of paddle 3.3; no advisories | |
 | imgaug | 0.4.0 | 0.4.0 | none: no fixed release; accepted below | |
@@ -60,6 +62,54 @@ Notes on the choices:
   fixes will land, and it declares the setuptools dependency that paddle
   already needed at runtime. Corpus run time in one run each: 2.6.2 381 s,
   3.0.0 200 s, 3.3.1 280 s (not a benchmark; same machine, sequential).
+- **Pillow 13.0.0** (2026-10-16) was 7 days old when adopted, short of
+  the usual two-week rule. It is the only release that fixes the advisories
+  reported against 12.3.0, which failed every image build, and the upgrade
+  was approved as 13.0.0 specifically. Pillow decides OCR input here: it
+  validates and fully decodes every image before PaddleOCR sees it
+  (`validate_image`), and the offline check draws its probe page with
+  Pillow's font renderer.
+  - *Corpus.* The baseline is the same built image with only Pillow put
+    back to 12.3.0 (`pip install --no-deps Pillow==12.3.0`), so Pillow is
+    the only difference. Every page of all seven documents was OCRed
+    (PyMuPDF renders PDF pages at 2x; images are read directly), with
+    networking disabled and the corpus read-only: 63 pages, 3416 lines in
+    both, and one SHA-256 over every line's text, confidence and bounding
+    box is identical. No output differs, so no expected result changed.
+    This covers every page, more than the 17-page selection above, whose
+    exact page set the aggregate record does not preserve, so the two
+    counts are not comparable; the controlled comparison is the one that
+    decides.
+  - *Image.* `scripts/test_offline_ocr_image.sh` passes on both: the
+    verified models load, the probe page reads the same two lines,
+    malformed and oversized images are refused.
+    `scripts/audit_image_packages.py` on the 13.0.0 image: 76
+    distributions, only the accepted imgaug entry.
+  - *Suite.* Full suite on PostgreSQL 17 and Redis 8 with Pillow 13.0.0
+    and PyMuPDF installed, so Pillow's own validation tests run (CI's test
+    job has no OCR stack): 902 passed, 3 skipped (the real-PaddleOCR tests,
+    which need the image and are covered above), coverage 89.59%; ruff,
+    black and the migration review clean.
+  - *Run time.* Whole-corpus OCR time on this machine is dominated by
+    PaddleOCR inference and varies with host load: 12.3.0 took 872 s and
+    1957 s, 13.0.0 took 1395 s and 2169 s (two runs each, every digest
+    identical). Pillow's own share, `validate_image` over the same 63
+    rendered pages, alternating images, five passes each: median
+    1.22 s and 1.30 s per pass on 12.3.0, 1.18 s and 1.15 s on 13.0.0. Pillow
+    costs about a second of the run and 13.0.0 is not slower.
+- **setuptools 84.1.0** (2026-10-19, 5 days old when adopted; accepted as
+  the first fixing release). GHSA-xmj3-9gf7-h52w is a Windows-only path
+  escape in setuptools' legacy `install_as_egg` wheel path. The Linux image
+  never installs wheels through setuptools, so it was not exposed, but a
+  fix exists. paddle declares setuptools without a bound, and no other
+  runtime requirement constrains it. Evidence, from the image with only
+  setuptools changed: paddle and paddleocr load; `pip check` output is
+  unchanged (its 20 lines are the deliberate `--no-deps` paddleocr
+  install); the corpus digest is identical (7 documents, 63 pages, 3416
+  lines); the offline image check passes with the same probe lines; and the
+  image audit shows only the accepted imgaug entry. Hosted CI ran the full
+  chain on main plus Pillow 13, black 26.10.1 and this change together:
+  green.
 - **setuptools and imgaug must ship.** paddle imports setuptools when it
   loads, and paddleocr 2.7 imports imgaug unconditionally. Blocking either
   stops paddleocr loading, so neither can be removed.

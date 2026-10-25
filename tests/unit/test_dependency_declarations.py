@@ -91,7 +91,7 @@ def test_the_image_gets_the_fixed_ocr_engine_stack():
     assert image["paddlepaddle"] == [("requirements-ocr.txt", "3.3.1")]
     assert image["safetensors"] == [("requirements-ocr.txt", "0.8.0")]
     assert image["protobuf"] == [("requirements-ocr.txt", "5.29.6")]
-    assert image["setuptools"] == [("requirements-ocr.txt", "83.0.0")]
+    assert image["setuptools"] == [("requirements-ocr.txt", "84.1.0")]
 
 
 def test_windows_development_keeps_paddle_2_6_with_its_protobuf_cap():
