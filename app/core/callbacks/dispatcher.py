@@ -66,6 +66,8 @@ def backend_callback_body(event: CallbackEvent) -> dict[str, Any] | None:
             "error_message": event.error_message or "AI-service reported job failure",
             "is_retryable": bool(event.retryable),
         }
+        if event.details:
+            body["details"] = dict(event.details)
     else:
         return None
 

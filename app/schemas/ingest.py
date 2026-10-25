@@ -90,6 +90,9 @@ class IngestCallbackPayload(BaseModel):
     error_code: str | None = None
     error_message: str | None = None
     is_retryable: bool = False
+    # Evidence of what happened before a failure (the backend stores it as
+    # the job's error_details), e.g. a verified fetch. Data only.
+    details: dict[str, Any] = Field(default_factory=dict)
 
 
 class IngestTaskStatusResponse(BaseModel):

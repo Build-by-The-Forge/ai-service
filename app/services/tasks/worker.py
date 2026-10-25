@@ -163,6 +163,7 @@ class TaskWorker:
         code: str,
         message: str,
         retryable: bool,
+        details: dict[str, Any] | None = None,
     ) -> None:
         await self.transport.ack(msg_id, group=self.group_name)
         self._finish(msg_id, ctx)
@@ -173,6 +174,7 @@ class TaskWorker:
                 error_code=code,
                 error_message=message,
                 retryable=retryable,
+                details=details or None,
             )
         )
 
@@ -226,7 +228,13 @@ class TaskWorker:
                 "Task %s failed permanently: %s %s", task.task_id, failure.code, failure.message
             )
             await self._fail_terminally(
-                msg_id, task, ctx, failure.code, failure.message, retryable=False
+                msg_id,
+                task,
+                ctx,
+                failure.code,
+                failure.message,
+                retryable=False,
+                details=failure.details,
             )
             return TaskStatus.FAILED
         except Exception as exc:
@@ -263,6 +271,7 @@ class TaskWorker:
                 code,
                 f"Failed after {task.max_attempts} deliveries: {exc}",
                 retryable=transient,
+                details=exc.details if isinstance(exc, TransientIngestionError) else None,
             )
             return TaskStatus.DEAD_LETTER
 
