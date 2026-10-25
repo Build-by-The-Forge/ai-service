@@ -39,7 +39,7 @@ input handling in OCR, the CI gate for both, and the backend image.
 | Package | Before | After | Advisories cleared | Evidence |
 |---|---|---|---|---|
 | Pillow | 10.4.0 | 12.3.0 | 17 (PYSEC-2026-165, -2249, -2250, -2252 to -2257, -2874, -3451, -3453, -3454, -3493 to -3496) | real-OCR tests, full suite, offline image check (36f3354) |
-| Pillow | 12.3.0 | 13.0.0 | 35 reported by the image audit against 12.3.0 on 2026-10-23 (34 CVE-2026-*, GHSA-78g4-xqwv-q3g8), fixed only in 13.0.0 | corpus identical to a 12.3.0 baseline; offline image check; image audit clean; full suite (see the Pillow 13 note) |
+| Pillow | 12.3.0 | 13.0.0 | 35 reported by the image audit against 12.3.0 on 2026-10-23 (34 CVE-2026-*, GHSA-78g4-xqwv-q3g8), 37 by 2026-10-25 as more were published; all fixed in 13.0.0 | corpus identical to a 12.3.0 baseline; offline image check; image audit clean; full suite (see the Pillow 13 note) |
 | opencv-python-headless | 4.6.0.66 | 4.11.0.86 | 2 (PYSEC-2023-184, GHSA-jh2j-j4j9-crg3: bundled libwebp) | corpus identical; offline image check (aa8b6e9) |
 | protobuf | 3.20.2 | 5.29.6 (Linux) | 2 (PYSEC-2026-1805, -1806) | corpus identical; backend changes from pure Python to the compiled `upb` (092a028) |
 | setuptools | 75.6.0 | 83.0.0 | 2 (PYSEC-2025-49, PYSEC-2026-3447) | corpus identical (092a028) |
