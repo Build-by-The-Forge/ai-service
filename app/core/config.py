@@ -119,6 +119,15 @@ class Settings(BaseSettings):
     # Deadline for one whole fetch (connect, stream, verify).
     ASSET_FETCH_TIMEOUT_SECONDS: float = Field(default=120.0, gt=0, le=1800)
 
+    # Extraction (P3-2). A document over the page limit is refused; the
+    # deadline covers the whole document (text layers, rendering, OCR). The
+    # largest course pack in the evaluation corpus has 538 pages.
+    EXTRACTION_MAX_PAGES: int = Field(default=600, ge=1, le=5000)
+    EXTRACTION_TIMEOUT_SECONDS: float = Field(default=1800.0, gt=0, le=7200)
+    # Pages whose mean OCR confidence is below this are reported (a warning
+    # on the page, a count in the stage metrics), not dropped.
+    OCR_MIN_MEAN_CONFIDENCE: float = Field(default=0.5, ge=0, le=1)
+
     LOG_LEVEL: str = "INFO"
 
     def __init__(self, **values):

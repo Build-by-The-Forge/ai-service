@@ -123,6 +123,8 @@ def test_pymupdf_is_one_version_everywhere_and_installed_in_the_image():
         v for _, n, v in pyproject_pins() if n == "pymupdf"
     }
     assert versions == {"1.28.0"}
+    # The dev set installs it too, for the extraction tests: the same version.
+    assert {v for _, v in requirement_pins([DEV_FILE])["pymupdf"]} == versions
 
 
 def test_every_pyproject_pin_agrees_with_the_requirements_files():

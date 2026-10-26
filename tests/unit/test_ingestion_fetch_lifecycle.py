@@ -1,17 +1,20 @@
-"""The ingestion handler in the worker lifecycle (P3-1 PR 5): the asset is
-fetched and verified first; the task then still fails honestly with
-INGESTION_PIPELINE_UNAVAILABLE, carrying the fetch evidence to the backend;
-a failed fetch reports its own typed failure, retried only if transient."""
+"""The ingestion handler in the worker lifecycle: the asset is fetched and
+verified (P3-1), then extracted and the "extracted" stage reported (P3-2);
+the task then fails honestly with INGESTION_PIPELINE_UNAVAILABLE, carrying
+the fetch and extraction evidence. An earlier failure reports its own typed
+code, retried only if transient."""
 
 import dataclasses
 import hashlib
 
+import fitz
 from botocore.exceptions import EndpointConnectionError
 
 from app.core.callbacks.dispatcher import backend_callback_body
 from app.core.callbacks.events import CallbackEventType
 from app.core.execution_context import TaskStatus
 from app.services.ingestion.asset_fetcher import AssetFetcher
+from app.services.ingestion.extraction import DocumentExtractor
 from app.services.tasks.handlers import ContentIngestionTaskHandler
 from app.services.tasks.ingestion_outcomes import PIPELINE_UNAVAILABLE
 from tests.unit.test_asset_fetcher import FakeS3
@@ -20,7 +23,17 @@ from tests.unit.test_worker_callback_integration import kinds, run, task, worker
 BUCKET = "build-documents"
 TENANT = "6f1c2a7e-4b3d-4c8e-9a1f-2d3e4f5a6b7c"  # the task's verified tenant
 ASSET = "0b9a8c7d-6e5f-5a4b-8c3d-2e1f0a9b8c7d"
-PDF = b"%PDF-1.7\n" + b"lecture notes " * 500
+
+
+def _native_pdf() -> bytes:
+    doc = fitz.open()
+    doc.new_page().insert_textbox(fitz.Rect(50, 50, 550, 750), "Lecture notes on limits. " * 20)
+    data = doc.tobytes()
+    doc.close()
+    return data
+
+
+PDF = _native_pdf()
 SHA = hashlib.sha256(PDF).hexdigest()
 KEY = f"tenants/{TENANT}/assets/{ASSET}/{SHA}"
 
@@ -35,6 +48,10 @@ def payload(**overrides) -> dict:
     } | overrides
 
 
+def _no_ocr():
+    raise AssertionError("a native PDF needs no OCR engine")
+
+
 def handler(client, tmp_path) -> ContentIngestionTaskHandler:
     return ContentIngestionTaskHandler(
         AssetFetcher(
@@ -43,11 +60,14 @@ def handler(client, tmp_path) -> ContentIngestionTaskHandler:
             max_bytes=10 * 1024 * 1024,
             timeout_seconds=5,
             temp_dir=str(tmp_path),
-        )
+        ),
+        DocumentExtractor(
+            ocr_engine_factory=_no_ocr, max_pages=10, timeout_seconds=30, min_confidence=0.5
+        ),
     )
 
 
-async def test_a_verified_fetch_is_reported_as_evidence_then_the_pipeline_is_unavailable(tmp_path):
+async def test_fetch_then_extraction_are_reported_then_the_pipeline_is_unavailable(tmp_path):
     worker, transport, dispatcher = worker_with(handler(FakeS3({KEY: PDF}), tmp_path))
 
     msg_id, status = await run(worker, transport, task(payload=payload()))
@@ -55,11 +75,20 @@ async def test_a_verified_fetch_is_reported_as_evidence_then_the_pipeline_is_una
     assert status == TaskStatus.FAILED
     assert kinds(dispatcher) == [
         (CallbackEventType.STARTED, None),
+        (CallbackEventType.STAGE_COMPLETED, "extracted"),
         (CallbackEventType.FAILED, None),
     ]
+    extracted = backend_callback_body(dispatcher.delivered_events[1])["metrics"]
+    assert (extracted["method"], extracted["pages"], extracted["native_pages"]) == (
+        "native_text",
+        1,
+        1,
+    )
+    assert extracted["characters"] > 400
     failed = dispatcher.delivered_events[-1]
     assert (failed.error_code, failed.retryable) == (PIPELINE_UNAVAILABLE, False)
     body = backend_callback_body(failed)
+    assert body["details"]["extraction"] == extracted
     assert body["details"]["fetch"] | {"seconds": 0} == {
         "verified": True,
         "size_bytes": len(PDF),
