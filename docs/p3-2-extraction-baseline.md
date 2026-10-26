@@ -57,4 +57,21 @@ P3-2 changes are measured with the same script on the same pages. The no-regress
 
 Pages where P3-2 changes the method (text layer instead of OCR) are reported for both methods.
 
-A broader, unannotated corpus (`data/ocr_evaluation/pdfs/1st Semester/`, 141 PDFs, kept out of git) will provide page-classification statistics in aggregate.
+## The broader corpus (aggregate only)
+
+`data/ocr_evaluation/pdfs/1st Semester/` holds real first-semester course material: BIO 101/103, CHE 101, CVE 105 and more. That is 175 files (141 PDFs, plus .doc/.docx/.ppt/.pptx and images). It is kept out of git, at 292 MB and pending a licence review. Surveyed with PyMuPDF (no text read out):
+
+| | Pages | Share |
+|---|---|---|
+| Native text (≥ 200 characters, images under half the page) | 1,725 | 53.1% |
+| Scanned or image (images cover half the page or more) | 1,390 | 42.8% |
+| Sparse text | 68 | 2.1% |
+| Mixed (text and large images) | 36 | 1.1% |
+| Empty | 31 | 1.0% |
+| **Total** (141 documents, median 12 pages, largest 538) | **3,250** | |
+
+None were encrypted or unreadable. For P3-2:
+
+- **Over half of all pages need no OCR.** A text layer is read in milliseconds, against seconds of CPU OCR per page, so native classification is the largest speed gain available.
+- **Page and time limits are required.** One upload has 538 pages.
+- **The non-PDF formats (.doc, .docx, .ppt, .pptx) are not accepted by upload today** (PDF, PNG and JPEG only). Supporting them is a separate decision, not part of P3-2.
