@@ -111,6 +111,14 @@ jobs:
       - name: Review migrations
         run: |
           python scripts/review_migration.py
+      # Provisioning, not migration: the AI roles cannot create extensions
+      # (nor can they on Supabase), so the superuser enables pgvector first,
+      # as deploy/db-init does in the backend's compose topology.
+      - name: Enable the vector extension
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d build_ai -v ON_ERROR_STOP=1 \
+            -c "CREATE EXTENSION IF NOT EXISTS vector" \
+            -c "SELECT extversion FROM pg_extension WHERE extname = 'vector'"
       - name: Run migrations
         run: |
           alembic upgrade head
