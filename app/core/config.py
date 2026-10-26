@@ -128,6 +128,14 @@ class Settings(BaseSettings):
     # on the page, a count in the stage metrics), not dropped.
     OCR_MIN_MEAN_CONFIDENCE: float = Field(default=0.5, ge=0, le=1)
 
+    # Embedding (P3-4, D3): all-MiniLM-L6-v2 on ONNX Runtime, loaded from the
+    # verified files baked into the image; nothing is downloaded at runtime.
+    # Threads should equal the worker's CPU quota (more oversubscribes and
+    # halves throughput); batches are bounded so memory stays flat.
+    EMBEDDING_MODEL_DIR: str | None = None
+    EMBEDDING_THREADS: int = Field(default=4, ge=1, le=64)
+    EMBEDDING_BATCH_SIZE: int = Field(default=32, ge=1, le=256)
+
     LOG_LEVEL: str = "INFO"
 
     def __init__(self, **values):
