@@ -6,6 +6,10 @@
 # OCR stack. The same version as the image's (requirements-ocr.txt); a test
 # keeps them equal.
 PyMuPDF==1.28.0
+# onnxruntime (requirements.txt) accepts any numpy; the image's is
+# requirements-ocr.txt's, and the embedder's tests and type checks run
+# against that same version. A test keeps them equal.
+numpy==1.26.4
 
 # Testing
 pytest==9.0.3
