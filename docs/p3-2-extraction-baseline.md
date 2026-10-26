@@ -1,0 +1,48 @@
+# P3-2 extraction baseline (before any pipeline change)
+
+Measured on 2026-10-26 with `scripts/evaluate_ocr_ground_truth.py`. It ran in the AI-service image (Pillow 13, paddle 3.3.1, verified PP-OCRv3 models) with networking disabled and the corpus read-only, in 649 s. Only metrics are recorded here, never recognised text.
+
+## Ground truth
+
+`data/ocr_evaluation/ground_truth/*.json` named nine pages across the seven evaluation documents, but held placeholders, not transcriptions. They now hold **draft** transcriptions (`ground_truth_type: draft_pending_human_verification`) made from the rendered pages:
+
+- reading order;
+- mathematics written linearly with Unicode symbols;
+- diagonal watermarks over the content omitted.
+
+**These figures become the official baseline only after a person verifies the drafts.** Then they are re-measured, and this document is updated.
+
+## Results
+
+CER is character error rate and WER is word error rate. Both are edit distance divided by the reference length, after Unicode NFC and whitespace normalization (`app/services/ingestion/text_metrics.py`). "OCR" is the current pipeline: PaddleOCR on the page rendered at 2x. "Text layer" is the PDF's embedded text (PyMuPDF), which P3-2 will use for native pages.
+
+| Document, page | Kind | OCR CER | OCR WER | Text-layer CER |
+|---|---|---|---|---|
+| DTS 104 examination (photo) | printed, photographed | 0.021 | 0.192 | — |
+| Handwritten lab notes (photo) | handwriting | 0.581 | 0.867 | — |
+| MTS102 Solutions, p1 | LaTeX PDF | 0.154 | 0.269 | **0.026** |
+| MTS 102 Cheat Sheet, p1 | PDF with watermark | **0.035** | 0.153 | 0.704 |
+| Differentiation worksheet, p1 | LaTeX PDF, dense maths | 0.362 | 0.771 | **0.128** |
+| Differentiation worksheet, p2 | LaTeX PDF, dense maths | 0.654 | 0.919 | **0.213** |
+| Limits MCQ, p1 | scanned, maths | 0.407 | 0.602 | no text layer |
+| PHY 102 MCQ, p1 | PDF, prose | **0.020** | 0.040 | 0.071 |
+| **All OCR (8 pages, 10,263 reference chars)** | | **0.260** | **0.456** | |
+| **All text layer (6 PDF pages, 7,750 chars)** | | | | **0.236** (WER 0.475) |
+
+## What it says for P3-2
+
+1. **A good text layer beats OCR by a wide margin** on digitally produced PDFs, especially mathematics: 2.6% against 15.4%, and 13–21% against 36–65%.
+2. **"Has a text layer" does not mean "use it".** The cheat sheet's text layer scores 70% CER, while OCR of the same page scores 3.5%. The classifier must judge a text layer's quality, not just whether it exists, and fall back to OCR when it is poor.
+3. **Scanned mathematics is the weakest case** (41% on the Limits sheet). It is the largest opportunity, and the one this OCR model handles worst.
+4. **Handwriting (58%) is out of reach** for this printed-text model. It is reported per page so it never hides behind an average.
+
+## Gate
+
+P3-2 changes are measured with the same script on the same pages. The no-regression rule:
+
+- the overall CER may not rise;
+- no page's CER may rise by more than 0.02 without an explanation recorded here.
+
+Pages where P3-2 changes the method (text layer instead of OCR) are reported for both methods.
+
+A broader, unannotated corpus (`data/ocr_evaluation/pdfs/1st Semester/`, 141 PDFs, kept out of git) will provide page-classification statistics in aggregate.
