@@ -96,3 +96,11 @@ conflicts with the speed-first priority.
   - batch size 32;
   - one model instance per worker process, loaded lazily once, like the
     OCR engine.
+
+## Decision (2026-10-26)
+
+The product owner approved the recommendation: Postgres full-text search plus
+all-MiniLM-L6-v2, fused by RRF. Production Postgres is **Supabase** (D4),
+which offers pgvector as an extension on all plans. P3-4 is therefore built
+on stock pgvector and Postgres full-text search, using no
+provider-specific features.
