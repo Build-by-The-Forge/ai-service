@@ -4,6 +4,7 @@ import time
 from typing import Any
 
 from app.services.ingestion.asset_fetcher import AssetFetcher
+from app.services.ingestion.extraction import DocumentExtractor
 from app.services.tasks.ingestion_outcomes import PermanentIngestionError, PipelineUnavailableError
 from app.core.execution_context import AIExecutionContext
 
@@ -26,19 +27,30 @@ class ContentIngestionTaskHandler(TaskHandler):
     Content ingestion: asset retrieval, extraction, chunking, embedding and
     durable indexing.
 
-    Asset retrieval exists (P3-1 PR 5): the dispatched asset is fetched from
-    object storage and verified (managed reference of the verified tenant,
-    SHA-256, size, type) before anything else happens. Nothing downstream
-    exists yet, so after a verified fetch the task still fails honestly with
-    INGESTION_PIPELINE_UNAVAILABLE, carrying the fetch evidence; a fetch that
-    fails reports its own typed failure. A real pipeline reports each stage
-    through ctx.stage_reporter.
+    1. Retrieval (P3-1): the dispatched asset is fetched from object storage
+       and verified (managed reference of the verified tenant, SHA-256, size,
+       type) before anything else happens.
+    2. Extraction (P3-2): each page is read from its text layer or OCR'd
+       (DocumentExtractor), and the "extracted" stage is reported through
+       ctx.stage_reporter with its evidence.
+    Chunking, embedding and indexing do not exist yet, so the task then
+    fails honestly with INGESTION_PIPELINE_UNAVAILABLE, carrying the fetch
+    and extraction evidence. Any earlier failure reports its own typed code.
     """
 
     _REQUIRED = ("asset_id", "storage_uri", "content_sha256", "mime_type")
 
-    def __init__(self, fetcher: AssetFetcher | None = None) -> None:
+    def __init__(
+        self, fetcher: AssetFetcher | None = None, extractor: DocumentExtractor | None = None
+    ) -> None:
         self._fetcher = fetcher
+        self._extractor = extractor
+
+    def _document_extractor(self) -> DocumentExtractor:
+        # Built on first use and reused: the OCR model inside it loads once.
+        if self._extractor is None:
+            self._extractor = DocumentExtractor.from_settings()
+        return self._extractor
 
     def _asset_fetcher(self) -> AssetFetcher:
         # Built from settings on first use, then reused (one S3 client).
@@ -76,12 +88,19 @@ class ContentIngestionTaskHandler(TaskHandler):
             }
             if ctx.is_cancelled():
                 raise asyncio.CancelledError(f"Task cancelled: {ctx.cancellation_reason}")
-            # Extraction (P3-2) starts here, reading asset.path.
-            raise PipelineUnavailableError(
-                "The asset was fetched and verified; extraction, chunking, embedding and "
-                "durable indexing are not available in this deployment yet.",
-                details=evidence,
-            )
+            document = await self._document_extractor().extract(asset.path, asset.mime_type)
+        metrics = document.stage_metrics()
+        if ctx.stage_reporter is not None:
+            await ctx.stage_reporter.report("extracted", metrics)
+        evidence["extraction"] = metrics
+        if ctx.is_cancelled():
+            raise asyncio.CancelledError(f"Task cancelled: {ctx.cancellation_reason}")
+        # Chunking (P3-3) starts here, from document.pages.
+        raise PipelineUnavailableError(
+            "The asset was fetched, verified and extracted; chunking, embedding and "
+            "durable indexing are not available in this deployment yet.",
+            details=evidence,
+        )
 
 
 class AgentExecutionTaskHandler(TaskHandler):
