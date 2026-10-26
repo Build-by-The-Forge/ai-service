@@ -10,32 +10,44 @@
     "quality_notes": "Medium quality JPEG, likely photographed exam paper"
   },
   "ground_truth": {
-    "full_text": "[Expected OCR transcription of exam paper content]\n\nNote: This field should contain the actual readable text from the document.\nPreserve structure where identifiable (questions, options, etc.)",
+    "full_text": "THE FEDERAL UNIVERSITY OF TECHNOLOGY, AKURE\nSCHOOL OF COMPUTING\nDEPARTMENT OF DATA SCIENCE\nB. TECH. DEGREE EXAMINATIONS, SECOND SEMESTER 2024/2025 SESSION\nCOURSE CODE:DTS 104 COURSE TITLE: INTRODUCTION TO DATA\nANALYTICS UNITS: 3 UNITS TIME ALLOWED: 2 HOURS\nInstruction: Answer any three (3) questions.\n\nQUESTION ONE\na. Describe the following data strategies: visualizing data, exploratory analysis, trend\nanalysis, and estimator (5mks). Explain the importance of data analysis in informed\ndecision making, business intelligence, problem-solving, and performance evaluation,\nand how it helps (5mks)\nb. Data analysts involve several key steps that helps to get insights from the raw\ndata, explain these processes? (5mks)\n\nQUESTION TWO\na. List and briefly explain any five tools commonly used in data analysis\n(5 mks)\nb. Consider the list data = [[1,2], 3, [4,5], 6, 7, [8,9], 10]\ni. How many elements are in the outer list?\nii. print elements from index 2 to 5\niii. print the list in reverse order (10mks)\nc. Differentiate between structured data and unstructured data with examples (5mks)\n\nQUESTION THREE\na. Provide a comparison table of descriptive, predictive, and prescriptive analysis highlighting\npurpose, focus, time frame, examples, tools, and impact (5 marks)\nb. Given that dataset X={5,7,3,7,10,7,4,8,6} represents the scores of 9 students in a test, compute\nfor the mean, median, mode, and variance of the dataset. (10mks)\nc. What is the role of a data analysis team and why is it important? (5mks)\n\nQUESTION FOUR\na. What is a list in Python? How is it different from strings and tuples? (5mks)\nb. Write a Python program to create a list of 5 integers and print each element using a for loop? (10mks)\nc. Explain the difference between qualitative data and quantitative data with suitable examples (5mks)\n\nQUESTION FIVE\na. You are asked to design an Excel dashboard for a company's regional sales performance. (10mks)\ni. Which types of charts would best represent trends?\nii. How would you make the dashboard interactive?\nb. Explain the role of interactive elements such as slicers, drop-downs, and timelines in dashboards?\n(5mks)\nc. List 5 key features of an effective Excel Dashboard (5mks)\n\nwww.futa.edu.ng ...technology for self reliance April, 2025",
     "text_regions": [
       {
         "id": "header",
         "text": "DTS SECOND SEMESTER 2025/2026 EXAMINATION",
         "type": "heading",
-        "estimated_bbox": [0.05, 0.05, 0.95, 0.15],
+        "estimated_bbox": [
+          0.05,
+          0.05,
+          0.95,
+          0.15
+        ],
         "confidence_expected": 0.95
       },
       {
         "id": "question_1",
         "text": "[Question 1 and options]",
         "type": "question_mcq",
-        "estimated_bbox": [0.05, 0.20, 0.95, 0.40],
-        "confidence_expected": 0.90
+        "estimated_bbox": [
+          0.05,
+          0.2,
+          0.95,
+          0.4
+        ],
+        "confidence_expected": 0.9
       }
     ]
   },
   "metadata": {
     "created_date": "2026-09-01",
-    "ground_truth_type": "manual_transcription",
+    "ground_truth_type": "draft_pending_human_verification",
     "difficulty_notes": "Exam paper with multiple choice questions, possibly handwritten student marks",
     "expected_challenges": [
       "handwriting overlays",
       "varying text sizes",
       "multiple columns"
-    ]
+    ],
+    "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
+    "verified_by": null
   }
 }

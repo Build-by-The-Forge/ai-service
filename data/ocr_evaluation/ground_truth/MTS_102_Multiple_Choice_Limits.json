@@ -13,7 +13,7 @@
     "pages": [
       {
         "page_number": 1,
-        "full_text": "[Expected OCR transcription of page 1]\n\nNote: Full text should be extracted for each page",
+        "full_text": "Set 2: Multiple-Choice\nQuestions on Limits and\nContinuity\n\n1. lim x→2 (x² − 4)/(x² + 4) is\n(A) 1 (B) 0 (C) −1/2 (D) −1 (E) ∞\n\n2. lim x→∞ (4 − x²)/(x² − 1) is\n(A) 1 (B) 0 (C) −4 (D) −1 (E) ∞\n\n3. lim x→3 (x − 3)/(x² − 2x − 3) is\n(A) 0 (B) 1 (C) 1/4 (D) ∞ (E) none of these\n\n4. lim x→0 x/x is\n(A) 1 (B) 0 (C) ∞ (D) −1 (E) nonexistent\n\n5. lim x→2 (x³ − 8)/(x² − 4) is\n(A) 4 (B) 0 (C) 1 (D) 3 (E) ∞\n\n6. lim x→∞ (4 − x²)/(4x² − x − 2) is\n(A) −2 (B) −1/4 (C) 1 (D) 2\n(E) nonexistent\n\n7. lim x→∞ (5x³ + 27)/(20x² + 10x + 9) is\n(A) ∞ (B) 1/4 (C) 3 (D) 0 (E) 1\n\n8. lim x→∞ (3x² + 27)/(x³ − 27) is\n(A) 3 (B) ∞ (C) 1 (D) −1 (E) 0\n\n9. lim x→∞ 2⁻ˣ/2ˣ is\n(A) −1 (B) 1 (C) 0 (D) ∞ (E) none of these",
         "text_regions": [
           {
             "id": "p1_header",
@@ -41,7 +41,7 @@
   },
   "metadata": {
     "created_date": "2026-09-01",
-    "ground_truth_type": "partial_manual_verification",
+    "ground_truth_type": "draft_pending_human_verification",
     "difficulty_notes": "18-page scanned PDF with mathematical content",
     "expected_challenges": [
       "mathematical notation and equations",
@@ -49,6 +49,8 @@
       "possible scanning artifacts",
       "multi-page processing latency"
     ],
-    "note": "For full benchmark, transcribe all pages or representative sample (pages 1, 5, 10, 18)"
+    "note": "For full benchmark, transcribe all pages or representative sample (pages 1, 5, 10, 18)",
+    "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
+    "verified_by": null
   }
 }

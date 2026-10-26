@@ -10,25 +10,32 @@
     "quality_notes": "Mobile camera photo, likely low-light or angled"
   },
   "ground_truth": {
-    "full_text": "[Expected OCR transcription of photographed document content]\n\nNote: This field should contain the actual readable text.\nCan be lecture notes, certificate, ID, form, etc.",
+    "full_text": "Graph Scale x axis\ny axis\n\n2min - 30 sec\n\nSlope = Δ boiling time / gram of salt = (183 − 150)/(1.5 − 0.00)\n= 33/1.5\n= 22s/g\n\ntable\nsalt (g) boiling time (s)\n0.00 150\n0.5 165\n1.0 171\n1.5 183\n2.0 192\n\nFrom my graph - estimated 4min = 4.15 g of salt\n4min is 240 sec",
     "text_regions": [
       {
         "id": "region_1",
         "text": "[Text content from first region]",
         "type": "body_text",
-        "estimated_bbox": [0.05, 0.1, 0.95, 0.9],
+        "estimated_bbox": [
+          0.05,
+          0.1,
+          0.95,
+          0.9
+        ],
         "confidence_expected": 0.85
       }
     ]
   },
   "metadata": {
     "created_date": "2026-09-01",
-    "ground_truth_type": "manual_transcription",
+    "ground_truth_type": "draft_pending_human_verification",
     "difficulty_notes": "Mobile camera photo - likely perspective distortion, variable lighting",
     "expected_challenges": [
       "perspective skew",
       "shadow/lighting variation",
       "image compression artifacts"
-    ]
+    ],
+    "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
+    "verified_by": null
   }
 }

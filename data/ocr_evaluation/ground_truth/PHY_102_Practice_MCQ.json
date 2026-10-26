@@ -13,7 +13,7 @@
     "pages": [
       {
         "page_number": 1,
-        "full_text": "[Expected OCR transcription of page 1]\n\nNote: Physics MCQ typically includes diagrams, formulas, multiple-choice options",
+        "full_text": "ELECTRIC FORCES AD THE ELECTRIC FIELD\n\n____1. Doug rubs a piece of fur on a hard rubber rod, giving the rod a negative charge. What\nhappens? A. Protons are removed from the rod. D. The fur is left neutral.\n\nPRACTICE MULTIPLE CHOICE QUESTIONS\nANSWERS AT END\nB. Electrons are added to the rod. E. Negative ions added to the fur.\nC. The fur is also charged negatively.\n\n____2. A repelling force must occur between two charged objects under which conditions?\nA. charges are of unlike signs C. charges are of equal magnitude\nB. charges are of like signs D. charges are of unequal magnitude\n\n____3. When a glass rod is rubbed with silk, which of the following statements best describes what\nhappens?\nA. electrons are removed from the rod D. the silk remains neutral\nB. protons are removed from the silk E. positive ions are removed from the silk\nC. the silk is charged positively\n\n____4. When charging two objects by rubbing them together:\nA. neither may be a conductor.\nB. they must be made of different material.\nC. they will sometimes end up with both being positively charged.\nD. the heat produced by friction is a necessary part of this process.\nE. they must have different temperature.\n\n____5. Who was the first to determine the electron's charge?\nA. Franklin D. Faraday\nB. Coulomb E. Maxwell\nC. Millikan\n\n____6. An uncharged conductor is supported by an insulating stand. I pass a positively charged rod\nnear the left end of the conductor, but do not touch it. The right end of the conductor will be:\nA. negative.D. attracted.\nB. positive. E. repulsed.\nC. neutral.\n\n____7. Of the following substances, which one contains the highest density of free electrons?\nA. hard rubber D. glass\nB. iron E. silk\nC. amber\n\nMultiple Choice Questions 1",
         "text_regions": [
           {
             "id": "p1_header",
@@ -25,7 +25,7 @@
             "id": "p1_q1",
             "text": "1. [Question with potential diagram reference]",
             "type": "question_mcq",
-            "confidence_expected": 0.80,
+            "confidence_expected": 0.8,
             "notes": "May reference diagrams not OCR-extractable"
           }
         ]
@@ -42,7 +42,7 @@
   },
   "metadata": {
     "created_date": "2026-09-01",
-    "ground_truth_type": "partial_manual_verification",
+    "ground_truth_type": "draft_pending_human_verification",
     "difficulty_notes": "21-page scanned PDF with physics content",
     "expected_challenges": [
       "scientific equations and notation",
@@ -52,6 +52,8 @@
       "physics symbols (θ, λ, Δ, etc.)",
       "potential for low OCR accuracy on diagrams"
     ],
-    "note": "For full benchmark, recommend sampling pages: 1, 5, 10, 15, 21"
+    "note": "For full benchmark, recommend sampling pages: 1, 5, 10, 15, 21",
+    "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
+    "verified_by": null
   }
 }

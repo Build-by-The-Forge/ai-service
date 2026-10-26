@@ -13,7 +13,7 @@
     "pages": [
       {
         "page_number": 1,
-        "full_text": "[Expected OCR transcription of page 1]\n\nNote: Cheat sheet typically contains condensed notes, formulas, key concepts",
+        "full_text": "MTS 102 CHEAT SHEET\n\nTest-Ready Summary\n\nCompiled by Felix the Astro-Coder\n\n1. Limits\n\nlim(x→a) f(x) = L → Plug in directly unless indeterminate\n\nAt infinity: Divide numerator and denominator by highest power of x\n\nSpecial: lim(x→0) (sin x)/x = 1\n\n2. First Principles (Definition of Derivative)\n\nf′(x) = lim(h→0) [(f(x + h) - f(x)) / h]\n\n3. Differentiation Rules\n\nPower Rule: d/dx(xⁿ) = nxⁿ⁻¹\n\nProduct Rule: d/dx(uv) = u′v + uv′\n\nQuotient Rule: d/dx(u/v) = (u′v - uv′) / v²\n\nMCCOY\nThe Genuine Man\n(TGM)",
         "text_regions": [
           {
             "id": "p1_title",
@@ -25,7 +25,7 @@
             "id": "p1_section1",
             "text": "[Section heading with condensed content]",
             "type": "section",
-            "confidence_expected": 0.80
+            "confidence_expected": 0.8
           }
         ]
       }
@@ -42,7 +42,7 @@
   },
   "metadata": {
     "created_date": "2026-09-01",
-    "ground_truth_type": "partial_manual_verification",
+    "ground_truth_type": "draft_pending_human_verification",
     "difficulty_notes": "Dense study guide with complex formatting",
     "expected_challenges": [
       "multiple columns and dense layout",
@@ -50,6 +50,8 @@
       "bullet points and hierarchies",
       "potential handwritten annotations",
       "column reading order preservation"
-    ]
+    ],
+    "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
+    "verified_by": null
   }
 }
