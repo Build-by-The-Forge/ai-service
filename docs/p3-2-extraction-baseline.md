@@ -32,7 +32,19 @@ CER is character error rate and WER is word error rate. Both are edit distance d
 ## What it says for P3-2
 
 1. **A good text layer beats OCR by a wide margin** on digitally produced PDFs, especially mathematics: 2.6% against 15.4%, and 13–21% against 36–65%.
-2. **"Has a text layer" does not mean "use it".** The cheat sheet's text layer scores 70% CER, while OCR of the same page scores 3.5%. The classifier must judge a text layer's quality, not just whether it exists, and fall back to OCR when it is poor.
+2. **A text layer's reading order must be decided per page.** The cheat sheet's layer first scored 70% CER, but its text is correct: it is stored in drawing order (sections come out 1, 3, 2) and uses typographic ligatures (`ﬀ`, `ﬁ`). Two extraction orders over the same text layer give:
+
+   | Page | Drawing order | Position-sorted, ligatures expanded |
+   |---|---|---|
+   | Cheat sheet | 0.703 | **0.010** |
+   | PHY 102 | 0.071 | **0.001** |
+   | MTS102 Solutions (LaTeX) | **0.026** | 0.077 |
+   | Differentiation p1 / p2 (LaTeX) | **0.128 / 0.213** | 0.256 / 0.451 |
+
+   - LaTeX output is already in reading order, and sorting fragments its mathematics.
+   - Office-style exports draw in arbitrary order, and sorting fixes it.
+
+   P3-2 therefore picks the order per page (for example, by how often the drawing order jumps upward), always expands ligatures, and falls back to OCR only when no usable layer exists. With the better order per page, the text layer scores 0.001–0.213 where it exists, against OCR's 0.020–0.654.
 3. **Scanned mathematics is the weakest case** (41% on the Limits sheet). It is the largest opportunity, and the one this OCR model handles worst.
 4. **Handwriting (58%) is out of reach** for this printed-text model. It is reported per page so it never hides behind an average.
 
