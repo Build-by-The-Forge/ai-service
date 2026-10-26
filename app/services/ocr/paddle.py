@@ -1,5 +1,7 @@
+import asyncio
 import json
 import logging
+import threading
 from pathlib import Path
 
 from app.core.config import STRICT_ENVIRONMENTS, settings
@@ -22,6 +24,10 @@ except Exception as exc:  # any failure, not only ImportError
 
 
 class PaddleOCRService(OCRProvider):
+    # One recognition at a time per process: a model instance is not safe
+    # across threads, and parallel CPU OCR would only contend.
+    _lock = threading.Lock()
+
     def __init__(self):
         """Initialize PaddleOCR for real OCR processing."""
         if PaddleOCR is None:
@@ -60,14 +66,10 @@ class PaddleOCRService(OCRProvider):
         if not Path(image_path).is_file():
             # Checked here, not left to the engine's own error deep inside it.
             raise FileNotFoundError(f"OCR input image not found: {image_path}")
-        validate_image(image_path)
-
-        # Run OCR on image
-        # result is a list of lists: [[text, score], [bbox], ...]
-        try:
-            result = self.model.ocr(image_path, cls=True)
-        except Exception as exc:  # native decoder/runtime; the cause is kept
-            raise OCRExtractionError(f"{type(exc).__name__}: {exc}") from exc
+        # Decoding and recognition take seconds of CPU per page: they run in a
+        # worker thread so the event loop (heartbeats, callbacks) keeps
+        # running (P3-2, audit F3/F4).
+        result = await asyncio.to_thread(self._recognize, image_path)
 
         if not result or not result[0]:
             return []
@@ -86,6 +88,18 @@ class PaddleOCRService(OCRProvider):
                 )
 
         return extracted
+
+    def _recognize(self, image_path: str):
+        """Validate then recognize one image; runs in a worker thread. One
+        model instance is not safe across threads, so calls are serialized:
+        a worker processes one task at a time anyway."""
+        with self._lock:
+            validate_image(image_path)
+            # result is a list of lists: [[text, score], [bbox], ...]
+            try:
+                return self.model.ocr(image_path, cls=True)
+            except Exception as exc:  # native decoder/runtime; the cause is kept
+                raise OCRExtractionError(f"{type(exc).__name__}: {exc}") from exc
 
 
 # Decoders Pillow may use for OCR input; the content decides, not the
