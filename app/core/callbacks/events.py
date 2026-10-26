@@ -37,6 +37,7 @@ class CallbackEvent:
     chunk_summary: dict[str, Any] | None = None
     stage: str | None = None
     metrics: dict[str, Any] | None = None
+    details: dict[str, Any] | None = None
     timestamp: float = field(default_factory=time.time)
 
     def to_dict(self) -> dict[str, Any]:
@@ -68,6 +69,8 @@ class CallbackEvent:
             data["extracted_metadata"] = self.extracted_metadata
         if self.chunk_summary is not None:
             data["chunk_summary"] = self.chunk_summary
+        if self.details is not None:
+            data["details"] = self.details
         if self.stage is not None:
             data["stage"] = self.stage
         if self.metrics is not None:

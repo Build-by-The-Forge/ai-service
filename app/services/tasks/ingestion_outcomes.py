@@ -35,10 +35,13 @@ class IngestionFailure(Exception):
 
     retryable = False
 
-    def __init__(self, code: str, message: str) -> None:
+    def __init__(self, code: str, message: str, details: dict[str, Any] | None = None) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
+        # Evidence for the backend (job error_details): what was done before
+        # the failure, e.g. a verified fetch. Data only, never secrets.
+        self.details = dict(details or {})
 
 
 class TransientIngestionError(IngestionFailure):
@@ -52,8 +55,8 @@ class PermanentIngestionError(IngestionFailure):
 class PipelineUnavailableError(IngestionFailure):
     retryable = False
 
-    def __init__(self, message: str) -> None:
-        super().__init__(PIPELINE_UNAVAILABLE, message)
+    def __init__(self, message: str, details: dict[str, Any] | None = None) -> None:
+        super().__init__(PIPELINE_UNAVAILABLE, message, details)
 
 
 class StageReporter:

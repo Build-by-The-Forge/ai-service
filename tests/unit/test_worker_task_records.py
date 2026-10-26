@@ -3,10 +3,10 @@
 from app.core.callbacks.dispatcher import InMemoryCallbackDispatcher
 from app.core.execution_context import AITask, TaskStatus
 from app.services.tasks.handlers import (
-    ContentIngestionTaskHandler,
     TaskHandler,
     TaskHandlerRegistry,
 )
+from app.services.tasks.ingestion_outcomes import PipelineUnavailableError
 from app.services.tasks.task_records import (
     InMemoryTaskRecordStore,
     TaskRecordUnavailableError,
@@ -23,6 +23,13 @@ class Staged(TaskHandler):
         await ctx.stage_reporter.report("chunked", {"chunks": 2})
         await ctx.stage_reporter.report("indexed", {"indexed_chunks": 2, "index": "pgvector"})
         return {}
+
+
+class PipelineUnavailable(TaskHandler):
+    """Fails as an ingestion task does while the pipeline is unavailable."""
+
+    async def handle(self, ctx, payload):
+        raise PipelineUnavailableError("not available")
 
 
 def ingestion_task(task_id="task_1"):
@@ -74,7 +81,7 @@ async def test_events_are_recorded_even_when_delivery_fails():
     await store.create(record())
     dispatcher = InMemoryCallbackDispatcher()
     dispatcher.simulate_failure(status_code=500)
-    await worker(ContentIngestionTaskHandler(), store, dispatcher).process_single_task(
+    await worker(PipelineUnavailable(), store, dispatcher).process_single_task(
         "m1", ingestion_task()
     )
     stored = await store.get("task_1")
