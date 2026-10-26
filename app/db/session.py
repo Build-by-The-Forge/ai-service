@@ -45,7 +45,8 @@ async def initialize_database() -> None:
     """Create every table in Base.metadata on an isolated test database.
 
     Test-only: real schema comes from Alembic. Base.metadata holds only the
-    AI-owned tables.
+    AI-owned tables. The test database user is a superuser, so it also
+    enables pgvector, which provisioning does in deployment.
     """
     eng = _build_engine()
     # Retry loop: database containers can be starting when tests begin.
@@ -54,6 +55,7 @@ async def initialize_database() -> None:
     for attempt in range(1, max_attempts + 1):
         try:
             async with eng.begin() as conn:
+                await conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
                 await conn.run_sync(Base.metadata.create_all)
             break
         except Exception as exc:
