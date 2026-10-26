@@ -4,6 +4,7 @@ import time
 from typing import Any
 
 from app.services.ingestion.asset_fetcher import AssetFetcher
+from app.services.ingestion.chunking import chunk_document
 from app.services.ingestion.extraction import DocumentExtractor
 from app.services.tasks.ingestion_outcomes import PermanentIngestionError, PipelineUnavailableError
 from app.core.execution_context import AIExecutionContext
@@ -33,9 +34,12 @@ class ContentIngestionTaskHandler(TaskHandler):
     2. Extraction (P3-2): each page is read from its text layer or OCR'd
        (DocumentExtractor), and the "extracted" stage is reported through
        ctx.stage_reporter with its evidence.
-    Chunking, embedding and indexing do not exist yet, so the task then
-    fails honestly with INGESTION_PIPELINE_UNAVAILABLE, carrying the fetch
-    and extraction evidence. Any earlier failure reports its own typed code.
+    3. Chunking (P3-3): page-aware chunks with deterministic ids, and the
+       "chunked" stage reported.
+    Embedding and durable indexing do not exist yet, so the task then fails
+    honestly with INGESTION_PIPELINE_UNAVAILABLE, carrying the fetch,
+    extraction and chunking evidence. Any earlier failure reports its own
+    typed code.
     """
 
     _REQUIRED = ("asset_id", "storage_uri", "content_sha256", "mime_type")
@@ -77,7 +81,7 @@ class ContentIngestionTaskHandler(TaskHandler):
             mime_type=payload["mime_type"],
             file_size_bytes=payload.get("file_size_bytes"),
         ) as asset:
-            evidence = {
+            evidence: dict[str, Any] = {
                 "fetch": {
                     "verified": True,
                     "size_bytes": asset.size_bytes,
@@ -95,10 +99,28 @@ class ContentIngestionTaskHandler(TaskHandler):
         evidence["extraction"] = metrics
         if ctx.is_cancelled():
             raise asyncio.CancelledError(f"Task cancelled: {ctx.cancellation_reason}")
-        # Chunking (P3-3) starts here, from document.pages.
+        # Chunk ids come from the verified tenant, the asset and the run, so
+        # re-indexing a run replaces its chunks.
+        chunks = chunk_document(
+            document.pages,
+            tenant_id=ctx.tenant_id,
+            asset_id=payload["asset_id"],
+            run_number=int(payload.get("run_number") or 1),
+        )
+        chunking = {
+            "chunks": len(chunks),
+            "characters": sum(len(chunk.text) for chunk in chunks),
+            "pages_covered": len({p for c in chunks for p in range(c.page_start, c.page_end + 1)}),
+        }
+        if ctx.stage_reporter is not None:
+            await ctx.stage_reporter.report("chunked", chunking)
+        evidence["chunking"] = chunking
+        if ctx.is_cancelled():
+            raise asyncio.CancelledError(f"Task cancelled: {ctx.cancellation_reason}")
+        # Embedding and durable indexing (P3-4) start here, from `chunks`.
         raise PipelineUnavailableError(
-            "The asset was fetched, verified and extracted; chunking, embedding and "
-            "durable indexing are not available in this deployment yet.",
+            "The asset was fetched, verified, extracted and chunked; embedding and durable "
+            "indexing are not available in this deployment yet.",
             details=evidence,
         )
 

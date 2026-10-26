@@ -76,8 +76,11 @@ async def test_fetch_then_extraction_are_reported_then_the_pipeline_is_unavailab
     assert kinds(dispatcher) == [
         (CallbackEventType.STARTED, None),
         (CallbackEventType.STAGE_COMPLETED, "extracted"),
+        (CallbackEventType.STAGE_COMPLETED, "chunked"),
         (CallbackEventType.FAILED, None),
     ]
+    chunked = backend_callback_body(dispatcher.delivered_events[2])["metrics"]
+    assert chunked["chunks"] >= 1 and chunked["pages_covered"] == 1
     extracted = backend_callback_body(dispatcher.delivered_events[1])["metrics"]
     assert (extracted["method"], extracted["pages"], extracted["native_pages"]) == (
         "native_text",
@@ -89,6 +92,7 @@ async def test_fetch_then_extraction_are_reported_then_the_pipeline_is_unavailab
     assert (failed.error_code, failed.retryable) == (PIPELINE_UNAVAILABLE, False)
     body = backend_callback_body(failed)
     assert body["details"]["extraction"] == extracted
+    assert body["details"]["chunking"] == chunked
     assert body["details"]["fetch"] | {"seconds": 0} == {
         "verified": True,
         "size_bytes": len(PDF),
