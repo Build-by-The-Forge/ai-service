@@ -44,6 +44,14 @@ def test_the_baseline_was_measured_on_this_exact_dataset():
     assert set(baseline["strategies"]) == set(evaluate.STRATEGIES)
 
 
+def test_the_dataset_identity_does_not_depend_on_line_endings(tmp_path):
+    # A Windows checkout converts the JSON files to CRLF.
+    for name in ("corpus.json", "questions.json", "distractors.json"):
+        lf = (DATASET / name).read_bytes().replace(b"\r\n", b"\n")
+        (tmp_path / name).write_bytes(lf.replace(b"\n", b"\r\n"))
+    assert evaluate.load_dataset(tmp_path).sha256 == evaluate.load_dataset(DATASET).sha256
+
+
 def test_a_hit_needs_the_expected_span_not_just_the_document():
     question = {
         "expected": [{"document": "doc", "page": 2, "evidence": "the key sentence"}],
