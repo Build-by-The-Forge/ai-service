@@ -1,0 +1,110 @@
+{
+  "dataset": {
+    "version": "v1",
+    "sha256": "321bf43ad33e41107bc0ccbbbf8f80d7a651e88514f246c75853e3ae8c7e8c7c"
+  },
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "chunks": 158,
+  "questions": 56,
+  "strategies": {
+    "dense": {
+      "recall@5": 0.9286,
+      "mrr@10": 0.8186,
+      "by_category": {
+        "direct": {
+          "questions": 12,
+          "recall@5": 0.9167
+        },
+        "informal": {
+          "questions": 12,
+          "recall@5": 0.9167
+        },
+        "math": {
+          "questions": 12,
+          "recall@5": 0.8333
+        },
+        "multi_passage": {
+          "questions": 6,
+          "recall@5": 1.0
+        },
+        "paraphrase": {
+          "questions": 14,
+          "recall@5": 1.0
+        }
+      },
+      "misses": [
+        "d02",
+        "i03",
+        "m11",
+        "m12"
+      ]
+    },
+    "keyword": {
+      "recall@5": 0.8571,
+      "mrr@10": 0.7149,
+      "by_category": {
+        "direct": {
+          "questions": 12,
+          "recall@5": 0.8333
+        },
+        "informal": {
+          "questions": 12,
+          "recall@5": 0.8333
+        },
+        "math": {
+          "questions": 12,
+          "recall@5": 0.75
+        },
+        "multi_passage": {
+          "questions": 6,
+          "recall@5": 0.8333
+        },
+        "paraphrase": {
+          "questions": 14,
+          "recall@5": 1.0
+        }
+      },
+      "misses": [
+        "d03",
+        "d12",
+        "i04",
+        "i08",
+        "m08",
+        "m09",
+        "m12",
+        "x06"
+      ]
+    },
+    "hybrid": {
+      "recall@5": 0.9464,
+      "mrr@10": 0.8378,
+      "by_category": {
+        "direct": {
+          "questions": 12,
+          "recall@5": 1.0
+        },
+        "informal": {
+          "questions": 12,
+          "recall@5": 1.0
+        },
+        "math": {
+          "questions": 12,
+          "recall@5": 0.8333
+        },
+        "multi_passage": {
+          "questions": 6,
+          "recall@5": 0.8333
+        },
+        "paraphrase": {
+          "questions": 14,
+          "recall@5": 1.0
+        }
+      },
+      "misses": [
+        "m11",
+        "m12",
+        "x06"
+      ]
+    }
+  }
+}
