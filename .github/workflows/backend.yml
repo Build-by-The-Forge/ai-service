@@ -198,7 +198,6 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost/build_ai
-      EMBEDDING_MODEL_DIR: ${{ runner.temp }}/embedding-model
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
@@ -213,7 +212,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
       - name: Fetch and verify the embedding model
-        run: python scripts/fetch_embedding_model.py --dest "$EMBEDDING_MODEL_DIR"
+        # The runner context is not available in job-level env, so the
+        # model directory is exported here for the later steps.
+        run: |
+          echo "EMBEDDING_MODEL_DIR=$RUNNER_TEMP/embedding-model" >> "$GITHUB_ENV"
+          python scripts/fetch_embedding_model.py --dest "$RUNNER_TEMP/embedding-model"
       - name: Enable the vector extension
         run: |
           PGPASSWORD=postgres psql -h localhost -U postgres -d build_ai -v ON_ERROR_STOP=1 \
