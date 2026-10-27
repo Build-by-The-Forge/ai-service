@@ -7,12 +7,12 @@ from app.core.rag.contracts import (
     RetrievalPolicy,
 )
 from app.core.rag.errors import TenantContextMissingError
-from app.services.rag.retrieval import HybridRetrievalEngine
+from tests.rag_support import in_memory_engine
 
 
 @pytest.mark.asyncio
 async def test_hybrid_retrieval_engine_index_and_retrieve():
-    engine = HybridRetrievalEngine()
+    engine = in_memory_engine()
 
     prov = ChunkProvenance(
         source_uri="s3://school-assets/che101.pdf",
@@ -52,7 +52,7 @@ async def test_hybrid_retrieval_engine_index_and_retrieve():
 
 @pytest.mark.asyncio
 async def test_hybrid_retrieval_engine_enforces_tenant_boundary():
-    engine = HybridRetrievalEngine()
+    engine = in_memory_engine()
 
     # Index document in school_A
     await engine.index_document(
@@ -73,6 +73,6 @@ async def test_hybrid_retrieval_engine_enforces_tenant_boundary():
 
 @pytest.mark.asyncio
 async def test_hybrid_retrieval_missing_tenant_id_raises():
-    engine = HybridRetrievalEngine()
+    engine = in_memory_engine()
     with pytest.raises(TenantContextMissingError):
         await engine.retrieve("test query", filter=RetrievalFilter(tenant_id=""))

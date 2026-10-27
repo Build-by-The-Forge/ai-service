@@ -10,7 +10,8 @@ from app.core.models.provider import ModelProviderAdapter
 from app.core.rag.contracts import ChunkProvenance, ContentAuthority
 from app.core.tools.registry import ToolRegistry
 from app.services.agents.executor import AgentExecutor
-from app.services.rag.retrieval import HybridRetrievalEngine, set_retrieval_engine
+from app.services.rag.retrieval import set_retrieval_engine
+from tests.rag_support import in_memory_engine
 from app.services.tools.builtins.content import (
     CONTENT_SEARCH_DEFINITION,
     content_search_handler,
@@ -68,7 +69,7 @@ class RAGScriptedModelProvider(ModelProviderAdapter):
 @pytest.mark.asyncio
 async def test_agent_to_tool_to_rag_hybrid_retrieval():
     # 1. Setup RAG Engine and index knowledge
-    engine = HybridRetrievalEngine()
+    engine = in_memory_engine()
     set_retrieval_engine(engine)
 
     prov = ChunkProvenance(
@@ -129,7 +130,7 @@ async def test_agent_to_tool_to_rag_hybrid_retrieval():
 
 @pytest.mark.asyncio
 async def test_agent_tool_rag_cross_tenant_isolation():
-    engine = HybridRetrievalEngine()
+    engine = in_memory_engine()
     set_retrieval_engine(engine)
 
     # Document belongs to school_futa
