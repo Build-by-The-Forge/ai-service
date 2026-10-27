@@ -3,10 +3,18 @@ import asyncio
 import time
 from typing import Any
 
+from app.core.rag.errors import EmbeddingGenerationError, VectorStoreError
 from app.services.ingestion.asset_fetcher import AssetFetcher
 from app.services.ingestion.chunking import chunk_document
 from app.services.ingestion.extraction import DocumentExtractor
-from app.services.tasks.ingestion_outcomes import PermanentIngestionError, PipelineUnavailableError
+from app.services.rag.embedder import EmbeddingPort
+from app.services.rag.onnx_embedder import OnnxMiniLMEmbedder
+from app.services.rag.pg_index import PgChunkIndex
+from app.services.tasks.ingestion_outcomes import (
+    PermanentIngestionError,
+    PipelineUnavailableError,
+    TransientIngestionError,
+)
 from app.core.execution_context import AIExecutionContext
 
 
@@ -36,19 +44,43 @@ class ContentIngestionTaskHandler(TaskHandler):
        ctx.stage_reporter with its evidence.
     3. Chunking (P3-3): page-aware chunks with deterministic ids, and the
        "chunked" stage reported.
-    Embedding and durable indexing do not exist yet, so the task then fails
-    honestly with INGESTION_PIPELINE_UNAVAILABLE, carrying the fetch,
-    extraction and chunking evidence. Any earlier failure reports its own
-    typed code.
+    4. Embedding and indexing (P3-4): every chunk is embedded locally, then
+       the asset's chunks replace its previous ones in the durable index in
+       one transaction. "indexed" is reported only after that commit, so the
+       job can only become ready once its chunks are durably searchable.
+       An embedding or database outage is transient (nothing partial is
+       indexed); a missing embedding configuration is
+       INGESTION_PIPELINE_UNAVAILABLE. Each failure carries the evidence of
+       the stages before it.
     """
 
     _REQUIRED = ("asset_id", "storage_uri", "content_sha256", "mime_type")
 
     def __init__(
-        self, fetcher: AssetFetcher | None = None, extractor: DocumentExtractor | None = None
+        self,
+        fetcher: AssetFetcher | None = None,
+        extractor: DocumentExtractor | None = None,
+        embedder: EmbeddingPort | None = None,
+        index: PgChunkIndex | None = None,
     ) -> None:
         self._fetcher = fetcher
         self._extractor = extractor
+        self._embedder = embedder
+        self._index = index
+
+    def _text_embedder(self, evidence: dict[str, Any]) -> EmbeddingPort:
+        # Built on first use and reused: the model inside it loads once.
+        if self._embedder is None:
+            try:
+                self._embedder = OnnxMiniLMEmbedder.from_settings()
+            except EmbeddingGenerationError as exc:
+                raise PipelineUnavailableError(exc.message, details=evidence) from exc
+        return self._embedder
+
+    def _chunk_index(self) -> PgChunkIndex:
+        if self._index is None:
+            self._index = PgChunkIndex()
+        return self._index
 
     def _document_extractor(self) -> DocumentExtractor:
         # Built on first use and reused: the OCR model inside it loads once.
@@ -101,11 +133,12 @@ class ContentIngestionTaskHandler(TaskHandler):
             raise asyncio.CancelledError(f"Task cancelled: {ctx.cancellation_reason}")
         # Chunk ids come from the verified tenant, the asset and the run, so
         # re-indexing a run replaces its chunks.
+        run_number = int(payload.get("run_number") or 1)
         chunks = chunk_document(
             document.pages,
             tenant_id=ctx.tenant_id,
             asset_id=payload["asset_id"],
-            run_number=int(payload.get("run_number") or 1),
+            run_number=run_number,
         )
         chunking = {
             "chunks": len(chunks),
@@ -117,12 +150,39 @@ class ContentIngestionTaskHandler(TaskHandler):
         evidence["chunking"] = chunking
         if ctx.is_cancelled():
             raise asyncio.CancelledError(f"Task cancelled: {ctx.cancellation_reason}")
-        # Embedding and durable indexing (P3-4) start here, from `chunks`.
-        raise PipelineUnavailableError(
-            "The asset was fetched, verified, extracted and chunked; embedding and durable "
-            "indexing are not available in this deployment yet.",
-            details=evidence,
-        )
+
+        started = time.monotonic()
+        embedder = self._text_embedder(evidence)
+        model = getattr(embedder, "model_id", type(embedder).__name__)
+        try:
+            vectors = await embedder.embed_batch([chunk.text for chunk in chunks])
+        except EmbeddingGenerationError as exc:
+            raise TransientIngestionError("EMBEDDING_FAILED", exc.message, evidence) from exc
+        if ctx.is_cancelled():
+            raise asyncio.CancelledError(f"Task cancelled: {ctx.cancellation_reason}")
+        try:
+            indexed = await self._chunk_index().replace_asset(
+                tenant_id=ctx.tenant_id,
+                asset_id=payload["asset_id"],
+                run_number=run_number,
+                chunks=chunks,
+                embeddings=vectors,
+                embedding_model=model,
+            )
+        except VectorStoreError as exc:
+            raise TransientIngestionError("INDEX_WRITE_FAILED", exc.message, evidence) from exc
+        indexing = {
+            "indexed_chunks": indexed,
+            "index": "document_chunks",
+            "embedding_model": model,
+            "dimension": embedder.dimension,
+            "seconds": round(time.monotonic() - started, 3),
+        }
+        # Committed: only now may the job advance towards ready.
+        if ctx.stage_reporter is not None:
+            await ctx.stage_reporter.report("indexed", indexing)
+        evidence["indexing"] = indexing
+        return {"chunk_summary": evidence}
 
 
 class AgentExecutionTaskHandler(TaskHandler):
