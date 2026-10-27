@@ -14,27 +14,24 @@
     "text_regions": [
       {
         "id": "header",
-        "text": "DTS SECOND SEMESTER 2025/2026 EXAMINATION",
+        "text": "THE FEDERAL UNIVERSITY OF TECHNOLOGY, AKURE",
         "type": "heading",
         "estimated_bbox": [
           0.05,
-          0.05,
+          0.0,
           0.95,
-          0.15
-        ],
-        "confidence_expected": 0.95
+          0.06
+        ]
+      },
+      {
+        "id": "session",
+        "text": "B. TECH. DEGREE EXAMINATIONS, SECOND SEMESTER 2024/2025 SESSION",
+        "type": "heading"
       },
       {
         "id": "question_1",
-        "text": "[Question 1 and options]",
-        "type": "question_mcq",
-        "estimated_bbox": [
-          0.05,
-          0.2,
-          0.95,
-          0.4
-        ],
-        "confidence_expected": 0.9
+        "text": "QUESTION ONE\na. Describe the following data strategies: visualizing data, exploratory analysis, trend\nanalysis, and estimator (5mks). Explain the importance of data analysis in informed\ndecision making, business intelligence, problem-solving, and performance evaluation,\nand how it helps (5mks)\nb. Data analysts involve several key steps that helps to get insights from the raw\ndata, explain these processes? (5mks)",
+        "type": "question"
       }
     ]
   },
@@ -48,6 +45,7 @@
       "multiple columns"
     ],
     "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
-    "verified_by": null
+    "verified_by": null,
+    "review_notes": "Review fixes 2026-10-27 (PR #17 review): text_regions rebuilt as verbatim substrings of full_text (template placeholders and stale headers removed). The stale 2025/2026 header region now reads the printed 2024/2025 session."
   }
 }

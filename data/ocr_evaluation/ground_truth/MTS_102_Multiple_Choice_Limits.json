@@ -17,15 +17,13 @@
         "text_regions": [
           {
             "id": "p1_header",
-            "text": "MTS 102: Multiple Choice Questions on Limits and Continuity",
-            "type": "title",
-            "confidence_expected": 0.92
+            "text": "Set 2: Multiple-Choice\nQuestions on Limits and\nContinuity",
+            "type": "title"
           },
           {
             "id": "p1_q1",
-            "text": "1. [Question text with options A-D]",
-            "type": "question_mcq",
-            "confidence_expected": 0.85
+            "text": "1. lim x→2 (x² − 4)/(x² + 4) is\n(A) 1 (B) 0 (C) −1/2 (D) −1 (E) ∞",
+            "type": "question_mcq"
           }
         ]
       }
@@ -51,6 +49,7 @@
     ],
     "note": "For full benchmark, transcribe all pages or representative sample (pages 1, 5, 10, 18)",
     "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
-    "verified_by": null
+    "verified_by": null,
+    "review_notes": "Review fixes 2026-10-27 (PR #17 review): text_regions rebuilt as verbatim substrings of full_text (template placeholders and stale headers removed). The diagonal ROTIMI watermark is omitted by the transcription convention."
   }
 }

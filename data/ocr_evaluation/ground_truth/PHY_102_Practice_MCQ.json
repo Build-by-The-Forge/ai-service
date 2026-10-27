@@ -17,16 +17,18 @@
         "text_regions": [
           {
             "id": "p1_header",
-            "text": "PHY 102 PRACTICE MULTIPLE CHOICE QUESTIONS",
-            "type": "title",
-            "confidence_expected": 0.92
+            "text": "ELECTRIC FORCES AD THE ELECTRIC FIELD",
+            "type": "title"
+          },
+          {
+            "id": "p1_subheading",
+            "text": "PRACTICE MULTIPLE CHOICE QUESTIONS",
+            "type": "heading"
           },
           {
             "id": "p1_q1",
-            "text": "1. [Question with potential diagram reference]",
-            "type": "question_mcq",
-            "confidence_expected": 0.8,
-            "notes": "May reference diagrams not OCR-extractable"
+            "text": "____1. Doug rubs a piece of fur on a hard rubber rod, giving the rod a negative charge. What\nhappens? A. Protons are removed from the rod. D. The fur is left neutral.",
+            "type": "question_mcq"
           }
         ]
       }
@@ -54,6 +56,7 @@
     ],
     "note": "For full benchmark, recommend sampling pages: 1, 5, 10, 15, 21",
     "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
-    "verified_by": null
+    "verified_by": null,
+    "review_notes": "Review fixes 2026-10-27 (PR #17 review): text_regions rebuilt as verbatim substrings of full_text (template placeholders and stale headers removed). The top heading keeps the printed 'AD' (source typo, not corrected); 'PRACTICE MULTIPLE CHOICE QUESTIONS' is an interior heading. The diagonal GRACE watermark is omitted by the transcription convention."
   }
 }

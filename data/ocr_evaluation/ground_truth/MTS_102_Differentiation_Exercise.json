@@ -13,20 +13,17 @@
     "pages": [
       {
         "page_number": 1,
-        "full_text": "MATH 171 - Derivative Worksheet\nDifferentiate these for fun, or practice, whichever you need. The given answers are not simplified.\n\n1. f(x) = 4x⁵ − 5x⁴ 2. f(x) = eˣ sin x 3. f(x) = (x⁴ + 3x)⁻¹\n4. f(x) = 3x²(x³ + 1)⁷ 5. f(x) = cos⁴ x − 2x² 6. f(x) = x/(1 + x²)\n7. f(x) = (x² − 1)/x 8. f(x) = (3x²)(x^(1/2)) 9. f(x) = ln(xe^(7x))\n10. f(x) = (2x⁴ + 3x² − 1)/x² 11. f(x) = (x³)⁵√(2 − x) 12. f(x) = 2x − 4/√x\n13. f(x) = 4(3x − 1)²/(x² + 7ˣ) 14. f(x) = √(x² + 8) 15. f(x) = x/√(1 − (ln x)²)\n16. f(x) = 6/(3x² − π)⁴ 17. f(x) = (3x² − πx)⁴/6 18. f(x) = x/(x² + √(3x))⁵\n19. f(x) = (xeˣ)^π 20. f(x) = [arctan(2x)]¹⁰ 21. f(x) = (e^(2x) + e)^(1/2)\n22. f(x) = (x⁶ + 1)⁵(4x + 7)³ 23. f(x) = (7x + √(x² + 3))⁶ 24. f(x) = (1/x + 1/x²)/(x − 1)\n25. f(x) = ∛(x²) − 1/√(x³) 26. f(x) = √((2x + 5)/(7x − 9)) 27. f(x) = sin x/cos x\n28. f(x) = eˣ(x² + 3)(x³ + 4) 29. f(x) = (5x² − 7x)/(x² + 2) 30. f(x) = [ln(5x² + 9)]³\n31. f(x) = ln(5x² + 9)³ 32. f(x) = cot(6x) 33. f(x) = sec² x · tan x\n34. f(x) = arcsin(2ˣ) 35. f(x) = tan(cos x) 36. f(x) = [(x² − 1)⁵ − x]³\n37. f(x) = sec x · sin(3x) 38. f(x) = (x − 1)³/(x(x + 3)⁴) 39. f(x) = log₅(3x² + 4x)\nIn problems 40 – 42, find dy/dx. Assume y is a differentiable function of x.\n40. 3y = xe^(5y) 41. xy + y² + x³ = 7 42. sin y/(y² + 1) = 3x\nIf f and g are differentiable functions such that f(2) = 3 , f′(2) = −1 , f′(3) = 7 , g(2) = −5\nand g′(2) = 2 , find the numbers indicated in problems 43 – 48.\n43. (g − f)′(2) 44. (fg)′(2) 45. (f/g)′(2)\n46. (5f + 3g)′(2) 47. (f ∘ f)′(2) 48. (f/(f + g))′(2)",
+        "full_text": "MATH 171 - Derivative Worksheet\nDifferentiate these for fun, or practice, whichever you need. The given answers are not simplified.\n\n1. f(x) = 4x⁵ − 5x⁴ 2. f(x) = eˣ sin x 3. f(x) = (x⁴ + 3x)⁻¹\n4. f(x) = 3x²(x³ + 1)⁷ 5. f(x) = cos⁴ x − 2x² 6. f(x) = x/(1 + x²)\n7. f(x) = (x² − 1)/x 8. f(x) = (3x²)(x^(1/2)) 9. f(x) = ln(xe^(7x))\n10. f(x) = (2x⁴ + 3x² − 1)/x² 11. f(x) = (x³) · root_5(2 − x) 12. f(x) = 2x − 4/√x\n13. f(x) = 4(3x − 1)²/(x² + 7ˣ) 14. f(x) = √(x² + 8) 15. f(x) = x/√(1 − (ln x)²)\n16. f(x) = 6/(3x² − π)⁴ 17. f(x) = (3x² − πx)⁴/6 18. f(x) = x/(x² + √(3x))⁵\n19. f(x) = (xeˣ)^π 20. f(x) = [arctan(2x)]¹⁰ 21. f(x) = (e^(2x) + e)^(1/2)\n22. f(x) = (x⁶ + 1)⁵(4x + 7)³ 23. f(x) = (7x + √(x² + 3))⁶ 24. f(x) = (1/x + 1/x²)/(x − 1)\n25. f(x) = ∛(x²) − 1/√(x³) 26. f(x) = √((2x + 5)/(7x − 9)) 27. f(x) = sin x/cos x\n28. f(x) = eˣ(x² + 3)(x³ + 4) 29. f(x) = (5x² − 7x)/(x² + 2) 30. f(x) = [ln(5x² + 9)]³\n31. f(x) = ln(5x² + 9)³ 32. f(x) = cot(6x) 33. f(x) = sec² x · tan x\n34. f(x) = arcsin(2ˣ) 35. f(x) = tan(cos x) 36. f(x) = [(x² − 1)⁵ − x]³\n37. f(x) = sec x · sin(3x) 38. f(x) = (x − 1)³/(x(x + 3)⁴) 39. f(x) = log₅(3x² + 4x)\nIn problems 40 – 42, find dy/dx. Assume y is a differentiable function of x.\n40. 3y = xe^(5y) 41. xy + y² + x³ = 7 42. sin y/(y² + 1) = 3x\nIf f and g are differentiable functions such that f(2) = 3 , f′(2) = −1 , f′(3) = 7 , g(2) = −5\nand g′(2) = 2 , find the numbers indicated in problems 43 – 48.\n43. (g − f)′(2) 44. (fg)′(2) 45. (f/g)′(2)\n46. (5f + 3g)′(2) 47. (f ∘ f)′(2) 48. (f/(f + g))′(2)",
         "text_regions": [
           {
             "id": "p1_header",
-            "text": "MTS 102 - Differentiation Exercise",
-            "type": "title",
-            "confidence_expected": 0.9
+            "text": "MATH 171 - Derivative Worksheet",
+            "type": "title"
           },
           {
             "id": "p1_ex1",
-            "text": "Exercise 1: [Mathematical expression and instruction]",
-            "type": "exercise",
-            "confidence_expected": 0.8,
-            "notes": "Contains mathematical symbols and equations"
+            "text": "1. f(x) = 4x⁵ − 5x⁴",
+            "type": "exercise"
           }
         ]
       },
@@ -56,7 +53,8 @@
       "LaTeX-like notation",
       "variable accuracy of symbols"
     ],
-    "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
-    "verified_by": null
+    "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible. An n-th root with index n is written root_n( ).",
+    "verified_by": null,
+    "review_notes": "Review fixes 2026-10-27 (PR #17 review): text_regions rebuilt as verbatim substrings of full_text (template placeholders and stale headers removed). Problem 11 rewritten as (x³) · root_5(2 − x): the 5 is the radical's index, not a power of (x³)."
   }
 }

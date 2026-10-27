@@ -17,15 +17,13 @@
         "text_regions": [
           {
             "id": "p1_title",
-            "text": "MTS 102 Cheat Sheet",
-            "type": "title",
-            "confidence_expected": 0.95
+            "text": "MTS 102 CHEAT SHEET",
+            "type": "title"
           },
           {
             "id": "p1_section1",
-            "text": "[Section heading with condensed content]",
-            "type": "section",
-            "confidence_expected": 0.8
+            "text": "1. Limits\n\nlim(x→a) f(x) = L → Plug in directly unless indeterminate\n\nAt infinity: Divide numerator and denominator by highest power of x\n\nSpecial: lim(x→0) (sin x)/x = 1",
+            "type": "section"
           }
         ]
       }
@@ -52,6 +50,7 @@
       "column reading order preservation"
     ],
     "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
-    "verified_by": null
+    "verified_by": null,
+    "review_notes": "Review fixes 2026-10-27 (PR #17 review): text_regions rebuilt as verbatim substrings of full_text (template placeholders and stale headers removed). Masked in the reviewer's redacted copy, the 'Compiled by' line and the MCCOY / The Genuine Man / (TGM) logo text were verified verbatim against the source PDF's text layer; the diagonal MCCOY watermark is omitted by the transcription convention."
   }
 }
