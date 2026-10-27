@@ -1,6 +1,6 @@
 import asyncio
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from app.core.rag.contracts import (
     ChunkProvenance,
@@ -15,6 +15,9 @@ from app.services.rag.chunker import Chunker
 from app.services.rag.embedder import EmbeddingPort
 from app.services.rag.lexical import LexicalIndexPort
 from app.services.rag.vector_store import VectorStorePort
+
+if TYPE_CHECKING:
+    from app.services.rag.evidence import Evidence
 
 
 class HybridRetrievalEngine:
@@ -222,7 +225,17 @@ class RetrievalService:
         tenant_id = tenant.get_tenant_id()
         filter_obj = RetrievalFilter(tenant_id=tenant_id)
         ctx = await self.engine.retrieve(query, filter=filter_obj)
-        # Every item carries `text` (the contract field chat and the backend
-        # read); real citations expose their content as `snippet`. Nothing
+        # Every item carries the passage in full as `text` (the contract field
+        # chat and the backend read), with `snippet` for display. Nothing
         # found means an empty list, never a stand-in passage.
-        return [{"text": c.get("snippet", ""), **c} for c in ctx.to_citation_summary()]
+        return [
+            {**c, "text": retrieved.chunk.content}
+            for retrieved, c in zip(ctx.chunks, ctx.to_citation_summary())
+        ]
+
+    async def evidence(self, query: str) -> "Evidence":
+        """The verified tenant's numbered passages for grounded answers."""
+        from app.core import tenant
+        from app.services.rag.evidence import gather
+
+        return await gather(query, tenant.get_tenant_id(), engine=self.engine)

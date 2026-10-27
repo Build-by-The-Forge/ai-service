@@ -1,5 +1,6 @@
 from typing import Any
 
+from app.services.rag.evidence import Evidence
 from app.services.rag.retrieval import RetrievalService
 
 
@@ -10,3 +11,6 @@ class TenantAwareRetrievalService(RetrievalService):
     async def retrieve(self, query: str) -> list[dict[str, Any]]:
         # Delegate to RetrievalService, which scopes search to the verified request tenant.
         return await self.retriever.retrieve(query)
+
+    async def evidence(self, query: str) -> Evidence:
+        return await self.retriever.evidence(query)
