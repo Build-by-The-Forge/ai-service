@@ -1,0 +1,75 @@
+{
+  "version": "v1",
+  "description": "Retrieval evaluation corpus, tier 1 (P3-5). Original course-style passages written for this evaluation (no third-party text), so the set can be committed and run in CI. Each document is a list of pages; questions.json cites them by document id and 1-based page.",
+  "license": "Original work for the BUILD project; may be used for testing and evaluation.",
+  "documents": [
+    {
+      "id": "mts102-limits",
+      "title": "MTS 102 Lecture Notes: Limits and Continuity",
+      "pages": [
+        "1. The Idea of a Limit\n\nWe write lim(x→a) f(x) = L when the values of f(x) can be made as close to L as we like by taking x sufficiently close to a, but not equal to a. The value of f at a itself plays no part: a function can have a limit at a point where it is not even defined.\n\nOne-sided limits. The left-hand limit lim(x→a⁻) f(x) uses only values of x below a, and the right-hand limit lim(x→a⁺) f(x) uses only values above a. The two-sided limit exists exactly when both one-sided limits exist and are equal.\n\nExample. For f(x) = |x|/x, the right-hand limit at 0 is 1 and the left-hand limit is −1, so lim(x→0) f(x) does not exist.",
+        "2. Evaluating Limits\n\nDirect substitution works whenever f is continuous at a: for a polynomial, lim(x→2) (x² + 3x) = 4 + 6 = 10.\n\nWhen substitution gives the indeterminate form 0/0, simplify first. Factorise and cancel: lim(x→2) (x² − 4)/(x − 2) = lim(x→2) (x + 2) = 4. For square roots, multiply by the conjugate: lim(x→0) (√(x + 9) − 3)/x = 1/6.\n\nThe squeeze theorem. If g(x) ≤ f(x) ≤ h(x) near a and g and h have the same limit L at a, then f also has limit L at a. It is how we prove that lim(x→0) x² sin(1/x) = 0.\n\nSpecial limit: lim(x→0) (sin x)/x = 1, with x measured in radians. It is the key step in finding the derivative of sin x.",
+        "3. Limits at Infinity and Continuity\n\nFor a rational function, divide the numerator and the denominator by the highest power of x in the denominator. If the degrees are equal, the limit as x→∞ is the ratio of the leading coefficients: lim(x→∞) (3x² + 1)/(2x² − 5) = 3/2. If the numerator has the lower degree, the limit is 0.\n\nContinuity. A function f is continuous at a when three conditions hold: f(a) is defined, lim(x→a) f(x) exists, and the limit equals f(a). A removable discontinuity is a hole that can be filled by redefining one value; a jump discontinuity has unequal one-sided limits.\n\nThe Intermediate Value Theorem. If f is continuous on [a, b] and N lies between f(a) and f(b), then f(c) = N for some c in (a, b). It is often used to show that an equation has a root in an interval."
+      ]
+    },
+    {
+      "id": "mts102-differentiation",
+      "title": "MTS 102 Lecture Notes: Differentiation",
+      "pages": [
+        "1. The Derivative from First Principles\n\nThe derivative of f at x is f′(x) = lim(h→0) [f(x + h) − f(x)]/h, provided the limit exists. Geometrically it is the slope of the tangent line to the curve y = f(x); physically it is an instantaneous rate of change, such as velocity as the derivative of position with respect to time.\n\nA function that is differentiable at a point is continuous there, but the converse fails: |x| is continuous at 0 yet has a corner, so it has no derivative at 0.\n\nThe derivative of a constant is zero, because its graph is a horizontal line with no change at all: if f(x) = c then f(x + h) − f(x) = 0 for every h.",
+        "2. Rules of Differentiation\n\nPower rule: d/dx (xⁿ) = n xⁿ⁻¹ for any real n. Sum rule: the derivative of a sum is the sum of the derivatives.\n\nProduct rule: (fg)′ = f′g + fg′. For example, d/dx (eˣ sin x) = eˣ sin x + eˣ cos x.\n\nQuotient rule: (f/g)′ = (f′g − fg′)/g², valid wherever g ≠ 0.\n\nChain rule: if y = f(g(x)) then dy/dx = f′(g(x)) · g′(x): differentiate the outside function, keep the inside, then multiply by the derivative of the inside. So d/dx (sin 3x) = 3 cos 3x and d/dx tan(cos x) = sec²(cos x) · (−sin x).",
+        "3. Implicit Differentiation and Applications\n\nWhen y is defined implicitly, differentiate both sides with respect to x, treating y as a function of x, then solve for dy/dx. From x² + y² = 25 we get 2x + 2y dy/dx = 0, so dy/dx = −x/y.\n\nStationary points occur where f′(x) = 0. The second derivative test classifies them: if f″(x) > 0 the point is a local minimum, and if f″(x) < 0 it is a local maximum.\n\nRates of change. If a spherical balloon's radius grows at 2 cm/s, its volume V = (4/3)πr³ changes at dV/dt = 4πr² · dr/dt."
+      ]
+    },
+    {
+      "id": "phy102-electrostatics",
+      "title": "PHY 102 Lecture Notes: Electrostatics",
+      "pages": [
+        "1. Electric Charge\n\nCharge comes in two kinds, positive and negative. Like charges repel and unlike charges attract. Charge is conserved: it is never created or destroyed, only transferred from one body to another.\n\nCharging by friction. When a glass rod is rubbed with silk, electrons move from the glass to the silk, leaving the rod positively charged. When a rubber rod is rubbed with fur, the rubber gains electrons and becomes negatively charged.\n\nCharge is quantised: every charge is a whole-number multiple of the elementary charge e = 1.6 × 10⁻¹⁹ C. Robert Millikan measured e in his oil-drop experiment by balancing the weight of tiny charged oil drops against an electric force.",
+        "2. Coulomb's Law\n\nThe force between two point charges q₁ and q₂ separated by a distance r is F = k q₁q₂ / r², where k = 1/(4πε₀) ≈ 9 × 10⁹ N m² C⁻². The force acts along the line joining the charges; it is repulsive for like charges and attractive for unlike charges.\n\nBecause of the inverse-square dependence, doubling the separation reduces the force to one quarter of its value, and halving it makes the force four times larger.\n\nConductors and insulators. In a conductor such as copper, outer electrons are free to move through the material; in an insulator such as glass or dry wood, electrons are bound to their atoms. Metals have the highest density of free electrons, which is why they conduct so well.",
+        "3. Electric Field and Potential\n\nThe electric field at a point is the force per unit positive test charge, E = F/q, measured in N/C. The field of a point charge is E = kq/r², pointing away from a positive charge and towards a negative one. Field lines never cross, and they are closer together where the field is stronger.\n\nThe electric potential V is the work done per unit charge in bringing a positive test charge from infinity to the point; for a point charge V = kq/r. The potential difference between two points is measured in volts, where 1 V = 1 J/C.\n\nInside a conductor in electrostatic equilibrium the field is zero, and any excess charge sits on the outer surface."
+      ]
+    },
+    {
+      "id": "phy102-current",
+      "title": "PHY 102 Lecture Notes: Current Electricity",
+      "pages": [
+        "1. Current, Voltage and Resistance\n\nElectric current is the rate of flow of charge, I = Q/t, measured in amperes. Ohm's law states that, at constant temperature, the current through a metallic conductor is proportional to the potential difference across it: V = IR.\n\nResistance depends on the material and the shape of the conductor: R = ρL/A, where ρ is the resistivity, L the length and A the cross-sectional area. A longer wire has more resistance; a thicker wire has less. The resistance of a metal rises with temperature.",
+        "2. Circuits\n\nResistors in series carry the same current and their resistances add: R = R₁ + R₂ + R₃. Resistors in parallel share the same voltage, and their combined resistance satisfies 1/R = 1/R₁ + 1/R₂, so the total is smaller than the smallest single resistor.\n\nKirchhoff's current law: the total current entering a junction equals the total current leaving it, which expresses conservation of charge. Kirchhoff's voltage law: around any closed loop the sum of the potential differences is zero, which expresses conservation of energy.\n\nElectrical power is P = VI = I²R = V²/R, measured in watts. A kettle rated 2000 W on a 230 V supply draws a current of about 8.7 A."
+      ]
+    },
+    {
+      "id": "chm101-thermochemistry",
+      "title": "CHM 101 Lecture Notes: Thermochemistry",
+      "pages": [
+        "1. Energy Changes in Reactions\n\nAn exothermic reaction releases heat to its surroundings, so its enthalpy change ΔH is negative; combustion and neutralisation are examples. An endothermic reaction absorbs heat, so ΔH is positive; dissolving ammonium nitrate in water makes the solution feel cold.\n\nThe standard enthalpy of formation, ΔHf°, is the enthalpy change when one mole of a compound forms from its elements in their standard states at 298 K and 1 atm. By definition ΔHf° of an element in its standard state is zero.",
+        "2. Hess's Law and Calorimetry\n\nHess's law states that the total enthalpy change of a reaction is the same whichever route is taken from reactants to products, as long as the initial and final states are the same. It lets us calculate enthalpy changes that cannot be measured directly by combining equations whose ΔH values are known.\n\nIn a calorimeter, the heat absorbed by water is q = mcΔT, where m is the mass of water, c = 4.18 J g⁻¹ K⁻¹ its specific heat capacity and ΔT the temperature rise. Bond enthalpies give an estimate: ΔH ≈ (energy to break bonds) − (energy released forming bonds)."
+      ]
+    },
+    {
+      "id": "bio101-cell",
+      "title": "BIO 101 Lecture Notes: The Cell",
+      "pages": [
+        "1. Cell Structure\n\nProkaryotic cells, such as bacteria, have no nucleus; their DNA lies in a region called the nucleoid. Eukaryotic cells, such as those of plants and animals, keep their DNA in a membrane-bound nucleus and contain membrane-bound organelles.\n\nThe mitochondrion is the site of aerobic respiration, where glucose is oxidised to release energy stored as ATP; it is often called the powerhouse of the cell. Ribosomes make proteins. Plant cells also have chloroplasts for photosynthesis, a cellulose cell wall and a large permanent vacuole.",
+        "2. Movement Across Membranes\n\nThe cell membrane is a phospholipid bilayer with proteins embedded in it; it is selectively permeable.\n\nDiffusion is the net movement of particles from a region of higher concentration to a region of lower concentration; it needs no energy from the cell. Osmosis is the diffusion of water molecules across a partially permeable membrane, from a dilute solution to a more concentrated one. A plant cell placed in pure water takes in water and becomes turgid; in a concentrated salt solution it loses water and becomes plasmolysed.\n\nActive transport moves substances against a concentration gradient and uses energy from ATP, as when root hair cells absorb mineral ions from the soil."
+      ]
+    },
+    {
+      "id": "csc101-python",
+      "title": "CSC 101 Lecture Notes: Python Data Types",
+      "pages": [
+        "1. Sequences\n\nA list is an ordered, mutable sequence written with square brackets, such as [3, 1, 2]. Because lists are mutable you can change them in place: append adds one item at the end, insert adds an item at a given position, and pop removes and returns an item.\n\nStrings and tuples are also ordered sequences, but they are immutable: once created they cannot be changed, so an operation that seems to modify a string actually builds a new one. Tuples are written with round brackets, such as (3, 1, 2), and are often used for fixed records like coordinates.\n\nAll sequences support indexing from 0, negative indexing from the end, and slicing: s[1:3] returns the items at positions 1 and 2.",
+        "2. Dictionaries and Sets\n\nA dictionary maps keys to values, for example {\"name\": \"Ada\", \"level\": 100}. Keys must be immutable, such as strings, numbers or tuples. Looking up a key is fast on average regardless of the dictionary's size, because dictionaries are implemented as hash tables.\n\nA set is an unordered collection with no duplicates. Converting a list to a set is a quick way to remove repeated values, and sets support union, intersection and difference.\n\nA list comprehension builds a list in one expression: [x * x for x in range(5)] gives [0, 1, 4, 9, 16]."
+      ]
+    },
+    {
+      "id": "sta111-descriptive",
+      "title": "STA 111 Lecture Notes: Descriptive Statistics",
+      "pages": [
+        "1. Measures of Central Tendency\n\nThe mean is the sum of the values divided by the number of values. The median is the middle value when the data are sorted; for an even number of values it is the average of the two middle values. The mode is the value that occurs most often, and a data set can have more than one mode.\n\nThe mean is sensitive to outliers, extreme values far from the rest of the data, while the median is not. For the scores 45, 50, 55, 60 and 290, the mean is 100 but the median is 55, which better describes a typical score.",
+        "2. Measures of Spread\n\nThe range is the largest value minus the smallest. The variance is the average squared deviation from the mean; for a sample we divide the sum of squared deviations by n − 1. The standard deviation is the square root of the variance and has the same units as the data.\n\nFor the sample 2, 4, 4, 4, 5, 5, 7, 9 the mean is 5, the sum of squared deviations is 32, the sample variance is 32/7 ≈ 4.57 and the sample standard deviation is about 2.14.\n\nThe interquartile range, Q3 − Q1, measures the spread of the middle half of the data and, like the median, resists outliers.",
+        "3. Types of Data\n\nStructured data is organised in a fixed format of rows and columns, such as a spreadsheet of student scores or a database table, so it is easy to search and analyse. Unstructured data has no predefined model; examples are emails, photographs, audio recordings and free-text survey answers.\n\nQualitative data describes categories, such as department or blood group; quantitative data is numerical. Quantitative data is discrete when it is counted, such as the number of students in a class, and continuous when it is measured, such as height or time."
+      ]
+    }
+  ]
+}
