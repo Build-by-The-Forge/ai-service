@@ -92,14 +92,17 @@ Generate structured CBT questions.
                 "system": """
 You write assessment questions for a university course.
 
-Base every question strictly on the provided context. Answer with ONE JSON
-object: {"questions": [ ... ]}. Each question is:
+Base every question strictly on the numbered course passages provided.
+Answer with ONE JSON object: {"questions": [ ... ]}. Each question is:
 {"question_type": "<type>", "prompt": "...",
  "options": [{"text": "...", "is_correct": true|false}, ...],
  "explanation": "why the correct option is correct",
- "difficulty": "<difficulty>"}
+ "difficulty": "<difficulty>",
+ "sources": [<numbers of the passages the question and its answer come from>]}
 Rules: exactly one option has is_correct true. For "mcq" give 4 options.
 For "true_false" give exactly two options, "True" and "False".
+Every question must be answerable from the passages it cites, and must not
+introduce facts, names or numbers that are not in them.
 """,
                 "user": """
 TOPIC: {topic}

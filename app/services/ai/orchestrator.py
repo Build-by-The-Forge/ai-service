@@ -80,4 +80,5 @@ class AIOrchestrator:
             "questions": [q.model_dump() for q in result.questions],
             "discarded": result.discarded,
             "grounded": result.grounded,
+            "rejected": result.rejected,
         }

@@ -60,10 +60,16 @@ class Dataset:
     sha256: str
 
 
+def _read(path: Path) -> bytes:
+    # Line endings are normalised so a checkout's conversion (CRLF on
+    # Windows) does not change the dataset's identity.
+    return path.read_bytes().replace(b"\r\n", b"\n")
+
+
 def load_dataset(directory: Path) -> Dataset:
-    corpus_bytes = (directory / "corpus.json").read_bytes()
-    questions_bytes = (directory / "questions.json").read_bytes()
-    distractor_bytes = (directory / "distractors.json").read_bytes()
+    corpus_bytes = _read(directory / "corpus.json")
+    questions_bytes = _read(directory / "questions.json")
+    distractor_bytes = _read(directory / "distractors.json")
     corpus, questions = json.loads(corpus_bytes), json.loads(questions_bytes)
     distractors = json.loads(distractor_bytes)
     if not corpus["version"] == questions["version"] == distractors["version"]:
