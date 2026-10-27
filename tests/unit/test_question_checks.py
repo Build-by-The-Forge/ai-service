@@ -62,6 +62,15 @@ def test_the_sample_covers_every_reason_and_supported_questions():
     assert expected.count(None) >= 10 and len(expected) - expected.count(None) >= 10
 
 
+def test_the_labels_carry_their_human_review_and_its_limits():
+    # A reviewed sample records who confirmed it, on which revision, and
+    # that it validates the labels only, not the lexical checker in general.
+    assert SAMPLES["status"] == "human_reviewed"
+    review = SAMPLES["review"]
+    assert review["date"] and review["by"] and review["revision"]
+    assert "not the general reliability" in review["scope"]
+
+
 def test_reasons_are_counted():
     counts = count_reasons(v for _, v in verdicts())
     assert counts == {UNTRACEABLE: 3, UNSUPPORTED_PREMISE: 6, NOT_ANSWERABLE: 5}
