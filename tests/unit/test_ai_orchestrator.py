@@ -107,7 +107,7 @@ async def test_no_questions_are_generated_without_course_material():
 
     result = await orchestrator(llm).generate_questions("geometry")
 
-    assert result == {"questions": [], "discarded": 0, "grounded": False}
+    assert result == {"questions": [], "discarded": 0, "grounded": False, "rejected": {}}
     assert llm.prompts == []
 
 
@@ -117,5 +117,5 @@ async def test_questions_are_generated_from_the_passages():
     result = await orchestrator(llm, OSMOSIS).generate_questions("osmosis")
 
     # The scripted model does not answer with JSON: all discarded, but grounded.
-    assert result == {"questions": [], "discarded": 5, "grounded": True}
+    assert result == {"questions": [], "discarded": 5, "grounded": True, "rejected": {}}
     assert OSMOSIS.text in llm.prompts[0]

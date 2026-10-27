@@ -123,6 +123,9 @@ class GeneratedQuestion(BaseModel):
     options: list[GeneratedOption]
     explanation: str | None = Field(default=None, max_length=MAX_MESSAGE_CHARS)
     difficulty: Difficulty
+    # The numbered course passages the question comes from (P3-5); a
+    # question without valid sources is discarded (question_checks).
+    sources: list[int] = Field(default_factory=list, max_length=10)
 
     @model_validator(mode="after")
     def _options_fit_the_type(self) -> "GeneratedQuestion":
@@ -143,6 +146,8 @@ class GeneratedQuestionsData(BaseModel):
     discarded: int
     # False when the course material has nothing on the topic (no questions).
     grounded: bool = True
+    # Of the discarded, those rejected by the support checks, by reason.
+    rejected: dict[str, int] = Field(default_factory=dict)
 
 
 class _Envelope(BaseModel):

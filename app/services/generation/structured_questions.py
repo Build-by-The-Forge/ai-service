@@ -6,7 +6,7 @@ Retrieval context comes from the verified request tenant only.
 """
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from pydantic import ValidationError
@@ -14,6 +14,7 @@ from pydantic import ValidationError
 from app.core.prompt_builder import PromptBuilder
 from app.schemas.ai import GeneratedQuestion
 from app.services.ai.llm import LLMProvider, StructuredOutputError
+from app.services.generation.question_checks import Verdict, check_question, count_reasons
 from app.services.rag.retrieval import RetrievalService
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,8 @@ class GeneratedQuestions:
     # False when the tenant's material has nothing on the topic: no
     # questions are generated from the model's own knowledge.
     grounded: bool = True
+    # Of the discarded, those the support checks rejected, by reason.
+    rejected: dict[str, int] = field(default_factory=dict)
 
 
 class StructuredQuestionGenerator:
@@ -63,6 +66,7 @@ class StructuredQuestionGenerator:
         raw = answer.get("questions")
         items: list[Any] = raw if isinstance(raw, list) else []
         valid: list[GeneratedQuestion] = []
+        rejected: list[Verdict] = []
         discarded = 0
         for item in items:
             try:
@@ -74,10 +78,19 @@ class StructuredQuestionGenerator:
             if question.question_type != question_type or question.difficulty != difficulty:
                 discarded += 1
                 continue
+            # Only what the cited passages support (traceable, no premise or
+            # answer beyond them).
+            verdict = check_question(question.model_dump(), evidence)
+            if not verdict.ok:
+                discarded += 1
+                rejected.append(verdict)
+                continue
             valid.append(question)
         if len(valid) > count:
             discarded += len(valid) - count
             valid = valid[:count]
         if not isinstance(raw, list):
             discarded = count
-        return GeneratedQuestions(questions=valid, discarded=discarded)
+        return GeneratedQuestions(
+            questions=valid, discarded=discarded, rejected=count_reasons(rejected)
+        )

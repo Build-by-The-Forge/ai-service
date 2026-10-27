@@ -9,12 +9,17 @@ from app.services.ai.llm import LLMProvider
 from app.services.generation.structured_questions import StructuredQuestionGenerator
 from app.services.rag.evidence import Evidence, Passage
 
+PASSAGE = (
+    "In cells, the mitochondrion is the organelle that makes ATP; ribosomes "
+    "make proteins, and the nucleus holds the DNA."
+)
+
 
 class NoRetrieval:
     """One course passage on the topic."""
 
     async def evidence(self, query):
-        passage = Passage(1, f"context for {query}", "chunk-1", "asset-1", 1, 1)
+        passage = Passage(1, PASSAGE, "chunk-1", "asset-1", 1, 1)
         return Evidence(query=query, passages=(passage,))
 
 
@@ -28,6 +33,7 @@ GOOD = {
     ],
     "explanation": "Mitochondria carry out respiration.",
     "difficulty": "medium",
+    "sources": [1],
 }
 
 
@@ -60,11 +66,39 @@ async def generate(llm, count=5, difficulty="medium", question_type="mcq"):
 
 
 async def test_valid_questions_are_returned_and_the_prompt_carries_the_context():
-    llm = Scripted({"questions": [GOOD, GOOD | {"prompt": "Second?"}]})
+    second = GOOD | {"prompt": "Which organelle in cells makes ATP?"}
+    llm = Scripted({"questions": [GOOD, second]})
     result = await generate(llm)
-    assert [q.prompt for q in result.questions] == ["Which organelle makes ATP?", "Second?"]
-    assert result.discarded == 0
-    assert "context for cells" in llm.prompts[0]
+    assert [q.prompt for q in result.questions] == [GOOD["prompt"], second["prompt"]]
+    assert result.discarded == 0 and result.rejected == {}
+    assert f"[1] (asset-1, p. 1) {PASSAGE}" in llm.prompts[0]
+
+
+@pytest.mark.parametrize(
+    "item,reason",
+    [
+        (bad(sources=[]), "untraceable"),
+        (bad(sources=[2]), "untraceable"),
+        (
+            bad(prompt="Which Nobel laureate discovered the Golgi apparatus in 1898?"),
+            "unsupported_premise",
+        ),
+        (
+            bad(
+                options=[
+                    {"text": "Chloroplast thylakoid membranes", "is_correct": True},
+                    {"text": "Mitochondrion", "is_correct": False},
+                ]
+            ),
+            "not_answerable_from_sources",
+        ),
+    ],
+    ids=["no-sources", "unknown-source", "invented-premise", "answer-not-in-source"],
+)
+async def test_unsupported_questions_are_rejected_and_counted(item, reason):
+    result = await generate(Scripted({"questions": [GOOD, item]}))
+    assert len(result.questions) == 1 and result.discarded == 1
+    assert result.rejected == {reason: 1}
 
 
 @pytest.mark.parametrize(
@@ -129,7 +163,9 @@ async def test_the_deterministic_provider_produces_valid_questions(question_type
     result = await generate(
         DeterministicLLM(), count=4, difficulty="hard", question_type=question_type
     )
-    assert len(result.questions) == 4 and result.discarded == 0
+    # Built from the passage and citing it, the questions pass the checks.
+    assert len(result.questions) == 4 and result.discarded == 0 and result.rejected == {}
     assert all(
-        q.difficulty == "hard" and q.question_type == question_type for q in result.questions
+        q.difficulty == "hard" and q.question_type == question_type and q.sources == [1]
+        for q in result.questions
     )
