@@ -2,7 +2,8 @@
 
 Every page has a transcription, every text region is a verbatim excerpt of
 its page's full_text (so region metrics cannot drift from the transcription),
-no template placeholder remains, and a draft records its review notes.
+no template placeholder remains, and each file records its review and,
+once verified, who verified it, when and against which revision.
 This checks consistency only; whether a transcription matches its page is a
 human verification, recorded in each file's metadata.
 """
@@ -46,7 +47,13 @@ def test_every_region_is_a_verbatim_excerpt_of_its_page(path):
 
 
 @pytest.mark.parametrize("path", FILES, ids=[f.stem for f in FILES])
-def test_a_draft_records_its_review(path):
+def test_the_verification_is_recorded(path):
     metadata = json.loads(path.read_text(encoding="utf-8"))["metadata"]
+    assert metadata.get("review_notes"), "the file must say what was reviewed"
     if metadata["ground_truth_type"] == "draft_pending_human_verification":
-        assert metadata.get("review_notes"), "a draft must say what was reviewed"
+        assert metadata["verified_by"] is None
+    else:
+        assert metadata["ground_truth_type"] == "human_verified"
+        verifier = metadata["verified_by"]
+        assert {"name", "date", "revision", "basis"} <= verifier.keys()
+        assert all(verifier[key] for key in ("name", "date", "revision", "basis"))
