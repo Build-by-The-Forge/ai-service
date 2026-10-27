@@ -127,6 +127,14 @@ def test_pymupdf_is_one_version_everywhere_and_installed_in_the_image():
     assert {v for _, v in requirement_pins([DEV_FILE])["pymupdf"]} == versions
 
 
+def test_dev_numpy_is_the_image_numpy():
+    # The embedder's tests and type checks run against the image's numpy,
+    # not whatever onnxruntime would otherwise pull into the dev set.
+    image = {v for _, v in requirement_pins()["numpy"]}
+    assert image == {"1.26.4"}
+    assert {v for _, v in requirement_pins([DEV_FILE])["numpy"]} == image
+
+
 def test_every_pyproject_pin_agrees_with_the_requirements_files():
     image = requirement_pins()
     benchmark = requirement_pins([BENCHMARK_FILE])

@@ -63,14 +63,31 @@ RUN --mount=type=bind,source=models/ocr,target=/context-models \
     && rm -rf /tmp/archives
 
 
+# --- Embedding model: the pinned revision in models/embedding/manifest.json --
+# Verified files in models/embedding/files/ (a local, git-ignored cache) are
+# used as they are; anything missing comes from the pinned Hugging Face
+# revision. Every file is checked against size and sha256 before install.
+FROM python:3.12-slim AS embedding-model
+COPY models/embedding/manifest.json scripts/fetch_embedding_model.py /build/
+RUN --mount=type=bind,source=models/embedding,target=/context-model \
+    python /build/fetch_embedding_model.py \
+        --manifest /build/manifest.json \
+        --cache-dir /context-model/files \
+        --dest /opt/build-ai/models/embedding \
+    && cp /build/manifest.json /opt/build-ai/models/embedding/
+
+
 FROM runtime-deps AS app
 
 COPY --from=ocr-models /opt/build-ai/models /opt/build-ai/models
+COPY --from=embedding-model /opt/build-ai/models/embedding /opt/build-ai/models/embedding
 # Not writable for a non-root user. The image still runs as root (a
 # pre-existing gap), which this does not prevent.
 RUN chmod -R a-w /opt/build-ai/models
-# PaddleOCR loads only these verified models; nothing is downloaded at runtime.
+# PaddleOCR and the embedder load only these verified models; nothing is
+# downloaded at runtime.
 ENV OCR_MODEL_DIR=/opt/build-ai/models/paddleocr
+ENV EMBEDDING_MODEL_DIR=/opt/build-ai/models/embedding
 
 # Only what the service needs: no tests or test tooling, development model
 # files, evaluation data, local caches or build leftovers from the working
@@ -83,6 +100,12 @@ COPY scripts ./scripts
 COPY models/ocr/manifest.json ./models/ocr/manifest.json
 
 RUN chmod +x docker/entrypoint.sh
+
+# A broken embedding stack fails the build, not the first ingestion.
+RUN python -c "import asyncio; \
+from app.services.rag.onnx_embedder import OnnxMiniLMEmbedder; \
+v = asyncio.run(OnnxMiniLMEmbedder('/opt/build-ai/models/embedding', threads=1).embed_text('build check')); \
+assert len(v) == 384 and abs(sum(x * x for x in v) - 1) < 1e-4, len(v); print('embedding ok', len(v))"
 
 EXPOSE 8000
 

@@ -36,6 +36,11 @@ httpx==0.27.2
 boto3==1.43.108
 botocore==1.43.108
 
+# Local embeddings (P3-4, D3): all-MiniLM-L6-v2 on ONNX Runtime, with the
+# model files baked into the image (models/embedding/manifest.json).
+onnxruntime==1.31.0
+tokenizers==0.23.3
+
 # Observability / Rate Limiting
 prometheus-fastapi-instrumentator==8.1.0
 slowapi==0.1.9

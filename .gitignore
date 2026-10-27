@@ -77,3 +77,5 @@ Thumbs.db
 
 # OCR model archive cache (scripts/fetch_ocr_models.py); archives are verified, never committed
 models/ocr/archives/
+# Embedding model cache (scripts/fetch_embedding_model.py); verified, never committed
+models/embedding/files/

@@ -1,0 +1,25 @@
+{
+  "schema": 1,
+  "description": "The embedding model baked into the AI-service image (P3-4, D3). The only place its version lives. Each file is verified against sha256 and size before it is installed; nothing is downloaded at runtime.",
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "dimension": 384,
+  "source": {
+    "type": "huggingface",
+    "repository": "Qdrant/all-MiniLM-L6-v2-onnx",
+    "revision": "d13954661f83248295ba75c1ed411eef3b7b936e"
+  },
+  "license": "Apache-2.0",
+  "attribution": "all-MiniLM-L6-v2 by sentence-transformers (Apache-2.0); ONNX export by Qdrant (Apache-2.0).",
+  "files": [
+    {
+      "name": "model.onnx",
+      "sha256": "bbd7b466f6d58e646fdc2bd5fd67b2f5e93c0b687011bd4548c420f7bd46f0c5",
+      "size": 90387630
+    },
+    {
+      "name": "tokenizer.json",
+      "sha256": "851ca67100d372ca3ae031a6abd168f53489eebfd7d89523f35c5c9b4d372c3c",
+      "size": 711649
+    }
+  ]
+}
