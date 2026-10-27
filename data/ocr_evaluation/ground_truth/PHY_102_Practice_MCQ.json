@@ -44,7 +44,7 @@
   },
   "metadata": {
     "created_date": "2026-09-01",
-    "ground_truth_type": "draft_pending_human_verification",
+    "ground_truth_type": "human_verified",
     "difficulty_notes": "21-page scanned PDF with physics content",
     "expected_challenges": [
       "scientific equations and notation",
@@ -55,8 +55,13 @@
       "potential for low OCR accuracy on diagrams"
     ],
     "note": "For full benchmark, recommend sampling pages: 1, 5, 10, 15, 21",
-    "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26, pending human verification. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
-    "verified_by": null,
+    "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
+    "verified_by": {
+      "name": "Olamide Fadahunsi (product owner)",
+      "date": "2026-10-27",
+      "revision": "db28b69",
+      "basis": "Confirmed after the AI reviewer's page-by-page comparison of the eight redacted source pages (no further corrections at 14d76d4) and its independent check of the six masked name and branding spans against the original PDFs' embedded text (all present)."
+    },
     "review_notes": "Review fixes 2026-10-27 (PR #17 review): text_regions rebuilt as verbatim substrings of full_text (template placeholders and stale headers removed). The top heading keeps the printed 'AD' (source typo, not corrected); 'PRACTICE MULTIPLE CHOICE QUESTIONS' is an interior heading. The diagonal GRACE watermark is omitted by the transcription convention."
   }
 }
