@@ -12,12 +12,18 @@ def no_scope():
 
 
 @pytest.mark.asyncio
-async def test_retrieval_service_uses_the_verified_tenant():
+async def test_retrieval_service_uses_the_verified_tenant(in_memory_retrieval):
+    await in_memory_retrieval.index_document(
+        tenant_id="11111111-1111-4111-8111-111111111111",
+        document_id="asset-1",
+        document_title="Greetings",
+        text="hello and welcome to the course",
+    )
     tenant.set_request_scope("11111111-1111-4111-8111-111111111111", "user-1")
 
     result = await RetrievalService().retrieve("hello")
 
-    assert result[0]["text"].startswith("Tenant 11111111-1111-4111-8111-111111111111")
+    assert result[0]["text"] == "hello and welcome to the course"
 
 
 @pytest.mark.asyncio

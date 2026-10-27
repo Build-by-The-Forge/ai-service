@@ -206,8 +206,6 @@ class RetrievalService:
         filter_obj = RetrievalFilter(tenant_id=tenant_id)
         ctx = await self.engine.retrieve(query, filter=filter_obj)
         # Every item carries `text` (the contract field chat and the backend
-        # read); real citations expose their content as `snippet`.
-        citations = [{"text": c.get("snippet", ""), **c} for c in ctx.to_citation_summary()]
-        if not citations:
-            return [{"text": f"Tenant {tenant_id} retrieval placeholder for '{query}'"}]
-        return citations
+        # read); real citations expose their content as `snippet`. Nothing
+        # found means an empty list, never a stand-in passage.
+        return [{"text": c.get("snippet", ""), **c} for c in ctx.to_citation_summary()]
