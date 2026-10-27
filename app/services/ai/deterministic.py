@@ -14,7 +14,12 @@ class DeterministicLLM(LLMProvider):
 
     async def generate(self, prompt: str) -> str:
         digest = hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:16]
-        return f"[deterministic model] prompt sha256:{digest} ({len(prompt)} chars)"
+        answer = f"[deterministic model] prompt sha256:{digest} ({len(prompt)} chars)"
+        # Behaves as a compliant model under the grounding rules: it cites
+        # the first numbered course passage when it was given passages.
+        if "\n[1] (" in prompt:
+            answer += " [1]"
+        return answer
 
     async def generate_json(self, prompt: str, *, kind: str, **hints: Any) -> dict[str, Any]:
         """Well-formed structured answers for the kinds AI-service asks for,

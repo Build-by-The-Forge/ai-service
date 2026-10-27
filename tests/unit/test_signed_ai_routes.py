@@ -235,7 +235,8 @@ async def test_the_limits_themselves_are_accepted(app):
 # --- M5: structured question generation -------------------------------------------------
 
 
-async def test_generated_questions_are_structured(app):
+async def test_generated_questions_are_structured(app, in_memory_retrieval):
+    await index_osmosis_notes(in_memory_retrieval)  # questions need course material
     raw = encode(
         {"topic": "cells", "count": 3, "difficulty": "hard", "question_type": "true_false"}
     )

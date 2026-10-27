@@ -12,7 +12,7 @@ def test_build_chat_tutor_prompt_includes_memory_context_and_question():
     )
 
     assert "STUDENT MEMORY:" in prompt["user"]
-    assert "CONTEXT:" in prompt["user"]
+    assert "COURSE PASSAGES:" in prompt["user"]
     assert "QUESTION:" in prompt["user"]
     assert "What is 2+2?" in prompt["user"]
 
