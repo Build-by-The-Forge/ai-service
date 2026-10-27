@@ -98,23 +98,38 @@ async def test_a_signed_user_call_with_the_permission_is_served(app, path, permi
     assert response.json()["success"] is True
 
 
-async def test_chat_uses_the_context_tenant_and_user(app, memory):
+async def index_osmosis_notes(engine) -> None:
+    """Each tenant has its own passage; retrieval must return the caller's."""
+    for tenant_id in (TENANT_A, TENANT_B):
+        await engine.index_document(
+            tenant_id=tenant_id,
+            document_id=f"notes-{tenant_id}",
+            document_title="Biology notes",
+            text=f"Tenant {tenant_id} notes: osmosis moves water across a membrane.",
+        )
+
+
+async def test_chat_uses_the_context_tenant_and_user(app, memory, in_memory_retrieval):
+    await index_osmosis_notes(in_memory_retrieval)
     raw = encode({"message": "What is osmosis?"})
     response = await post(app, "/v1/ai/chat", raw, signed("/v1/ai/chat", raw, "ai.use"))
 
     data = response.json()["data"]
     assert memory.reads == [(TENANT_A, USER_ID)]
     assert data["memory_used"] == f"memory of {USER_ID}: mastery=0.5"
-    assert data["context_used"][0]["text"].startswith(f"Tenant {TENANT_A} ")
+    [context] = data["context_used"]
+    assert context["text"].startswith(f"Tenant {TENANT_A} notes")
     assert data["answer"].startswith("[deterministic model]")
 
 
-async def test_retrieval_follows_the_context_tenant(app):
+async def test_retrieval_follows_the_context_tenant(app, in_memory_retrieval):
+    await index_osmosis_notes(in_memory_retrieval)
     raw = encode({"query": "osmosis"})
     for tenant_id in (TENANT_A, TENANT_B):
         headers = signed("/v1/ai/retrieve", raw, "ai.use", tenant_id=tenant_id)
         response = await post(app, "/v1/ai/retrieve", raw, headers)
-        assert response.json()["data"][0]["text"].startswith(f"Tenant {tenant_id} ")
+        [hit] = response.json()["data"]
+        assert hit["text"].startswith(f"Tenant {tenant_id} notes")
 
 
 # --- C29: the body cannot name an identity ---------------------------------------------

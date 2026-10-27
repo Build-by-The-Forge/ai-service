@@ -12,28 +12,31 @@ from app.core.rag.contracts import (
 )
 from app.core.rag.errors import TenantContextMissingError
 from app.services.rag.chunker import Chunker
-from app.services.rag.embedder import EmbeddingPort, MockEmbeddingAdapter
-from app.services.rag.lexical import BM25Index, LexicalIndexPort
-from app.services.rag.vector_store import InMemoryVectorStore, VectorStorePort
+from app.services.rag.embedder import EmbeddingPort
+from app.services.rag.lexical import LexicalIndexPort
+from app.services.rag.vector_store import VectorStorePort
 
 
 class HybridRetrievalEngine:
     """
-    Production Multi-Tenant Hybrid Retrieval Engine.
-    Combines Dense Vector Similarity + Sparse BM25 Keyword Search using Reciprocal Rank Fusion (RRF).
-    Guarantees strict tenant isolation and preserves verifiable citation provenance.
+    Multi-tenant hybrid retrieval: dense similarity and sparse keyword search
+    combined with Reciprocal Rank Fusion, with citation provenance.
+
+    The ports are explicit: production uses durable_retrieval_engine() (the
+    local embedder and the durable index); in-memory stores exist only where
+    a test builds them.
     """
 
     def __init__(
         self,
-        embedder: EmbeddingPort | None = None,
-        vector_store: VectorStorePort | None = None,
-        lexical_index: LexicalIndexPort | None = None,
+        embedder: EmbeddingPort,
+        vector_store: VectorStorePort,
+        lexical_index: LexicalIndexPort,
         chunker: Chunker | None = None,
     ):
-        self.embedder = embedder or MockEmbeddingAdapter()
-        self.vector_store = vector_store or InMemoryVectorStore()
-        self.lexical_index = lexical_index or BM25Index()
+        self.embedder = embedder
+        self.vector_store = vector_store
+        self.lexical_index = lexical_index
         self.chunker = chunker or Chunker()
 
     async def index_document(
@@ -181,14 +184,28 @@ class HybridRetrievalEngine:
 _default_retrieval_engine: HybridRetrievalEngine | None = None
 
 
+def durable_retrieval_engine() -> HybridRetrievalEngine:
+    """The production engine (P3-5): the local all-MiniLM-L6-v2 embedder and
+    the durable document_chunks index, which serves both the dense and the
+    keyword side and filters every query by tenant in SQL."""
+    from app.services.rag.onnx_embedder import OnnxMiniLMEmbedder
+    from app.services.rag.pg_index import PgChunkIndex
+
+    index = PgChunkIndex()
+    return HybridRetrievalEngine(
+        embedder=OnnxMiniLMEmbedder.from_settings(), vector_store=index, lexical_index=index
+    )
+
+
 def get_retrieval_engine() -> HybridRetrievalEngine:
     global _default_retrieval_engine
     if _default_retrieval_engine is None:
-        _default_retrieval_engine = HybridRetrievalEngine()
+        _default_retrieval_engine = durable_retrieval_engine()
     return _default_retrieval_engine
 
 
-def set_retrieval_engine(engine: HybridRetrievalEngine) -> None:
+def set_retrieval_engine(engine: HybridRetrievalEngine | None) -> None:
+    """Replace the app-wide engine (tests); None rebuilds the durable one on next use."""
     global _default_retrieval_engine
     _default_retrieval_engine = engine
 
@@ -206,8 +223,6 @@ class RetrievalService:
         filter_obj = RetrievalFilter(tenant_id=tenant_id)
         ctx = await self.engine.retrieve(query, filter=filter_obj)
         # Every item carries `text` (the contract field chat and the backend
-        # read); real citations expose their content as `snippet`.
-        citations = [{"text": c.get("snippet", ""), **c} for c in ctx.to_citation_summary()]
-        if not citations:
-            return [{"text": f"Tenant {tenant_id} retrieval placeholder for '{query}'"}]
-        return citations
+        # read); real citations expose their content as `snippet`. Nothing
+        # found means an empty list, never a stand-in passage.
+        return [{"text": c.get("snippet", ""), **c} for c in ctx.to_citation_summary()]
