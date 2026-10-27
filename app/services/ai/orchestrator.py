@@ -2,6 +2,7 @@ from app.core.prompt_builder import PromptBuilder
 from app.services.ai.llm import LLMProvider
 from app.services.generation.structured_questions import StructuredQuestionGenerator
 from app.services.memory.memory_service import MemoryService
+from app.services.rag.evidence import Evidence, GroundedAnswer, check_grounded
 from app.services.rag.retrieval import RetrievalService
 
 
@@ -26,37 +27,44 @@ class AIOrchestrator:
 
         memory_text = "\n".join(memory_items)
 
-        context_docs = await self.retriever.retrieve(question)
-
-        context_text = "\n".join(doc.get("text", "") for doc in context_docs)
-
-        prompt = self.prompts.build(
-            name="chat_tutor",
-            context=context_text,
+        evidence = await self.retriever.evidence(question)
+        answer = await self._grounded(
+            evidence,
+            "chat_tutor",
+            context=evidence.prompt_block(),
             question=question,
             memory=memory_text,
         )
 
-        answer = await self.llm.generate(prompt["system"] + "\n" + prompt["user"])
-
         return {
-            "answer": answer,
-            "context_used": context_docs,
+            "answer": answer.text,
+            "grounded": answer.grounded,
+            "citations": answer.citations,
+            "context_used": evidence.context(),
             "memory_used": memory_text,
         }
 
     async def explain(self, subject: str):
-        prompt = f"""
-You are an expert tutoring assistant.
+        evidence = await self.retriever.evidence(subject)
+        answer = await self._grounded(
+            evidence, "explain", context=evidence.prompt_block(), subject=subject
+        )
+        return {
+            "explanation": answer.text,
+            "grounded": answer.grounded,
+            "citations": answer.citations,
+        }
 
-Explain the following subject in clear academic terms:
-
-{subject}
-"""
-
-        answer = await self.llm.generate(prompt)
-
-        return {"explanation": answer}
+    async def _grounded(self, evidence: Evidence, template: str, **fields) -> GroundedAnswer:
+        """The model answers from the evidence, or not at all: with no
+        passages it is not asked, and an answer that does not cite the
+        passages it was given is replaced (check_grounded)."""
+        if not evidence.passages:
+            return check_grounded("", evidence)
+        prompt = self.prompts.build(name=template, **fields)
+        return check_grounded(
+            await self.llm.generate(prompt["system"] + "\n" + prompt["user"]), evidence
+        )
 
     async def generate_questions(
         self,
@@ -71,4 +79,5 @@ Explain the following subject in clear academic terms:
         return {
             "questions": [q.model_dump() for q in result.questions],
             "discarded": result.discarded,
+            "grounded": result.grounded,
         }

@@ -23,6 +23,9 @@ logger = logging.getLogger(__name__)
 class GeneratedQuestions:
     questions: list[GeneratedQuestion]
     discarded: int
+    # False when the tenant's material has nothing on the topic: no
+    # questions are generated from the model's own knowledge.
+    grounded: bool = True
 
 
 class StructuredQuestionGenerator:
@@ -34,15 +37,16 @@ class StructuredQuestionGenerator:
     async def generate(
         self, topic: str, *, count: int, difficulty: str, question_type: str
     ) -> GeneratedQuestions:
-        context_docs = await self.retriever.retrieve(topic)
-        context = "\n".join(doc.get("text", "") for doc in context_docs)
+        evidence = await self.retriever.evidence(topic)
+        if not evidence.passages:
+            return GeneratedQuestions(questions=[], discarded=0, grounded=False)
         prompt = self.prompts.build(
             "structured_questions",
             topic=topic,
             count=count,
             difficulty=difficulty,
             question_type=question_type,
-            context=context,
+            context=evidence.prompt_block(),
         )
         try:
             answer = await self.llm.generate_json(

@@ -7,11 +7,15 @@ import pytest
 from app.services.ai.deterministic import DeterministicLLM
 from app.services.ai.llm import LLMProvider
 from app.services.generation.structured_questions import StructuredQuestionGenerator
+from app.services.rag.evidence import Evidence, Passage
 
 
 class NoRetrieval:
-    async def retrieve(self, query):
-        return [{"text": f"context for {query}"}]
+    """One course passage on the topic."""
+
+    async def evidence(self, query):
+        passage = Passage(1, f"context for {query}", "chunk-1", "asset-1", 1, 1)
+        return Evidence(query=query, passages=(passage,))
 
 
 GOOD = {

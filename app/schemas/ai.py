@@ -79,14 +79,30 @@ class ContextItem(BaseModel):
     text: str
 
 
+class Citation(BaseModel):
+    """A course passage an answer cites as [number] (P3-5)."""
+
+    number: int
+    chunk_id: str
+    document_id: str
+    page_start: int | None = None
+    page_end: int | None = None
+
+
 class ChatData(BaseModel):
     answer: str
+    # False when the course material does not cover the question: the answer
+    # is then the fixed "not covered" reply, never an ungrounded claim.
+    grounded: bool = False
+    citations: list[Citation] = Field(default_factory=list)
     context_used: list[ContextItem]
     memory_used: str
 
 
 class ExplainData(BaseModel):
     explanation: str
+    grounded: bool = False
+    citations: list[Citation] = Field(default_factory=list)
 
 
 class GeneratedOption(BaseModel):
@@ -125,6 +141,8 @@ class GeneratedQuestion(BaseModel):
 class GeneratedQuestionsData(BaseModel):
     questions: list[GeneratedQuestion]
     discarded: int
+    # False when the course material has nothing on the topic (no questions).
+    grounded: bool = True
 
 
 class _Envelope(BaseModel):
