@@ -1,7 +1,14 @@
 {
   "version": "v1",
-  "status": "draft_pending_human_review",
-  "description": "Labelled generated questions for the deterministic support checks (app/services/generation/question_checks.py). Each sample gives the passages the model was shown (pages of data/retrieval_eval/v1/corpus.json, numbered [1].. in order) and a generated item; expected is null for a supported question, or the reason it must be rejected. Drafted by Claude; a person must confirm every label before the reported precision and recall are treated as authoritative.",
+  "status": "human_reviewed",
+  "review": {
+    "date": "2026-10-27",
+    "by": "project reviewer (via the product owner)",
+    "revision": "5bb3997",
+    "result": "All 28 labels confirmed against data/retrieval_eval/v1/corpus.json: the 14 supported examples have evidence for the question and its intended answer; the 3 untraceable cases have missing or invalid sources; the 6 unsupported-premise cases introduce facts, numbers or contexts absent from the cited passages; the 5 not-answerable cases have correct answers the cited material does not support. No corrections.",
+    "scope": "This confirms the labels, not the general reliability of the lexical checker: a false statement assembled from source vocabulary can still pass it."
+  },
+  "description": "Labelled generated questions for the deterministic support checks (app/services/generation/question_checks.py). Each sample gives the passages the model was shown (pages of data/retrieval_eval/v1/corpus.json, numbered [1].. in order) and a generated item; expected is null for a supported question, or the reason it must be rejected. Drafted by Claude; every label was then confirmed by human review (see review), which validates the labels, not the checker's general reliability.",
   "corpus": "data/retrieval_eval/v1/corpus.json",
   "samples": [
     {"id": "s01", "expected": null, "passages": [{"document": "bio101-cell", "page": 2}], "item": {"question_type": "mcq", "prompt": "Osmosis is the diffusion of which molecules across a partially permeable membrane?", "options": [{"text": "Water molecules", "is_correct": true}, {"text": "Salt ions", "is_correct": false}, {"text": "Glucose", "is_correct": false}, {"text": "Proteins", "is_correct": false}], "sources": [1]}},
