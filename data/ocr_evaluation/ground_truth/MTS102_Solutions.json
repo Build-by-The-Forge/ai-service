@@ -13,13 +13,17 @@
     "pages": [
       {
         "page_number": 1,
-        "full_text": "[Expected OCR transcription of page 1]\n\nNote: Solutions usually contain worked problems and answers",
+        "full_text": "SOLUTIONS TO MTS 102 ASSIGNMENT\nFederal University of Technology, Akure (FUTA)\nSchool of Physical Sciences\nDepartment of Mathematical Sciences\nDr. A. S. Afolabi — 2025/2026 Academic Session\nTo be submitted: 15th July, 2026 @ 12:00 noon\n\nPrepared by: EMERALD\n\nJune 15, 2026\n\nAll 50 questions solved correctly with detailed step-by-step workings.\nThis document is for study assistance and verification of your own attempts. Submit your own work.\n\nQuestion 1. Let y = a + b + c + d + e + f, where each is a differentiable function of x. Find dy/dx.\n\nSolution:\nBy the linearity (sum rule) of differentiation, the derivative of a sum is the sum of the derivatives:\ndy/dx = da/dx + db/dx + dc/dx + dd/dx + de/dx + df/dx.\n\nQuestion 2. Differentiate f(x) = 7π³ and justify your result.\n\nSolution:\nNote that 7π³ is a constant (product of constants 7 and π³, where π is the constant ≈ 3.14159).\nThe derivative of any constant function c is zero:\nf′(x) = d/dx (7π³) = 0.\nJustification: By definition, lim h→0 (f(x+h) − f(x))/h = lim h→0 (c−c)/h = 0.\n\nQuestion 3. If f(x) = x³ sin x and g(x) = ln(x² + 1), compute d/dx [f(x) + g(x)].\n\nSolution:\nBy sum rule:\nd/dx [f(x) + g(x)] = f′(x) + g′(x).\n1",
         "text_regions": [
           {
+            "id": "p1_title",
+            "text": "SOLUTIONS TO MTS 102 ASSIGNMENT",
+            "type": "title"
+          },
+          {
             "id": "p1_solution_1",
-            "text": "Solution 1: [Complete worked solution]",
-            "type": "solution",
-            "confidence_expected": 0.85
+            "text": "Question 1. Let y = a + b + c + d + e + f, where each is a differentiable function of x. Find dy/dx.\n\nSolution:\nBy the linearity (sum rule) of differentiation, the derivative of a sum is the sum of the derivatives:\ndy/dx = da/dx + db/dx + dc/dx + dd/dx + de/dx + df/dx.",
+            "type": "solution"
           }
         ],
         "content_type": "native_text_or_scanned"
@@ -36,7 +40,7 @@
   },
   "metadata": {
     "created_date": "2026-09-01",
-    "ground_truth_type": "partial_manual_verification",
+    "ground_truth_type": "human_verified",
     "difficulty_notes": "Solutions manual - may mix native text and scanned solutions",
     "expected_challenges": [
       "mixed content type (native + scanned)",
@@ -44,6 +48,14 @@
       "varying page formats",
       "solution numbering and references"
     ],
-    "important_note": "Verify if this PDF contains extractable native text or if it's entirely scanned"
+    "important_note": "Verify if this PDF contains extractable native text or if it's entirely scanned",
+    "transcription_note": "Draft transcription by Claude (AI) from the rendered page, 2026-10-26. Convention: reading order, one printed line per line; mathematics linear with Unicode symbols (fractions as (a)/(b), roots √( ), limits 'lim x→a'); diagonal watermarks over the content omitted; printed headers, footers and logos kept; handwriting as legible.",
+    "verified_by": {
+      "name": "Olamide Fadahunsi (product owner)",
+      "date": "2026-10-27",
+      "revision": "db28b69",
+      "basis": "Confirmed after the AI reviewer's page-by-page comparison of the eight redacted source pages (no further corrections at 14d76d4) and its independent check of the six masked name and branding spans against the original PDFs' embedded text (all present)."
+    },
+    "review_notes": "Review fixes 2026-10-27 (PR #17 review): text_regions rebuilt as verbatim substrings of full_text (template placeholders and stale headers removed). Masked in the reviewer's redacted copy, the lecturer line and the 'Prepared by' line were verified verbatim against the source PDF's text layer."
   }
 }
