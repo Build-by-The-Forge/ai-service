@@ -382,3 +382,116 @@ async def test_dispatch_is_refused_when_the_fence_cannot_be_raised(guard):
     set_index_fence(InMemoryIndexFence())
     assert (await post(app, body, signed_headers(body))).status_code == 202
     assert len(recorder.tasks) == 1
+
+
+# --- the dispatch contract: what each answer guarantees -----------------------------
+
+
+@real_redis
+async def test_the_same_key_for_a_different_request_is_an_integrity_conflict(guard):
+    app, recorder = build(guard)
+    first = dispatch_body()
+    assert (await post(app, first, signed_headers(first))).status_code == 202
+    other = dispatch_body(content_sha256="cd" * 32)  # same key, different work
+    response = await post(app, other, signed_headers(other))
+    assert response.status_code == 409
+    assert "IDEMPOTENCY_CONFLICT" in response.text
+    assert len(recorder.tasks) == 1  # never answered with, or as, another task
+
+
+@real_redis
+async def test_only_the_correlation_id_may_differ_on_a_duplicate(guard):
+    app, recorder = build(guard)
+    first = dispatch_body()
+    accepted = (await post(app, first, signed_headers(first))).json()
+    again = dispatch_body(correlation_id="another-trace")
+    duplicate = (await post(app, again, signed_headers(again))).json()
+    assert (duplicate["status"], duplicate["external_task_id"]) == (
+        "DUPLICATE",
+        accepted["external_task_id"],
+    )
+    assert len(recorder.tasks) == 1
+
+
+@real_redis
+async def test_a_duplicate_before_the_first_task_is_queued_is_not_decided(guard):
+    """DUPLICATE always names a queued task: a claim still in progress is
+    answered 503, and the caller retries the same request."""
+    from app.api.v1.ingest import request_fingerprint
+    from app.core.idempotency import get_idempotency_store
+    from app.schemas.ingest import IngestDispatchRequest
+
+    app, recorder = build(guard)
+    body = dispatch_body()
+    payload = IngestDispatchRequest.model_validate_json(body)
+    await get_idempotency_store().set_if_absent(
+        tenant_id=TENANT_A,
+        idempotency_key=payload.idempotency_key,
+        external_task_id="task_in_flight",
+        fingerprint=request_fingerprint(payload),
+    )
+    response = await post(app, body, signed_headers(body))
+    assert response.status_code == 503 and "DISPATCH_IN_PROGRESS" in response.text
+    assert recorder.tasks == []
+
+
+@real_redis
+async def test_a_claim_from_before_fingerprints_still_answers_duplicate(guard):
+    from app.core.idempotency import get_idempotency_store
+
+    app, recorder = build(guard)
+    body = dispatch_body()
+    await get_idempotency_store().set_if_absent(
+        tenant_id=TENANT_A, idempotency_key="job-1-r1-a1", external_task_id="task_legacy"
+    )
+    data = (await post(app, body, signed_headers(body))).json()
+    assert (data["status"], data["external_task_id"]) == ("DUPLICATE", "task_legacy")
+
+
+class FailingQueue:
+    def __init__(self) -> None:
+        self.calls = 0
+
+    async def dispatch_ingest(self, **kwargs):
+        from app.services.tasks.transport import TaskQueueUnavailableError
+
+        self.calls += 1
+        raise TaskQueueUnavailableError("redis down")
+
+
+@real_redis
+async def test_a_task_that_could_not_be_queued_releases_its_claim(guard, in_memory_task_records):
+    """No task was queued, so the key is free again: the retry is a fresh
+    dispatch, never a DUPLICATE of a task that does not exist."""
+    app = create_app(replay_guard=guard)
+    queue = FailingQueue()
+    app.dependency_overrides[get_task_dispatcher] = lambda: queue
+    body = dispatch_body()
+    assert (await post(app, body, signed_headers(body))).status_code == 503
+
+    recorder = RecordingDispatcher()
+    app.dependency_overrides[get_task_dispatcher] = lambda: recorder
+    data = (await post(app, body, signed_headers(body))).json()
+    assert data["status"] == "ACCEPTED"
+    assert [t["external_task_id"] for t in recorder.tasks] == [data["external_task_id"]]
+
+
+@real_redis
+async def test_a_task_whose_record_could_not_be_written_releases_its_claim(guard):
+    from app.services.tasks.task_records import (
+        InMemoryTaskRecordStore,
+        RedisTaskRecordStore,
+        get_task_record_store,
+    )
+
+    app, recorder = build(guard)
+    down = RedisTaskRecordStore.connect("redis://127.0.0.1:1/0", timeout=0.3)
+    app.dependency_overrides[get_task_record_store] = lambda: down
+    body = dispatch_body()
+    try:
+        assert (await post(app, body, signed_headers(body))).status_code == 503
+    finally:
+        await down.close()
+    app.dependency_overrides[get_task_record_store] = InMemoryTaskRecordStore
+    assert (await post(app, body, signed_headers(body))).json()["status"] == "ACCEPTED"
+    assert len(recorder.tasks) == 1
