@@ -8,6 +8,11 @@ sparse entries are written, replaced and deleted together.
   deleted and the new ones inserted in one transaction, so re-indexing
   replaces, an identical re-run is idempotent, and a failure leaves the
   previous index untouched (never a partial one).
+- Writes are fenced (P3-6 §7.5): ingestion_fences holds the one
+  (run, attempt) allowed to write each asset, raised at dispatch and never
+  lowered. replace_asset locks that row and writes only if its attempt
+  equals it, so a superseded or late attempt changes nothing
+  (STALE_INDEX_WRITE), even when the index holds no newer rows.
 - Every read and delete filters on the verified tenant inside the SQL;
   nothing is read across tenants and filtered afterwards.
 - Dense queries use the HNSW index with pgvector 0.8's iterative scan, so a
@@ -21,13 +26,19 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Float, delete, func, select, text
+from sqlalchemy import Float, delete, func, select, text, tuple_
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rag.contracts import ChunkProvenance, DocumentChunk, RetrievalFilter
-from app.core.rag.errors import TenantContextMissingError, VectorStoreError
+from app.core.rag.errors import (
+    StaleIndexWriteError,
+    TenantContextMissingError,
+    VectorStoreError,
+)
 from app.db.models.document_chunk import DocumentChunk as ChunkRow
+from app.db.models.ingestion_fence import IngestionFence
 from app.services.rag.lexical import LexicalIndexPort
 from app.services.rag.vector_store import VectorStorePort
 
@@ -98,12 +109,47 @@ class PgChunkIndex(VectorStorePort, LexicalIndexPort):
             self._session_factory = get_async_session_local()
         return self._session_factory()
 
+    async def raise_fence(
+        self, *, tenant_id: str, asset_id: str, run_number: int, attempt: int
+    ) -> tuple[int, int]:
+        """Raise the asset's fence to (run_number, attempt) unless it is
+        already that or higher; returns the fence now in force."""
+        tenant_id = _tenant(tenant_id)
+        insert = pg_insert(IngestionFence).values(
+            tenant_id=tenant_id, asset_id=asset_id, run_number=run_number, attempt=attempt
+        )
+        stmt = insert.on_conflict_do_update(
+            index_elements=[IngestionFence.tenant_id, IngestionFence.asset_id],
+            set_={
+                "run_number": insert.excluded.run_number,
+                "attempt": insert.excluded.attempt,
+                "updated_at": func.now(),
+            },
+            where=tuple_(insert.excluded.run_number, insert.excluded.attempt)
+            > tuple_(IngestionFence.run_number, IngestionFence.attempt),
+        )
+        try:
+            async with self._session() as db, db.begin():
+                await db.execute(stmt)
+                row = (
+                    await db.execute(
+                        select(IngestionFence.run_number, IngestionFence.attempt).where(
+                            IngestionFence.tenant_id == tenant_id,
+                            IngestionFence.asset_id == asset_id,
+                        )
+                    )
+                ).one()
+        except SQLAlchemyError as exc:
+            raise VectorStoreError(f"{type(exc).__name__}: {exc}", store_type=STORE) from exc
+        return int(row.run_number), int(row.attempt)
+
     async def replace_asset(
         self,
         *,
         tenant_id: str,
         asset_id: str,
         run_number: int,
+        attempt: int,
         chunks: Sequence[Chunk],
         embeddings: Sequence[Sequence[float]],
         embedding_model: str,
@@ -117,6 +163,7 @@ class PgChunkIndex(VectorStorePort, LexicalIndexPort):
                 tenant_id=tenant_id,
                 asset_id=asset_id,
                 run_number=run_number,
+                attempt=attempt,
                 chunk_index=chunk.index,
                 page_start=chunk.page_start,
                 page_end=chunk.page_end,
@@ -128,6 +175,22 @@ class PgChunkIndex(VectorStorePort, LexicalIndexPort):
         ]
         try:
             async with self._session() as db, db.begin():
+                # The fence row's lock also serialises concurrent writers.
+                fence = (
+                    await db.execute(
+                        select(IngestionFence.run_number, IngestionFence.attempt)
+                        .where(
+                            IngestionFence.tenant_id == tenant_id,
+                            IngestionFence.asset_id == asset_id,
+                        )
+                        .with_for_update()
+                    )
+                ).first()
+                if fence is None or (fence.run_number, fence.attempt) != (run_number, attempt):
+                    raise StaleIndexWriteError(
+                        f"attempt ({run_number}, {attempt}) is not the asset's fence "
+                        f"{tuple(fence) if fence else None}; nothing was written"
+                    )
                 await db.execute(
                     delete(ChunkRow).where(
                         ChunkRow.tenant_id == tenant_id, ChunkRow.asset_id == asset_id

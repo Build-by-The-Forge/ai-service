@@ -39,10 +39,12 @@ async def retrieve_as(engine, tenant_id: str, query: str) -> list[dict]:
 async def test_indexed_chunks_are_retrieved_with_their_page_for_their_tenant_only(durable):
     index, embedder, engine = durable
     owner, other = str(uuid.uuid4()), str(uuid.uuid4())
+    await index.raise_fence(tenant_id=owner, asset_id="asset-phy102", run_number=1, attempt=1)
     await index.replace_asset(
         tenant_id=owner,
         asset_id="asset-phy102",
         run_number=1,
+        attempt=1,
         chunks=[Chunk(chunk_id(owner, "asset-phy102", 1, 0), 0, TEXT, 4, 4)],
         embeddings=[await embedder.embed_text(TEXT)],
         embedding_model="mock",

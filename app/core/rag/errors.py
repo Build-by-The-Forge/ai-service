@@ -52,6 +52,14 @@ class VectorStoreNotImplementedError(VectorStoreError):
         self.operation = operation
 
 
+class StaleIndexWriteError(RAGError):
+    """An index write by an attempt that is not the asset's current fence
+    (P3-6 §7.5): a superseded or late attempt. Nothing was written."""
+
+    def __init__(self, message: str):
+        super().__init__(message, error_code="STALE_INDEX_WRITE")
+
+
 class DocumentNotFoundError(RAGError):
     """Raised when a requested document ID or chunk ID does not exist."""
 

@@ -156,10 +156,12 @@ async def index_corpus(dataset: Dataset, index: Any, embedder: Any, tenant_id: s
         ]
         chunks = chunk_document(pages, tenant_id=tenant_id, asset_id=doc_id, run_number=1)
         vectors = await embedder.embed_batch([c.text for c in chunks])
+        await index.raise_fence(tenant_id=tenant_id, asset_id=doc_id, run_number=1, attempt=1)
         total += await index.replace_asset(
             tenant_id=tenant_id,
             asset_id=doc_id,
             run_number=1,
+            attempt=1,
             chunks=chunks,
             embeddings=vectors,
             embedding_model=getattr(embedder, "model_id", type(embedder).__name__),

@@ -14,7 +14,11 @@ from botocore.exceptions import EndpointConnectionError
 from app.core.callbacks.dispatcher import backend_callback_body
 from app.core.callbacks.events import CallbackEventType
 from app.core.execution_context import TaskStatus
-from app.core.rag.errors import EmbeddingGenerationError, VectorStoreError
+from app.core.rag.errors import (
+    EmbeddingGenerationError,
+    StaleIndexWriteError,
+    VectorStoreError,
+)
 from app.services.ingestion.asset_fetcher import AssetFetcher
 from app.services.ingestion.extraction import DocumentExtractor
 from app.services.tasks.handlers import ContentIngestionTaskHandler
@@ -100,7 +104,9 @@ async def test_every_stage_is_reported_and_only_then_the_job_completes(tmp_path)
     index = FakeIndex()
     worker, transport, dispatcher = worker_with(handler(FakeS3({KEY: PDF}), tmp_path, index=index))
 
-    msg_id, status = await run(worker, transport, task(payload=payload(run_number=2)))
+    msg_id, status = await run(
+        worker, transport, task(payload=payload(run_number=2, attempt_count=3))
+    )
 
     assert status == TaskStatus.SUCCEEDED
     assert kinds(dispatcher) == [
@@ -128,7 +134,13 @@ async def test_every_stage_is_reported_and_only_then_the_job_completes(tmp_path)
         384,
     )
     [call] = index.calls
-    assert (call["tenant_id"], call["asset_id"], call["run_number"]) == (TENANT, ASSET, 2)
+    # Written as the dispatched attempt, which the index fence checks.
+    assert (call["tenant_id"], call["asset_id"], call["run_number"], call["attempt"]) == (
+        TENANT,
+        ASSET,
+        2,
+        3,
+    )
     assert len(call["embeddings"]) == len(call["chunks"]) == chunked["chunks"]
     completed = backend_callback_body(dispatcher.delivered_events[-1])["metrics"]
     assert completed["chunk_summary"]["fetch"]["sha256"] == SHA
@@ -160,6 +172,21 @@ async def test_an_outage_after_chunking_is_transient_and_never_indexed(
     assert (failed.error_code, failed.retryable) == (code, True)
     assert set(backend_callback_body(failed)["details"]) == {"fetch", "extraction", "chunking"}
     assert (CallbackEventType.STAGE_COMPLETED, "indexed") not in kinds(dispatcher)
+
+
+async def test_a_write_refused_by_the_index_fence_fails_permanently(tmp_path):
+    """A newer attempt holds the asset's fence (P3-6 §7.5): this attempt
+    must never write, and retrying cannot help."""
+    index = FakeIndex(StaleIndexWriteError("attempt (1, 1) is not the asset's fence (1, 2)"))
+    worker, transport, dispatcher = worker_with(handler(FakeS3({KEY: PDF}), tmp_path, index=index))
+
+    _, status = await run(worker, transport, task(payload=payload()))
+
+    failed = dispatcher.delivered_events[-1]
+    assert status == TaskStatus.FAILED
+    assert (failed.error_code, failed.retryable) == ("STALE_INDEX_WRITE", False)
+    assert (CallbackEventType.STAGE_COMPLETED, "indexed") not in kinds(dispatcher)
+    assert transport._queue.empty()  # not retried internally
 
 
 async def test_a_missing_embedding_model_is_pipeline_unavailable(tmp_path, monkeypatch):
