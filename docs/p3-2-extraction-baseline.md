@@ -1,16 +1,16 @@
 # P3-2 extraction baseline (before any pipeline change)
 
-Measured on 2026-10-26 with `scripts/evaluate_ocr_ground_truth.py`. It ran in the AI-service image (Pillow 13, paddle 3.3.1, verified PP-OCRv3 models) with networking disabled and the corpus read-only, in 649 s. Only metrics are recorded here, never recognised text.
+First measured on 2026-10-26 with `scripts/evaluate_ocr_ground_truth.py`, and re-measured on 2026-10-27 on the human-verified ground truth. Both runs used the AI-service image (Pillow 13, paddle 3.3.1, verified PP-OCRv3 models) with networking disabled and the corpus read-only; the second took 296 s. Only metrics are recorded here, never recognised text.
 
 ## Ground truth
 
-`data/ocr_evaluation/ground_truth/*.json` named nine pages across the seven evaluation documents, but held placeholders, not transcriptions. They now hold **draft** transcriptions (`ground_truth_type: draft_pending_human_verification`) made from the rendered pages:
+`data/ocr_evaluation/ground_truth/*.json` named nine pages across the seven evaluation documents, but held placeholders, not transcriptions. They now hold transcriptions made from the rendered pages, **human-verified** on 2026-10-27 (`ground_truth_type: human_verified`; each file's `verified_by` records the verifier, date, revision and basis):
 
 - reading order;
 - mathematics written linearly with Unicode symbols;
 - diagonal watermarks over the content omitted.
 
-**These figures become the official baseline only after a person verifies the drafts.** Then they are re-measured, and this document is updated.
+**These are the official baseline figures**, re-measured after verification. The review's corrections changed one page: the Differentiation worksheet p1 (problem 11's fifth root), whose OCR CER moved from 0.362 to 0.365 and text-layer CER from 0.128 to 0.131. Every other page is unchanged to four decimal places.
 
 ## Results
 
@@ -22,12 +22,12 @@ CER is character error rate and WER is word error rate. Both are edit distance d
 | Handwritten lab notes (photo) | handwriting | 0.581 | 0.867 | — |
 | MTS102 Solutions, p1 | LaTeX PDF | 0.154 | 0.269 | **0.026** |
 | MTS 102 Cheat Sheet, p1 | PDF with watermark | **0.035** | 0.153 | 0.704 |
-| Differentiation worksheet, p1 | LaTeX PDF, dense maths | 0.362 | 0.771 | **0.128** |
+| Differentiation worksheet, p1 | LaTeX PDF, dense maths | 0.365 | 0.772 | **0.131** |
 | Differentiation worksheet, p2 | LaTeX PDF, dense maths | 0.654 | 0.919 | **0.213** |
 | Limits MCQ, p1 | scanned, maths | 0.407 | 0.602 | no text layer |
 | PHY 102 MCQ, p1 | PDF, prose | **0.020** | 0.040 | 0.071 |
-| **All OCR (8 pages, 10,263 reference chars)** | | **0.260** | **0.456** | |
-| **All text layer (6 PDF pages, 7,750 chars)** | | | | **0.236** (WER 0.475) |
+| **All OCR (8 pages, 10,270 reference chars)** | | **0.261** | **0.457** | |
+| **All text layer (6 PDF pages, 7,757 chars)** | | | | **0.236** (WER 0.475) |
 
 ## What it says for P3-2
 
@@ -39,7 +39,7 @@ CER is character error rate and WER is word error rate. Both are edit distance d
    | Cheat sheet | 0.703 | **0.010** |
    | PHY 102 | 0.071 | **0.001** |
    | MTS102 Solutions (LaTeX) | **0.026** | 0.077 |
-   | Differentiation p1 / p2 (LaTeX) | **0.128 / 0.213** | 0.256 / 0.451 |
+   | Differentiation p1 / p2 (LaTeX) | **0.131 / 0.213** | 0.256 / 0.451 |
 
    - LaTeX output is already in reading order, and sorting fragments its mathematics.
    - Office-style exports draw in arbitrary order, and sorting fixes it.
