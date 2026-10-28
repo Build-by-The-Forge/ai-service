@@ -104,9 +104,11 @@ groups.
     change.
 - The numbers describe evaluation set v1, which is original material
   written for the purpose. They are not a measurement of retrieval quality
-  on real course documents. That measurement is the tier-2 evaluation, to
-  be run on the real FUTA documents after the ground-truth transcriptions
-  (#17) are reviewed. Only aggregate results will be committed.
+  on real course documents. That measurement is the tier-2 evaluation
+  (`docs/p3-5-tier2-evaluation.md`, aggregates only). On 141 real FUTA
+  documents, recall@5 is dense 0.675, hybrid 0.625 and keyword 0.325, with
+  no significant difference between dense and hybrid at n = 40. The choice
+  of hybrid is to be re-examined against that set (its follow-up 1).
 - A grounded answer can still misstate what a passage says. The citation
   check proves *which* evidence was used, not that the answer is faithful
   to it. Generated questions are produced from passages, but are not yet
