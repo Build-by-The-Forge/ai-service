@@ -124,16 +124,16 @@ class TaskRecordStore(abc.ABC):
     async def record_event(
         self,
         external_task_id: str,
-        worker_id: str | None,
+        worker_id: str,
         *,
         event: dict[str, Any] | None = None,
         state: str | None = None,
         lease_seconds: float = 0,
     ) -> str:
-        """Append an event and/or set the state. With ``worker_id``, only
-        while that worker runs the task; the lease is extended, or cleared
-        by a terminal state. Without, unconditionally (a task that never
-        took a lease)."""
+        """Append an event and/or set the state, only while ``worker_id``
+        runs the task; the lease is extended, or cleared by a terminal state.
+        There is no unconditional write: a record changes only for its
+        owner, or through reclaim."""
 
     @abc.abstractmethod
     async def release(self, external_task_id: str, worker_id: str) -> str:
@@ -199,17 +199,13 @@ class InMemoryTaskRecordStore(TaskRecordStore):
     async def record_event(
         self,
         external_task_id: str,
-        worker_id: str | None,
+        worker_id: str,
         *,
         event: dict[str, Any] | None = None,
         state: str | None = None,
         lease_seconds: float = 0,
     ) -> str:
-        if worker_id is None:
-            record = self.records.get(external_task_id)
-            result = WriteResult.MISSING if record is None else WriteResult.OK
-        else:
-            result, record = self._held(external_task_id, worker_id)
+        result, record = self._held(external_task_id, worker_id)
         if record is None:
             return result
         now = time.time()
@@ -217,11 +213,10 @@ class InMemoryTaskRecordStore(TaskRecordStore):
             record.events.append(event)
         if state is not None:
             record.state = state
-        if worker_id is not None:
-            if record.state in TaskState.TERMINAL:
-                record.lease_until = None
-            else:
-                record.lease_until, record.heartbeat_at = now + lease_seconds, now
+        if record.state in TaskState.TERMINAL:
+            record.lease_until = None
+        else:
+            record.lease_until, record.heartbeat_at = now + lease_seconds, now
         record.updated_at = now
         return result
 
@@ -312,16 +307,11 @@ redis.call('EXPIRE', KEYS[1], ARGV[3])
 return 'ok'
 """
 
-# ARGV: worker ('' = unconditional), event JSON ('' = none), state ('' =
+# ARGV: worker, event JSON ('' = none), state ('' =
 # unchanged), lease seconds, TTL, the event bound. The event text is
 # spliced into the array, never decoded.
 _RECORD_EVENT = _LUA_PRELUDE + """
-local r
-if ARGV[1] == '' then
-  r = redis.call('EXISTS', KEYS[1]) == 1 and 'ok' or 'missing'
-else
-  r = held(KEYS[1], ARGV[1])
-end
+local r = held(KEYS[1], ARGV[1])
 if r ~= 'ok' then return r end
 local t = now()
 if ARGV[2] ~= '' then
@@ -337,14 +327,12 @@ if ARGV[2] ~= '' then
   end
 end
 if ARGV[3] ~= '' then redis.call('HSET', KEYS[1], 'state', ARGV[3]) end
-if ARGV[1] ~= '' then
-  local state = redis.call('HGET', KEYS[1], 'state')
-  if state == 'succeeded' or state == 'failed' or state == 'lost' then
-    redis.call('HDEL', KEYS[1], 'lease_until')
-  else
-    redis.call('HSET', KEYS[1], 'lease_until', tostring(t + tonumber(ARGV[4])),
-      'heartbeat_at', tostring(t))
-  end
+local state = redis.call('HGET', KEYS[1], 'state')
+if state == 'succeeded' or state == 'failed' or state == 'lost' then
+  redis.call('HDEL', KEYS[1], 'lease_until')
+else
+  redis.call('HSET', KEYS[1], 'lease_until', tostring(t + tonumber(ARGV[4])),
+    'heartbeat_at', tostring(t))
 end
 redis.call('HSET', KEYS[1], 'updated_at', tostring(t))
 redis.call('EXPIRE', KEYS[1], ARGV[5])
@@ -472,7 +460,7 @@ class RedisTaskRecordStore(TaskRecordStore):
     async def record_event(
         self,
         external_task_id: str,
-        worker_id: str | None,
+        worker_id: str,
         *,
         event: dict[str, Any] | None = None,
         state: str | None = None,
@@ -482,7 +470,7 @@ class RedisTaskRecordStore(TaskRecordStore):
             self._record_event,
             [self.key(external_task_id)],
             [
-                worker_id or "",
+                worker_id,
                 json.dumps(event) if event is not None else "",
                 state or "",
                 lease_seconds,

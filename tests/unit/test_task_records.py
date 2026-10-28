@@ -107,7 +107,7 @@ async def test_unknown_tasks_are_missing(h):
     assert await h.store.get(h.task_id) is None
     assert await h.store.start(h.task_id, "w1", 60) == WriteResult.MISSING
     assert await h.store.renew(h.task_id, "w1", 60) == WriteResult.MISSING
-    assert await h.store.record_event(h.task_id, None, event={"n": 1}) == WriteResult.MISSING
+    assert await h.store.record_event(h.task_id, "w1", event={"n": 1}) == WriteResult.MISSING
     assert await h.store.release(h.task_id, "w1") == WriteResult.MISSING
     assert await h.store.get(h.task_id) is None  # no write creates a record
 
@@ -123,12 +123,14 @@ async def test_events_are_appended_up_to_a_bound(h):
     assert stored.state == TaskState.FAILED
 
 
-async def test_a_task_that_never_took_a_lease_records_unconditionally(h):
+async def test_nothing_is_recorded_for_a_task_nobody_has_started(h):
     await h.store.create(record(h.task_id))
-    assert await h.store.record_event(h.task_id, None, event={"n": 1}) == WriteResult.OK
-    assert await h.store.record_event(h.task_id, None, state=TaskState.FAILED) == WriteResult.OK
+    assert await h.store.record_event(h.task_id, "w1", event={"n": 1}) == WriteResult.FENCED
+    assert await h.store.record_event(h.task_id, "w1", state=TaskState.FAILED) == (
+        WriteResult.FENCED
+    )
     stored = await h.store.get(h.task_id)
-    assert (stored.state, stored.events) == (TaskState.FAILED, [{"n": 1}])
+    assert (stored.state, stored.events) == (TaskState.ACCEPTED, [])
 
 
 # --- the lease ---------------------------------------------------------------------

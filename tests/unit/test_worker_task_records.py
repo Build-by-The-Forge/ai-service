@@ -91,18 +91,22 @@ async def test_events_are_recorded_even_when_delivery_fails():
     ]
 
 
-async def test_a_record_store_outage_does_not_fail_the_task():
+async def test_a_record_store_outage_at_start_leaves_the_task_unrun_and_pending():
+    """Ownership cannot be proven, so the task does not run and nothing is
+    reported; the entry stays pending for the reclaim to decide."""
+
     class Down(InMemoryTaskRecordStore):
         async def start(self, *args, **kwargs):
             raise TaskRecordUnavailableError("down")
 
-        async def record_event(self, *args, **kwargs):
-            raise TaskRecordUnavailableError("down")
-
     store = Down()
     await InMemoryTaskRecordStore.create(store, record())
-    status = await worker(Staged(), store).process_single_task("m1", ingestion_task())
-    assert status == TaskStatus.SUCCEEDED
+    dispatcher = InMemoryCallbackDispatcher()
+    w = worker(Staged(), store, dispatcher)
+    assert await w.process_single_task("m1", ingestion_task()) == TaskStatus.CANCELLED
+    assert dispatcher.delivered_events == []
+    assert "m1" not in w.transport._acked
+    assert (await store.get("task_1")).state == TaskState.ACCEPTED
 
 
 async def test_non_ingestion_tasks_are_not_recorded():

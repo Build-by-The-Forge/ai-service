@@ -15,7 +15,12 @@ from app.core.callbacks.events import CallbackEventType
 from app.core.execution_context import TaskStatus
 from app.services.tasks.handlers import TaskHandler, TaskHandlerRegistry
 from app.services.tasks.ingestion_outcomes import TransientIngestionError
-from app.services.tasks.task_records import InMemoryTaskRecordStore, TaskState, WriteResult
+from app.services.tasks.task_records import (
+    InMemoryTaskRecordStore,
+    TaskRecordUnavailableError,
+    TaskState,
+    WriteResult,
+)
 from app.services.tasks.transport import InMemoryTaskTransport
 from app.services.tasks.worker import TaskWorker
 from tests.unit.test_task_records import record
@@ -161,3 +166,104 @@ async def test_an_internal_retry_hands_the_lease_to_the_next_delivery():
     )
     assert not transport._queue.empty()  # re-queued
     assert await store.start("task_1", "w2", 60) == WriteResult.OK
+
+
+# --- fail closed: no proven ownership, no execution and no report ---------------------
+
+
+class Flaky(InMemoryTaskRecordStore):
+    """Raises TaskRecordUnavailableError from the named operations while
+    ``down`` is set (or for the first ``times`` calls)."""
+
+    def __init__(self, *ops, times=None):
+        super().__init__()
+        self.ops, self.times, self.down = set(ops), times, True
+
+    def _check(self, op):
+        if op in self.ops and self.down:
+            if self.times is not None:
+                self.times -= 1
+                self.down = self.times > 0
+            raise TaskRecordUnavailableError("down")
+
+    async def renew(self, *args, **kwargs):
+        self._check("renew")
+        return await super().renew(*args, **kwargs)
+
+    async def record_event(self, *args, **kwargs):
+        if kwargs.get("event", {}).get("stage") != "extracted":  # let the first report through
+            self._check("record_event")
+        return await super().record_event(*args, **kwargs)
+
+
+async def test_a_task_whose_record_is_missing_is_not_run():
+    store = InMemoryTaskRecordStore()  # no record: expired, or never created
+    handler = Gated()
+    handler.go.set()
+    w, dispatcher, transport = worker(handler, store)
+
+    assert await w.process_single_task("m1", ingestion_task()) == TaskStatus.CANCELLED
+    assert not handler.extracted.is_set()
+    assert dispatcher.delivered_events == []
+    assert "m1" in transport._acked  # nothing may ever run this entry
+
+
+async def test_a_renewal_outage_fences_the_task_before_its_lease_could_lapse():
+    store = Flaky("renew")
+    await store.create(record())
+    handler = Gated()
+    w, dispatcher, _ = worker(handler, store)
+
+    run = asyncio.create_task(w.process_single_task("m1", ingestion_task()))
+    await handler.extracted.wait()
+    started = time.monotonic()
+    assert await asyncio.wait_for(run, timeout=LEASE * 3) == TaskStatus.CANCELLED
+    assert time.monotonic() - started < LEASE  # stopped before the lease ran out
+    assert not handler.finished
+    assert kinds(dispatcher)[-1] == (CallbackEventType.STAGE_COMPLETED, "extracted")
+
+
+async def test_a_brief_renewal_outage_is_tolerated():
+    store = Flaky("renew", times=1)
+    await store.create(record())
+    handler = Gated(hold=LEASE)
+    handler.go.set()
+    w, _, _ = worker(handler, store)
+    assert await w.process_single_task("m1", ingestion_task()) == TaskStatus.SUCCEEDED
+
+
+async def test_an_event_that_cannot_be_recorded_is_not_delivered_and_stops_the_task():
+    store = Flaky("record_event")
+    await store.create(record())
+    handler = Gated()
+    w, dispatcher, _ = worker(handler, store)
+    w.lease_seconds = 60  # the report, not a renewal, meets the outage
+
+    run = asyncio.create_task(w.process_single_task("m1", ingestion_task()))
+    await handler.extracted.wait()
+    handler.go.set()
+    assert await run == TaskStatus.CANCELLED
+    assert not handler.finished
+    assert kinds(dispatcher) == [
+        (CallbackEventType.STARTED, None),
+        (CallbackEventType.STAGE_COMPLETED, "extracted"),
+    ]
+
+
+async def test_a_worker_that_lost_its_lease_cannot_report_completion():
+    store = InMemoryTaskRecordStore()
+    await store.create(record())
+
+    class LosesAtTheEnd(TaskHandler):
+        async def handle(self, ctx, payload):
+            for stage in ("extracted", "chunked", "indexed"):
+                await ctx.stage_reporter.report(stage, {})
+            store.records["task_1"].state = TaskState.LOST  # reclaimed just now
+            return {}
+
+    w, dispatcher, _ = worker(LosesAtTheEnd(), store)
+    assert await w.process_single_task("m1", ingestion_task()) == TaskStatus.CANCELLED
+    assert CallbackEventType.COMPLETED not in [k for k, _ in kinds(dispatcher)]
+    stored = await store.get("task_1")
+    assert stored.state == TaskState.LOST
+    assert [e.get("event_type") for e in stored.events].count("job_completed") == 0
