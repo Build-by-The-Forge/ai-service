@@ -12,6 +12,7 @@ from app.core.callbacks.dispatcher import (
 from app.core.callbacks.events import CallbackDeliveryResult, CallbackEvent, CallbackEventType
 from app.core.config import settings
 from app.core.execution_context import AIExecutionContext, AITask, TaskStatus
+from app.core.redis import get_redis_client
 from app.services.tasks.handlers import TaskHandlerRegistry, get_task_handler_registry
 from app.services.tasks.heartbeat import HeartbeatManager, get_heartbeat_manager
 from app.services.tasks.ingestion_outcomes import (
@@ -20,18 +21,22 @@ from app.services.tasks.ingestion_outcomes import (
     StageReporter,
     TransientIngestionError,
 )
+from app.services.tasks.reclaimer import INGESTION_TASK_TYPE, StreamReclaimer
 from app.services.tasks.task_records import (
+    RedisTaskRecordStore,
     TaskRecordStore,
     TaskRecordUnavailableError,
     TaskState,
     WriteResult,
     get_task_record_store,
 )
-from app.services.tasks.transport import TaskTransport, get_task_transport
+from app.services.tasks.transport import (
+    RedisStreamTransport,
+    TaskTransport,
+    get_task_transport,
+)
 
 logger = logging.getLogger(__name__)
-
-INGESTION_TASK_TYPE = "content.ingestion"
 
 
 class TaskWorker:
@@ -446,12 +451,48 @@ class TaskWorker:
         msg_id, task = entries[0]
         return await self.process_single_task(msg_id, task)
 
-    async def start(self, stop_event: asyncio.Event) -> None:
-        logger.info("TaskWorker %s started listening on group %s", self.worker_id, self.group_name)
+    def _default_reclaimer(self) -> StreamReclaimer | None:
+        # Reclaiming needs the real stream and the real records.
+        if isinstance(self.transport, RedisStreamTransport) and isinstance(
+            self.task_records, RedisTaskRecordStore
+        ):
+            return StreamReclaimer(
+                get_redis_client(),
+                self.task_records,
+                group=self.group_name,
+                lease_seconds=self.lease_seconds,
+            )
+        return None
+
+    async def _reclaim_loop(self, reclaimer: StreamReclaimer, stop_event: asyncio.Event) -> None:
+        """A pass every lease length, beside task processing, so a busy
+        worker still reclaims a dead one's entries."""
         while not stop_event.is_set():
             try:
-                await self.run_once(block_ms=2000)
+                await reclaimer.run_once()
             except Exception as e:
-                logger.error("Worker error during loop: %s", str(e), exc_info=True)
-                await asyncio.sleep(1)
+                logger.warning("Reclaim pass failed: %s", e)
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=self.lease_seconds)
+            except TimeoutError:
+                pass
+
+    async def start(
+        self, stop_event: asyncio.Event, reclaimer: StreamReclaimer | None = None
+    ) -> None:
+        logger.info("TaskWorker %s started listening on group %s", self.worker_id, self.group_name)
+        reclaimer = reclaimer or self._default_reclaimer()
+        reclaiming = (
+            asyncio.create_task(self._reclaim_loop(reclaimer, stop_event)) if reclaimer else None
+        )
+        try:
+            while not stop_event.is_set():
+                try:
+                    await self.run_once(block_ms=2000)
+                except Exception as e:
+                    logger.error("Worker error during loop: %s", str(e), exc_info=True)
+                    await asyncio.sleep(1)
+        finally:
+            if reclaiming is not None:
+                reclaiming.cancel()
         logger.info("TaskWorker %s shut down gracefully", self.worker_id)
