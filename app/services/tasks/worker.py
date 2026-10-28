@@ -38,6 +38,12 @@ from app.services.tasks.transport import (
 
 logger = logging.getLogger(__name__)
 
+# The lease could not be confirmed: the record store is unreachable.
+UNCONFIRMED = "unconfirmed"
+# A recorded event is retried briefly before the task is fenced.
+RECORD_ATTEMPTS = 3
+RECORD_RETRY_SECONDS = 0.2
+
 
 class TaskWorker:
     """
@@ -126,8 +132,9 @@ class TaskWorker:
     async def _record(self, event: CallbackEvent) -> bool:
         """Record the backend body of an ingestion event before delivery, so
         an undelivered event can still be reconciled. Returns False when the
-        write is refused because this worker no longer holds the task, which
-        fences it. A record-store outage is logged; it never fails the task."""
+        write is refused, or cannot be confirmed, for a task this worker
+        leases: it is then fenced and the event is not delivered. Nothing is
+        reported for an ingestion task without proven ownership."""
         task_id = event.external_task_id
         if task_id not in self._recorded_tasks:
             return True
@@ -141,20 +148,32 @@ class TaskWorker:
             CallbackEventType.FAILED: TaskState.FAILED,
             CallbackEventType.COMPLETED: TaskState.SUCCEEDED,
         }.get(event.event_type)
-        holder = self.worker_id if task_id in self._leased else None
-        try:
-            result = await self.task_records.record_event(
-                task_id, holder, event=body, state=state, lease_seconds=self.lease_seconds
-            )
-        except TaskRecordUnavailableError as exc:
-            logger.warning(
-                "Task record not updated: task=%s event=%s error=%s",
-                task_id,
-                event.event_id,
-                exc,
-            )
-            result = WriteResult.OK
-        if holder is not None and result != WriteResult.OK:
+        if task_id not in self._leased:
+            # Every ingestion task that runs holds a lease; one that does not
+            # has nothing it may report.
+            self._fence(task_id, "event without a lease")
+            return False
+        result = UNCONFIRMED
+        for attempt in range(RECORD_ATTEMPTS):
+            try:
+                result = await self.task_records.record_event(
+                    task_id,
+                    self.worker_id,
+                    event=body,
+                    state=state,
+                    lease_seconds=self.lease_seconds,
+                )
+                break
+            except TaskRecordUnavailableError as exc:
+                logger.warning(
+                    "Task record not updated: task=%s event=%s attempt=%d error=%s",
+                    task_id,
+                    event.event_id,
+                    attempt + 1,
+                    exc,
+                )
+                await asyncio.sleep(RECORD_RETRY_SECONDS * (attempt + 1))
+        if result != WriteResult.OK:
             self._fence(task_id, f"event not recorded: {result}")
             return False
         if state is not None:  # terminal: nothing more to record for this task
@@ -175,30 +194,39 @@ class TaskWorker:
             handler.cancel()
 
     async def _take_lease(self, task: AITask) -> str:
+        """OK when this worker now holds the task; FENCED, MISSING or
+        UNCONFIRMED (store unreachable) otherwise, and then it must not run."""
         try:
             result = await self.task_records.start(task.task_id, self.worker_id, self.lease_seconds)
         except TaskRecordUnavailableError as exc:
             logger.warning("Task lease not taken: task=%s error=%s", task.task_id, exc)
-            return WriteResult.MISSING
+            return UNCONFIRMED
         if result == WriteResult.OK:
             self._leased.add(task.task_id)
-        elif result == WriteResult.MISSING:
-            logger.warning("Task %s has no record: it runs without a lease", task.task_id)
         return result
 
     async def _keep_lease(self, task_id: str) -> None:
         """Renew the lease every third of its length until cancelled. A
-        refused renewal fences the task; an unreachable store is retried."""
+        refused renewal fences the task. An unreachable store is retried only
+        while the last confirmed lease has a third of its length left; past
+        that, another worker may reclaim the task, so it is fenced."""
+        loop = asyncio.get_running_loop()
+        confirmed = loop.time()  # the lease was taken at or after this
         while True:
             await asyncio.sleep(self.lease_seconds / 3)
+            asked = loop.time()
             try:
                 result = await self.task_records.renew(task_id, self.worker_id, self.lease_seconds)
             except TaskRecordUnavailableError as exc:
                 logger.warning("Task lease not renewed: task=%s error=%s", task_id, exc)
+                if loop.time() - confirmed >= self.lease_seconds * 2 / 3:
+                    self._fence(task_id, "lease could not be confirmed before it lapses")
+                    return
                 continue
             if result != WriteResult.OK:
                 self._fence(task_id, f"lease renewal refused: {result}")
                 return
+            confirmed = asked
 
     async def _release_lease(self, task_id: str) -> bool:
         """Hand the task back before re-queueing it. False if it was no
@@ -208,10 +236,11 @@ class TaskWorker:
         try:
             result = await self.task_records.release(task_id, self.worker_id)
         except TaskRecordUnavailableError as exc:
-            # The next delivery finds the task still running here and does not
-            # run it; the lapsed lease then lets the backend recover the job.
+            # Not handed back, so no other delivery could take it: stop here.
+            # The lapsing lease lets the backend recover the job.
             logger.warning("Task lease not released: task=%s error=%s", task_id, exc)
-            return True
+            self._fence(task_id, "lease release could not be confirmed")
+            return False
         if result != WriteResult.OK:
             self._fence(task_id, f"lease release refused: {result}")
             return False
@@ -299,11 +328,16 @@ class TaskWorker:
         if is_ingestion:
             ctx.stage_reporter = self._stage_reporter(task)
             self._recorded_tasks.add(task.task_id)
-            if await self._take_lease(task) == WriteResult.FENCED:
-                # Reclaimed, finished, or held by another delivery: never run
-                # it again here, and report nothing.
-                logger.warning("Task %s is not runnable here; not run", task.task_id)
-                await self.transport.ack(msg_id, group=self.group_name)
+            taken = await self._take_lease(task)
+            if taken != WriteResult.OK:
+                # Without proven ownership the task never runs here, and
+                # nothing is reported (P3-6 §7.1). Reclaimed, finished, held
+                # elsewhere or its record gone: nothing may run this entry, so
+                # it is acknowledged. Store unreachable: it stays pending, and
+                # the reclaim decides once the store is back.
+                logger.warning("Task %s not run: lease %s", task.task_id, taken)
+                if taken != UNCONFIRMED:
+                    await self.transport.ack(msg_id, group=self.group_name)
                 return TaskStatus.CANCELLED
         self._active_contexts[ctx.execution_id] = ctx
 
@@ -436,6 +470,8 @@ class TaskWorker:
                 chunk_summary=chunk_summary,
             )
         )
+        if task.task_id in self._fenced:  # completion refused: not this worker's to report
+            return TaskStatus.CANCELLED
         return TaskStatus.SUCCEEDED
 
     async def run_once(self, block_ms: int = 1000) -> TaskStatus | None:

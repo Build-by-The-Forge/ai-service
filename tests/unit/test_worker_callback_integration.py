@@ -15,6 +15,7 @@ from app.services.tasks.ingestion_outcomes import (
     StageReporter,
     TransientIngestionError,
 )
+from app.services.tasks.task_records import TaskRecord
 from app.services.tasks.transport import InMemoryTaskTransport
 from app.services.tasks.worker import TaskWorker
 
@@ -75,7 +76,17 @@ def worker_with(handler, task_type="content.ingestion", dispatcher=None):
 
 
 async def run(worker, transport, t):
-    """Process a task as if just consumed: the queue then holds only re-queues."""
+    """Process a task as if just consumed: the queue then holds only re-queues.
+    Its task record exists, as dispatch always creates it before publishing."""
+    await worker.task_records.create(
+        TaskRecord(
+            external_task_id=t.task_id,
+            tenant_id=t.tenant_id,
+            job_id=t.job_id,
+            run_number=t.run_number,
+            attempt_count=t.attempt_count,
+        )
+    )
     msg_id = f"msg-{t.delivery_attempt}"
     return msg_id, await worker.process_single_task(msg_id, t)
 
