@@ -39,6 +39,23 @@ def signed_call_with(permission: str) -> Callable[[Request], VerifiedCall]:
     return dependency
 
 
+def signed_dispatch_call(permission: str) -> Callable[[Request], VerifiedCall]:
+    """Ingestion dispatch (P3-6 §9): a user context holding ``permission``,
+    or a system context, the backend worker delivering a job an authorized
+    user already created. The task's tenant is the verified context's either
+    way. Dispatch and task status are the only routes a system context may
+    use besides callbacks; every other route refuses it."""
+    check = signed_call_with(permission)
+
+    def dependency(request: Request) -> VerifiedCall:
+        call = getattr(request.state, VERIFIED_CALL_STATE, None)
+        if isinstance(call, VerifiedCall) and call.context.is_system:
+            return call
+        return check(request)
+
+    return dependency
+
+
 def signed_user_call_with(permission: str) -> Callable[[Request], Awaitable[VerifiedCall]]:
     """``signed_call_with(permission)`` for a route acting for a user (design
     B.4): the context must be a user context, and its tenant and user become

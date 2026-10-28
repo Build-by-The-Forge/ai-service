@@ -7,7 +7,7 @@ from app.core.idempotency import (
     IdempotencyUnavailableError,
     get_idempotency_store,
 )
-from app.core.service_call import signed_call_with, signed_system_call
+from app.core.service_call import signed_dispatch_call, signed_system_call
 from app.core.service_signature_v1 import VerifiedCall
 from app.schemas.ingest import (
     DispatchStatus,
@@ -37,14 +37,15 @@ INGEST_DISPATCH_PERMISSION = "content.job.manage"
     status_code=status.HTTP_202_ACCEPTED,
     summary="Dispatch Content Ingestion Task",
     description=(
-        "Signed backend-only endpoint (BUILD Service Signature v1). The task's tenant is "
+        "Signed backend-only endpoint (BUILD Service Signature v1): a user context with "
+        "content.job.manage, or the backend worker's system context. The task's tenant is "
         "the verified context's tenant; the body cannot name one. Idempotent per tenant "
         "and idempotency key."
     ),
 )
 async def dispatch_ingest_task(
     payload: IngestDispatchRequest,
-    call: VerifiedCall = Depends(signed_call_with(INGEST_DISPATCH_PERMISSION)),
+    call: VerifiedCall = Depends(signed_dispatch_call(INGEST_DISPATCH_PERMISSION)),
     idempotency_store: IdempotencyStore = Depends(get_idempotency_store),
     dispatcher: TaskDispatcher = Depends(get_task_dispatcher),
     task_records: TaskRecordStore = Depends(get_task_record_store),

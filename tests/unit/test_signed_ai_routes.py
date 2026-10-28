@@ -154,13 +154,23 @@ async def test_a_context_without_the_route_permission_is_403(app, path, permissi
     assert response.status_code == 403
 
 
-async def test_a_system_context_is_403(app):
+@pytest.mark.parametrize(
+    "path,body",
+    [(path, body) for path, _, body in ROUTES]
+    + [
+        ("/v1/ai/memory/query", {"query": "osmosis"}),
+        ("/v1/ai/memory/upsert", {"content": "a note"}),
+    ],
+    ids=ROUTE_IDS + ["/v1/ai/memory/query", "/v1/ai/memory/upsert"],
+)
+async def test_a_system_context_is_403(app, path, body):
+    """A system context may only dispatch and read task status (P3-6 §9)."""
     from app.core.service_context import ServiceContext
 
-    raw = encode({"message": "hi"})
+    raw = encode(body)
     context = ServiceContext.system(tenant_id=TENANT_A, correlation_id="corr")
-    headers = signed_headers(raw, target="/v1/ai/chat", context=context)
-    assert (await post(app, "/v1/ai/chat", raw, headers)).status_code == 403
+    headers = signed_headers(raw, target=path, context=context)
+    assert (await post(app, path, raw, headers)).status_code == 403
 
 
 # --- C12, C13: closed to clients -------------------------------------------------------

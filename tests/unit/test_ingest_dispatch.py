@@ -150,9 +150,8 @@ async def test_invalid_body_is_422(guard):
         user_context(permissions=("ai.use",)),
         user_context(permissions=("ai.questions.generate", "content.read"), role="owner"),
         user_context(permissions=(), role="admin"),
-        ServiceContext.system(tenant_id=TENANT_A, correlation_id="sweep-1"),
     ],
-    ids=["other-permission", "owner-without-it", "admin-role-only", "system"],
+    ids=["other-permission", "owner-without-it", "admin-role-only"],
 )
 async def test_context_without_the_dispatch_permission_is_403(guard, context):
     app, recorder = build(guard)
@@ -160,6 +159,19 @@ async def test_context_without_the_dispatch_permission_is_403(guard, context):
     response = await post(app, body, signed_headers(body, context=context))
     assert response.status_code == 403
     assert recorder.tasks == []
+
+
+@real_redis
+async def test_the_backend_workers_system_context_may_dispatch_for_its_tenant(guard):
+    """P3-6 §9: the worker delivers a job an authorized user created; the
+    task's tenant is the system context's."""
+    app, recorder = build(guard)
+    body = dispatch_body()
+    system = ServiceContext.system(tenant_id=TENANT_B, correlation_id="worker-1")
+    response = await post(app, body, signed_headers(body, context=system))
+    assert response.status_code == 202, response.text
+    [task] = recorder.tasks
+    assert task["tenant_id"] == TENANT_B
 
 
 # --- authentication (C2, C7, C12) ---------------------------------------------------
