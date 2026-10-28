@@ -1,6 +1,7 @@
 """Signed ingestion task status for reconciliation (M3-09, C23 at AI-service)."""
 
 import os
+import time
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -151,3 +152,53 @@ async def test_the_full_record_round_trips_through_real_redis(guard):
         await store.close()
     assert response.status_code == 200
     assert response.json()["events"][0]["external_task_id"] == "task_real"
+
+
+# --- liveness (P3-6 §7.2) --------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("lease_offset", "expected"), [(60, "running"), (-1, "stalled")], ids=["live", "lapsed"]
+)
+async def test_running_is_reported_only_while_the_lease_is_live(
+    guard, in_memory_task_records, lease_offset, expected
+):
+    now = time.time()
+    await in_memory_task_records.create(
+        TaskRecord(
+            external_task_id="task_abc",
+            tenant_id=TENANT_A,
+            job_id="job-1",
+            run_number=1,
+            attempt_count=2,
+            state="running",
+            worker_id="worker_1",
+            lease_until=now + lease_offset,
+            heartbeat_at=now - 5,
+        )
+    )
+    app = create_app(replay_guard=guard)
+    data = (await get(app, PATH, signed_get(PATH, system()))).json()
+    assert (data["state"], data["lease_until"], data["heartbeat_at"]) == (
+        expected,
+        now + lease_offset,
+        now - 5,
+    )
+
+
+async def test_a_reclaimed_task_is_reported_lost(guard, in_memory_task_records):
+    await in_memory_task_records.create(
+        TaskRecord(
+            external_task_id="task_abc",
+            tenant_id=TENANT_A,
+            job_id="job-1",
+            run_number=1,
+            attempt_count=2,
+            state="lost",
+            lost_entry="1-0",
+        )
+    )
+    app = create_app(replay_guard=guard)
+    data = (await get(app, PATH, signed_get(PATH, system()))).json()
+    assert (data["state"], data["lease_until"]) == ("lost", None)
+    assert "lost_entry" not in data and "worker_id" not in data

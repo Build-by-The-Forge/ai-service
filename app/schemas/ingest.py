@@ -98,11 +98,18 @@ class IngestCallbackPayload(BaseModel):
 class IngestTaskStatusResponse(BaseModel):
     """Signed status of one ingestion task, for backend reconciliation
     (M3-09). ``events`` are the exact callback bodies the worker produced,
-    in order; the backend applies them through its callback rules."""
+    in order; the backend applies them through its callback rules.
+
+    ``running`` means a worker holds a live lease (``lease_until`` in the
+    future); a running task whose lease lapsed is ``stalled``, and one
+    reclaimed from a dead worker is ``lost``. Neither will report again
+    (P3-6 §7.2)."""
 
     external_task_id: str
     job_id: str
     run_number: int
     attempt_count: int
-    state: Literal["accepted", "running", "succeeded", "failed"]
+    state: Literal["accepted", "running", "stalled", "succeeded", "failed", "lost"]
     events: list[IngestCallbackPayload]
+    lease_until: float | None = None
+    heartbeat_at: float | None = None

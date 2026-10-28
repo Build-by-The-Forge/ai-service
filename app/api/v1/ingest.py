@@ -21,6 +21,7 @@ from app.services.tasks.task_records import (
     TaskRecordStore,
     TaskRecordUnavailableError,
     get_task_record_store,
+    reported_state,
 )
 
 router = APIRouter()
@@ -147,7 +148,9 @@ async def get_ingest_task(
             "job_id": record.job_id,
             "run_number": record.run_number,
             "attempt_count": record.attempt_count,
-            "state": record.state,
+            "state": reported_state(record),
             "events": record.events,
+            "lease_until": record.lease_until,
+            "heartbeat_at": record.heartbeat_at,
         }
     )
