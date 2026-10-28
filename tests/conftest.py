@@ -22,6 +22,18 @@ def in_memory_task_records():
 
 
 @pytest.fixture(autouse=True)
+def in_memory_index_fence():
+    """Dispatch raises an in-memory index fence; tests of the durable
+    fence use PgChunkIndex directly."""
+    from app.services.rag.index_fence import InMemoryIndexFence, set_index_fence
+
+    fence = InMemoryIndexFence()
+    set_index_fence(fence)
+    yield fence
+    set_index_fence(None)
+
+
+@pytest.fixture(autouse=True)
 def in_memory_retrieval():
     """Tests retrieve from an in-memory engine (tests/rag_support.py); the
     app's default is the durable one, which tests that need it build."""

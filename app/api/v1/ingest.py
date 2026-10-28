@@ -2,6 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.core.rag.errors import VectorStoreError
 from app.core.idempotency import (
     IdempotencyStore,
     IdempotencyUnavailableError,
@@ -15,6 +16,7 @@ from app.schemas.ingest import (
     IngestDispatchResponse,
     IngestTaskStatusResponse,
 )
+from app.services.rag.index_fence import IndexFencePort, get_index_fence
 from app.services.tasks.dispatcher import TaskDispatcher, get_task_dispatcher
 from app.services.tasks.task_records import (
     TaskRecord,
@@ -49,6 +51,7 @@ async def dispatch_ingest_task(
     idempotency_store: IdempotencyStore = Depends(get_idempotency_store),
     dispatcher: TaskDispatcher = Depends(get_task_dispatcher),
     task_records: TaskRecordStore = Depends(get_task_record_store),
+    index_fence: IndexFencePort = Depends(get_index_fence),
 ) -> IngestDispatchResponse:
     tenant_id = call.context.tenant_id
     receipt = {
@@ -57,6 +60,23 @@ async def dispatch_ingest_task(
         "run_number": payload.run_number,
         "attempt_count": payload.attempt_count,
     }
+
+    # Raise the asset's index fence to this attempt before anything else
+    # (P3-6 §7.5): from now on only this attempt, or a later one, can write
+    # the asset's index. The fence only rises, so a duplicate or a late
+    # older dispatch leaves it unchanged; failing here dispatches nothing.
+    try:
+        await index_fence.raise_fence(
+            tenant_id=tenant_id,
+            asset_id=payload.asset_id,
+            run_number=payload.run_number,
+            attempt=payload.attempt_count,
+        )
+    except VectorStoreError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="service temporarily unavailable",
+        ) from exc
 
     candidate_task_id = f"task_{uuid.uuid4().hex}"
     try:
