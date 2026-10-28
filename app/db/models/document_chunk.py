@@ -27,6 +27,9 @@ class DocumentChunk(Base):
     tenant_id: Mapped[str] = mapped_column(String(36))
     asset_id: Mapped[str] = mapped_column(String(64))
     run_number: Mapped[int] = mapped_column(Integer)
+    # The attempt that wrote the row, for provenance; ingestion_fences decides
+    # which attempt may write (P3-6 §7.5).
+    attempt: Mapped[int] = mapped_column(Integer, server_default="1")
     chunk_index: Mapped[int] = mapped_column(Integer)
     page_start: Mapped[int] = mapped_column(Integer)
     page_end: Mapped[int] = mapped_column(Integer)

@@ -3,7 +3,11 @@ import asyncio
 import time
 from typing import Any
 
-from app.core.rag.errors import EmbeddingGenerationError, VectorStoreError
+from app.core.rag.errors import (
+    EmbeddingGenerationError,
+    StaleIndexWriteError,
+    VectorStoreError,
+)
 from app.services.ingestion.asset_fetcher import AssetFetcher
 from app.services.ingestion.chunking import chunk_document
 from app.services.ingestion.extraction import DocumentExtractor
@@ -165,10 +169,15 @@ class ContentIngestionTaskHandler(TaskHandler):
                 tenant_id=ctx.tenant_id,
                 asset_id=payload["asset_id"],
                 run_number=run_number,
+                attempt=int(payload.get("attempt_count") or 1),
                 chunks=chunks,
                 embeddings=vectors,
                 embedding_model=model,
             )
+        except StaleIndexWriteError as exc:
+            # A newer attempt holds the asset's fence: this one must never
+            # write, and repeating it cannot help (P3-6 §7.5).
+            raise PermanentIngestionError("STALE_INDEX_WRITE", exc.message, evidence) from exc
         except VectorStoreError as exc:
             raise TransientIngestionError("INDEX_WRITE_FAILED", exc.message, evidence) from exc
         indexing = {

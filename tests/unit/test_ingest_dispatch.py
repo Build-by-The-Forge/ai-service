@@ -4,6 +4,7 @@ The real app is used with a real Redis replay guard (TEST_REDIS_URL); the
 fail-closed case points a real client at a closed port.
 """
 
+import json
 import os
 
 import pytest
@@ -335,3 +336,49 @@ async def test_dispatch_fails_closed_when_idempotency_is_unavailable(guard):
     response = await post(app, body, signed_headers(body))
     assert response.status_code == 503
     assert recorder.tasks == []
+
+
+# --- the index fence (P3-6 §7.5) ---------------------------------------------------
+
+
+@real_redis
+async def test_an_accepted_dispatch_raises_the_assets_index_fence(guard, in_memory_index_fence):
+    app, _ = build(guard)
+    body = dispatch_body(run_number=2, attempt_count=3)
+    assert (await post(app, body, signed_headers(body))).status_code == 202
+    asset = json.loads(body)["asset_id"]
+    assert in_memory_index_fence.fences == {(TENANT_A, asset): (2, 3)}
+
+
+@real_redis
+async def test_a_late_older_dispatch_never_lowers_the_fence(guard, in_memory_index_fence):
+    app, _ = build(guard)
+    newer = dispatch_body(run_number=1, attempt_count=2, idempotency_key="attempt-2")
+    older = dispatch_body(run_number=1, attempt_count=1, idempotency_key="attempt-1")
+    await post(app, newer, signed_headers(newer))
+    await post(app, older, signed_headers(older))
+    asset = json.loads(newer)["asset_id"]
+    assert in_memory_index_fence.fences[(TENANT_A, asset)] == (1, 2)
+
+
+@real_redis
+async def test_dispatch_is_refused_when_the_fence_cannot_be_raised(guard):
+    from app.core.rag.errors import VectorStoreError
+    from app.services.rag.index_fence import set_index_fence
+
+    class Down:
+        async def raise_fence(self, **kwargs):
+            raise VectorStoreError("db down", store_type="pgvector")
+
+    set_index_fence(Down())
+    app, recorder = build(guard)
+    body = dispatch_body()
+    response = await post(app, body, signed_headers(body))
+    assert response.status_code == 503
+    assert recorder.tasks == []
+    # Nothing was claimed either: the same dispatch succeeds once the fence is back.
+    from app.services.rag.index_fence import InMemoryIndexFence
+
+    set_index_fence(InMemoryIndexFence())
+    assert (await post(app, body, signed_headers(body))).status_code == 202
+    assert len(recorder.tasks) == 1

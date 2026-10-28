@@ -9,7 +9,9 @@ any backend table it reflects from the shared database.
 
 from typing import Any
 
-AI_OWNED_TABLES = frozenset({"document_chunks", "learning_memory", "session_memory"})
+AI_OWNED_TABLES = frozenset(
+    {"document_chunks", "ingestion_fences", "learning_memory", "session_memory"}
+)
 
 
 def include_object(

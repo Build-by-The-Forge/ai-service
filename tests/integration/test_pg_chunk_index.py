@@ -39,11 +39,14 @@ def chunks(tenant: str, asset: str, texts=TEXTS, run: int = 1) -> list[Chunk]:
     ]
 
 
-async def index(store, tenant, asset, texts=TEXTS, run=1, vectors=None):
+async def index(store, tenant, asset, texts=TEXTS, run=1, vectors=None, attempt=1):
+    """Index as the asset's current attempt: dispatch raises the fence first."""
+    await store.raise_fence(tenant_id=tenant, asset_id=asset, run_number=run, attempt=attempt)
     return await store.replace_asset(
         tenant_id=tenant,
         asset_id=asset,
         run_number=run,
+        attempt=attempt,
         chunks=chunks(tenant, asset, texts, run),
         embeddings=vectors or [unit(i) for i in range(len(texts))],
         embedding_model=MODEL,
