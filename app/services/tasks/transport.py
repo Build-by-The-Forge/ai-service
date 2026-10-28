@@ -5,6 +5,12 @@ from typing import Any
 
 from app.core.execution_context import AITask
 from app.core.redis import get_redis_client
+from app.services.tasks.task_records import TASK_KEY_TAG
+
+# The stream shares the task records' hash tag, so a reclaim script can use
+# both keys in a Redis Cluster (P3-6 §7.3).
+TASK_STREAM = f"{TASK_KEY_TAG}:stream:ai_tasks"
+TASK_DLQ_STREAM = f"{TASK_KEY_TAG}:stream:ai_tasks:dlq"
 
 
 class TaskTransport(abc.ABC):
@@ -14,7 +20,7 @@ class TaskTransport(abc.ABC):
     """
 
     @abc.abstractmethod
-    async def publish(self, task: AITask, stream_name: str = "stream:ai_tasks") -> str:
+    async def publish(self, task: AITask, stream_name: str = TASK_STREAM) -> str:
         """Publishes an AITask envelope to the designated stream. Returns the transport message ID."""
 
     @abc.abstractmethod
@@ -22,7 +28,7 @@ class TaskTransport(abc.ABC):
         self,
         group: str = "ai_worker_group",
         consumer: str = "worker_1",
-        stream_name: str = "stream:ai_tasks",
+        stream_name: str = TASK_STREAM,
         count: int = 1,
         block_ms: int = 2000,
     ) -> list[tuple[str, AITask]]:
@@ -35,7 +41,7 @@ class TaskTransport(abc.ABC):
     async def ack(
         self,
         stream_msg_id: str,
-        stream_name: str = "stream:ai_tasks",
+        stream_name: str = TASK_STREAM,
         group: str = "ai_worker_group",
     ) -> None:
         """Acknowledges successful task processing."""
@@ -45,7 +51,7 @@ class TaskTransport(abc.ABC):
         self,
         task: AITask,
         error_reason: str,
-        dlq_stream_name: str = "stream:ai_tasks:dlq",
+        dlq_stream_name: str = TASK_DLQ_STREAM,
     ) -> str:
         """Transfers a permanently failed or max-retried task to the Dead-Letter Queue."""
 
@@ -61,7 +67,7 @@ class InMemoryTaskTransport(TaskTransport):
         self._counter = 0
         self._acked: set[str] = set()
 
-    async def publish(self, task: AITask, stream_name: str = "stream:ai_tasks") -> str:
+    async def publish(self, task: AITask, stream_name: str = TASK_STREAM) -> str:
         self._counter += 1
         msg_id = f"mem_msg_{self._counter}"
         await self._queue.put((msg_id, task))
@@ -71,7 +77,7 @@ class InMemoryTaskTransport(TaskTransport):
         self,
         group: str = "ai_worker_group",
         consumer: str = "worker_1",
-        stream_name: str = "stream:ai_tasks",
+        stream_name: str = TASK_STREAM,
         count: int = 1,
         block_ms: int = 2000,
     ) -> list[tuple[str, AITask]]:
@@ -87,7 +93,7 @@ class InMemoryTaskTransport(TaskTransport):
     async def ack(
         self,
         stream_msg_id: str,
-        stream_name: str = "stream:ai_tasks",
+        stream_name: str = TASK_STREAM,
         group: str = "ai_worker_group",
     ) -> None:
         self._acked.add(stream_msg_id)
@@ -96,7 +102,7 @@ class InMemoryTaskTransport(TaskTransport):
         self,
         task: AITask,
         error_reason: str,
-        dlq_stream_name: str = "stream:ai_tasks:dlq",
+        dlq_stream_name: str = TASK_DLQ_STREAM,
     ) -> str:
         self._counter += 1
         dlq_id = f"dlq_msg_{self._counter}"
@@ -138,7 +144,7 @@ class RedisStreamTransport(TaskTransport):
             else:
                 pass
 
-    async def publish(self, task: AITask, stream_name: str = "stream:ai_tasks") -> str:
+    async def publish(self, task: AITask, stream_name: str = TASK_STREAM) -> str:
         try:
             client = get_redis_client()
             task_json = json.dumps(task.to_dict())
@@ -151,7 +157,7 @@ class RedisStreamTransport(TaskTransport):
         self,
         group: str = "ai_worker_group",
         consumer: str = "worker_1",
-        stream_name: str = "stream:ai_tasks",
+        stream_name: str = TASK_STREAM,
         count: int = 1,
         block_ms: int = 2000,
     ) -> list[tuple[str, AITask]]:
@@ -181,7 +187,7 @@ class RedisStreamTransport(TaskTransport):
     async def ack(
         self,
         stream_msg_id: str,
-        stream_name: str = "stream:ai_tasks",
+        stream_name: str = TASK_STREAM,
         group: str = "ai_worker_group",
     ) -> None:
         try:
@@ -194,7 +200,7 @@ class RedisStreamTransport(TaskTransport):
         self,
         task: AITask,
         error_reason: str,
-        dlq_stream_name: str = "stream:ai_tasks:dlq",
+        dlq_stream_name: str = TASK_DLQ_STREAM,
     ) -> str:
         try:
             client = get_redis_client()

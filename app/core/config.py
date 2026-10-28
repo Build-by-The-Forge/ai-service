@@ -94,6 +94,11 @@ class Settings(BaseSettings):
     # default to the compose backend.
     BACKEND_CALLBACK_URL: str | None = None
 
+    # A running ingestion task's lease in its task record (P3-6 §7): renewed
+    # every third of it; a task whose lease lapses is reported stalled, and
+    # its stream entry may be reclaimed after twice this, unrenewed.
+    TASK_LEASE_SECONDS: float = Field(default=60.0, ge=5.0, le=600.0)
+
     CALLBACK_TIMEOUT_SECONDS: float = 10.0
     CALLBACK_MAX_ATTEMPTS: int = 3
     CALLBACK_INITIAL_BACKOFF_SECONDS: float = 0.5

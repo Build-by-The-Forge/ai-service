@@ -93,7 +93,10 @@ async def test_events_are_recorded_even_when_delivery_fails():
 
 async def test_a_record_store_outage_does_not_fail_the_task():
     class Down(InMemoryTaskRecordStore):
-        async def save(self, record):
+        async def start(self, *args, **kwargs):
+            raise TaskRecordUnavailableError("down")
+
+        async def record_event(self, *args, **kwargs):
             raise TaskRecordUnavailableError("down")
 
     store = Down()

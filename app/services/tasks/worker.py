@@ -10,7 +10,9 @@ from app.core.callbacks.dispatcher import (
     get_callback_dispatcher,
 )
 from app.core.callbacks.events import CallbackDeliveryResult, CallbackEvent, CallbackEventType
+from app.core.config import settings
 from app.core.execution_context import AIExecutionContext, AITask, TaskStatus
+from app.core.redis import get_redis_client
 from app.services.tasks.handlers import TaskHandlerRegistry, get_task_handler_registry
 from app.services.tasks.heartbeat import HeartbeatManager, get_heartbeat_manager
 from app.services.tasks.ingestion_outcomes import (
@@ -19,17 +21,22 @@ from app.services.tasks.ingestion_outcomes import (
     StageReporter,
     TransientIngestionError,
 )
+from app.services.tasks.reclaimer import INGESTION_TASK_TYPE, StreamReclaimer
 from app.services.tasks.task_records import (
+    RedisTaskRecordStore,
     TaskRecordStore,
     TaskRecordUnavailableError,
     TaskState,
+    WriteResult,
     get_task_record_store,
 )
-from app.services.tasks.transport import TaskTransport, get_task_transport
+from app.services.tasks.transport import (
+    RedisStreamTransport,
+    TaskTransport,
+    get_task_transport,
+)
 
 logger = logging.getLogger(__name__)
-
-INGESTION_TASK_TYPE = "content.ingestion"
 
 
 class TaskWorker:
@@ -37,6 +44,12 @@ class TaskWorker:
     Asynchronous worker that consumes AITask envelopes, establishes AIExecutionContext,
     executes handlers with heartbeat/lease tracking, manages retries/dead-lettering,
     and reliably emits lifecycle events via the CallbackPort.
+
+    An ingestion task runs under a lease in its task record (P3-6 §7): taken
+    at start, renewed every third of TASK_LEASE_SECONDS and by every recorded
+    event, cleared by the terminal one. A refused write (the task was
+    reclaimed, or its record lost) fences the task: its handler is
+    cancelled, and nothing more is recorded or reported for it.
     """
 
     def __init__(
@@ -48,6 +61,7 @@ class TaskWorker:
         callback_dispatcher: CallbackPort | None = None,
         group_name: str = "ai_worker_group",
         task_records: TaskRecordStore | None = None,
+        lease_seconds: float | None = None,
     ):
         self.worker_id = worker_id or f"worker_{uuid.uuid4().hex[:8]}"
         self.transport = transport or get_task_transport()
@@ -60,6 +74,12 @@ class TaskWorker:
         # reconciliation (M3-09).
         self._recorded_tasks: set[str] = set()
         self._active_contexts: dict[str, AIExecutionContext] = {}
+        self.lease_seconds = lease_seconds or settings.TASK_LEASE_SECONDS
+        # Ingestion tasks whose lease this worker holds, those fenced off,
+        # and each running handler (so that a fence can cancel it).
+        self._leased: set[str] = set()
+        self._fenced: set[str] = set()
+        self._handlers: dict[str, tuple[AIExecutionContext, asyncio.Future[Any]]] = {}
 
     def get_active_context(self, execution_id: str) -> AIExecutionContext | None:
         return self._active_contexts.get(execution_id)
@@ -75,8 +95,15 @@ class TaskWorker:
         """
         Emits a callback event safely without allowing delivery exceptions to fail the task execution.
         The callback destination is fixed by configuration and must never be chosen by the payload.
+        A fenced task's events are dropped: this worker no longer holds the task.
         """
-        await self._record(event)
+        if event.external_task_id in self._fenced or not await self._record(event):
+            logger.info(
+                "Event dropped for a fenced task: task=%s type=%s",
+                event.external_task_id,
+                event.event_type,
+            )
+            return None
         try:
             result = await self.callback_dispatcher.dispatch(event)
             if not result.success:
@@ -96,33 +123,106 @@ class TaskWorker:
             )
             return None
 
-    async def _record(self, event: CallbackEvent) -> None:
+    async def _record(self, event: CallbackEvent) -> bool:
         """Record the backend body of an ingestion event before delivery, so
-        an undelivered event can still be reconciled. A record-store outage
-        is logged; it never fails the task."""
-        if event.external_task_id not in self._recorded_tasks:
-            return
+        an undelivered event can still be reconciled. Returns False when the
+        write is refused because this worker no longer holds the task, which
+        fences it. A record-store outage is logged; it never fails the task."""
+        task_id = event.external_task_id
+        if task_id not in self._recorded_tasks:
+            return True
         try:
             body = backend_callback_body(event)
         except Exception:
             body = None
         if body is None:
-            return
+            return True
         state = {
             CallbackEventType.FAILED: TaskState.FAILED,
             CallbackEventType.COMPLETED: TaskState.SUCCEEDED,
         }.get(event.event_type)
+        holder = self.worker_id if task_id in self._leased else None
         try:
-            await self.task_records.update(event.external_task_id, state=state, event=body)
+            result = await self.task_records.record_event(
+                task_id, holder, event=body, state=state, lease_seconds=self.lease_seconds
+            )
         except TaskRecordUnavailableError as exc:
             logger.warning(
                 "Task record not updated: task=%s event=%s error=%s",
-                event.external_task_id,
+                task_id,
                 event.event_id,
                 exc,
             )
+            result = WriteResult.OK
+        if holder is not None and result != WriteResult.OK:
+            self._fence(task_id, f"event not recorded: {result}")
+            return False
         if state is not None:  # terminal: nothing more to record for this task
-            self._recorded_tasks.discard(event.external_task_id)
+            self._recorded_tasks.discard(task_id)
+        return True
+
+    def _fence(self, task_id: str, reason: str) -> None:
+        """This worker no longer holds the task: stop its handler before any
+        further side effect, and report nothing more for it."""
+        if task_id in self._fenced:
+            return
+        self._fenced.add(task_id)
+        logger.warning("Task %s fenced: %s", task_id, reason)
+        running = self._handlers.get(task_id)
+        if running is not None:
+            ctx, handler = running
+            ctx.cancel(f"fenced: {reason}")
+            handler.cancel()
+
+    async def _take_lease(self, task: AITask) -> str:
+        try:
+            result = await self.task_records.start(task.task_id, self.worker_id, self.lease_seconds)
+        except TaskRecordUnavailableError as exc:
+            logger.warning("Task lease not taken: task=%s error=%s", task.task_id, exc)
+            return WriteResult.MISSING
+        if result == WriteResult.OK:
+            self._leased.add(task.task_id)
+        elif result == WriteResult.MISSING:
+            logger.warning("Task %s has no record: it runs without a lease", task.task_id)
+        return result
+
+    async def _keep_lease(self, task_id: str) -> None:
+        """Renew the lease every third of its length until cancelled. A
+        refused renewal fences the task; an unreachable store is retried."""
+        while True:
+            await asyncio.sleep(self.lease_seconds / 3)
+            try:
+                result = await self.task_records.renew(task_id, self.worker_id, self.lease_seconds)
+            except TaskRecordUnavailableError as exc:
+                logger.warning("Task lease not renewed: task=%s error=%s", task_id, exc)
+                continue
+            if result != WriteResult.OK:
+                self._fence(task_id, f"lease renewal refused: {result}")
+                return
+
+    async def _release_lease(self, task_id: str) -> bool:
+        """Hand the task back before re-queueing it. False if it was no
+        longer this worker's (it is then fenced)."""
+        if task_id not in self._leased:
+            return True
+        try:
+            result = await self.task_records.release(task_id, self.worker_id)
+        except TaskRecordUnavailableError as exc:
+            # The next delivery finds the task still running here and does not
+            # run it; the lapsed lease then lets the backend recover the job.
+            logger.warning("Task lease not released: task=%s error=%s", task_id, exc)
+            return True
+        if result != WriteResult.OK:
+            self._fence(task_id, f"lease release refused: {result}")
+            return False
+        self._leased.discard(task_id)
+        return True
+
+    async def _stop_fenced(self, msg_id: str, ctx: AIExecutionContext) -> TaskStatus:
+        # A reclaim may have acknowledged the entry already; XACK repeats harmlessly.
+        await self.transport.ack(msg_id, group=self.group_name)
+        self._finish(msg_id, ctx)
+        return TaskStatus.CANCELLED
 
     def _event(self, task: AITask, event_type: CallbackEventType, **fields) -> CallbackEvent:
         # run_number and attempt_count are the backend's attempt identity:
@@ -179,6 +279,14 @@ class TaskWorker:
         )
 
     async def process_single_task(self, msg_id: str, task: AITask) -> TaskStatus:
+        try:
+            return await self._process(msg_id, task)
+        finally:
+            self._leased.discard(task.task_id)
+            self._fenced.discard(task.task_id)
+            self._recorded_tasks.discard(task.task_id)
+
+    async def _process(self, msg_id: str, task: AITask) -> TaskStatus:
         # 1. Check expiration
         if task.is_expired():
             logger.warning("Task %s is expired (deadline passed). Discarding.", task.task_id)
@@ -191,10 +299,12 @@ class TaskWorker:
         if is_ingestion:
             ctx.stage_reporter = self._stage_reporter(task)
             self._recorded_tasks.add(task.task_id)
-            try:
-                await self.task_records.update(task.task_id, state=TaskState.RUNNING)
-            except TaskRecordUnavailableError as exc:
-                logger.warning("Task record not updated: task=%s error=%s", task.task_id, exc)
+            if await self._take_lease(task) == WriteResult.FENCED:
+                # Reclaimed, finished, or held by another delivery: never run
+                # it again here, and report nothing.
+                logger.warning("Task %s is not runnable here; not run", task.task_id)
+                await self.transport.ack(msg_id, group=self.group_name)
+                return TaskStatus.CANCELLED
         self._active_contexts[ctx.execution_id] = ctx
 
         # 3. Claim execution lease
@@ -214,15 +324,24 @@ class TaskWorker:
             )
             return TaskStatus.DEAD_LETTER
 
-        # 6. Execute Handler
+        # 6. Execute Handler, renewing the lease while it runs
+        running = asyncio.ensure_future(handler.handle(ctx, task.payload))
+        self._handlers[task.task_id] = (ctx, running)
+        renewal = (
+            asyncio.create_task(self._keep_lease(task.task_id))
+            if task.task_id in self._leased
+            else None
+        )
         try:
-            handler_result = await handler.handle(ctx, task.payload)
+            handler_result = await running
         except asyncio.CancelledError as ce:
             logger.info("Task %s execution was cancelled: %s", task.task_id, str(ce))
             await self.transport.ack(msg_id, group=self.group_name)
             self._finish(msg_id, ctx)
             return TaskStatus.CANCELLED
         except (PermanentIngestionError, PipelineUnavailableError) as failure:
+            if task.task_id in self._fenced:
+                return await self._stop_fenced(msg_id, ctx)
             # Repeating the same work cannot help: no internal retry.
             logger.warning(
                 "Task %s failed permanently: %s %s", task.task_id, failure.code, failure.message
@@ -238,6 +357,8 @@ class TaskWorker:
             )
             return TaskStatus.FAILED
         except Exception as exc:
+            if task.task_id in self._fenced:
+                return await self._stop_fenced(msg_id, ctx)
             transient = isinstance(exc, TransientIngestionError)
             code = exc.code if isinstance(exc, TransientIngestionError) else "AI_UNCLASSIFIED_ERROR"
             logger.error(
@@ -250,7 +371,10 @@ class TaskWorker:
             )
             if task.delivery_attempt < task.max_attempts:
                 # Internal retry of the same backend attempt: only the
-                # worker's delivery count changes.
+                # worker's delivery count changes. The lease is handed back
+                # first, so that the next delivery can take it.
+                if not await self._release_lease(task.task_id):
+                    return await self._stop_fenced(msg_id, ctx)
                 await self.transport.publish(
                     dataclasses.replace(task, delivery_attempt=task.delivery_attempt + 1)
                 )
@@ -274,7 +398,13 @@ class TaskWorker:
                 details=exc.details if isinstance(exc, TransientIngestionError) else None,
             )
             return TaskStatus.DEAD_LETTER
+        finally:
+            if renewal is not None:
+                renewal.cancel()
+            self._handlers.pop(task.task_id, None)
 
+        if task.task_id in self._fenced:
+            return await self._stop_fenced(msg_id, ctx)
         await self.transport.ack(msg_id, group=self.group_name)
         self._finish(msg_id, ctx)
 
@@ -321,12 +451,48 @@ class TaskWorker:
         msg_id, task = entries[0]
         return await self.process_single_task(msg_id, task)
 
-    async def start(self, stop_event: asyncio.Event) -> None:
-        logger.info("TaskWorker %s started listening on group %s", self.worker_id, self.group_name)
+    def _default_reclaimer(self) -> StreamReclaimer | None:
+        # Reclaiming needs the real stream and the real records.
+        if isinstance(self.transport, RedisStreamTransport) and isinstance(
+            self.task_records, RedisTaskRecordStore
+        ):
+            return StreamReclaimer(
+                get_redis_client(),
+                self.task_records,
+                group=self.group_name,
+                lease_seconds=self.lease_seconds,
+            )
+        return None
+
+    async def _reclaim_loop(self, reclaimer: StreamReclaimer, stop_event: asyncio.Event) -> None:
+        """A pass every lease length, beside task processing, so a busy
+        worker still reclaims a dead one's entries."""
         while not stop_event.is_set():
             try:
-                await self.run_once(block_ms=2000)
+                await reclaimer.run_once()
             except Exception as e:
-                logger.error("Worker error during loop: %s", str(e), exc_info=True)
-                await asyncio.sleep(1)
+                logger.warning("Reclaim pass failed: %s", e)
+            try:
+                await asyncio.wait_for(stop_event.wait(), timeout=self.lease_seconds)
+            except TimeoutError:
+                pass
+
+    async def start(
+        self, stop_event: asyncio.Event, reclaimer: StreamReclaimer | None = None
+    ) -> None:
+        logger.info("TaskWorker %s started listening on group %s", self.worker_id, self.group_name)
+        reclaimer = reclaimer or self._default_reclaimer()
+        reclaiming = (
+            asyncio.create_task(self._reclaim_loop(reclaimer, stop_event)) if reclaimer else None
+        )
+        try:
+            while not stop_event.is_set():
+                try:
+                    await self.run_once(block_ms=2000)
+                except Exception as e:
+                    logger.error("Worker error during loop: %s", str(e), exc_info=True)
+                    await asyncio.sleep(1)
+        finally:
+            if reclaiming is not None:
+                reclaiming.cancel()
         logger.info("TaskWorker %s shut down gracefully", self.worker_id)
