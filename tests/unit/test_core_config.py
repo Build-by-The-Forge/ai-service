@@ -1,5 +1,7 @@
 import socket
 
+import pytest
+
 from app.core.config import Settings, _resolve_embedded_hostname
 
 
@@ -35,3 +37,14 @@ def test_settings_resolves_embedded_hosts_when_dns_fails(monkeypatch):
 
     assert "localhost" in settings.DATABASE_URL
     assert "localhost" in settings.REDIS_URL
+
+
+@pytest.mark.parametrize("value", [14.9, 600.1])
+def test_task_lease_seconds_is_bounded_15_to_600(value):
+    """P3-6 §12: a shorter lease would make renewal outages fence healthy
+    tasks; a longer one delays recovery of a dead worker."""
+    from pydantic import ValidationError
+
+    with pytest.raises(ValidationError):
+        Settings(TASK_LEASE_SECONDS=value)
+    assert Settings(TASK_LEASE_SECONDS=15).TASK_LEASE_SECONDS == 15
