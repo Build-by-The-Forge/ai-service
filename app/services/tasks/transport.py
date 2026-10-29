@@ -1,6 +1,7 @@
 import abc
 import asyncio
 import json
+import logging
 from typing import Any
 
 from app.core.execution_context import AITask
@@ -11,6 +12,15 @@ from app.services.tasks.task_records import TASK_KEY_TAG
 # both keys in a Redis Cluster (P3-6 §7.3).
 TASK_STREAM = f"{TASK_KEY_TAG}:stream:ai_tasks"
 TASK_DLQ_STREAM = f"{TASK_KEY_TAG}:stream:ai_tasks:dlq"
+
+
+logger = logging.getLogger(__name__)
+
+
+class TaskQueueUnavailableError(RuntimeError):
+    """The task stream could not be written or read. A publish that fails
+    must fail the dispatch (503): queueing the task anywhere else, such as
+    in this process's memory, would accept work no worker can ever see."""
 
 
 class TaskTransport(abc.ABC):
@@ -123,10 +133,16 @@ class InMemoryTaskTransport(TaskTransport):
 class RedisStreamTransport(TaskTransport):
     """
     Production-grade Redis Streams transport using consumer groups (XADD, XREADGROUP, XACK).
+
+    It fails closed: a publish or read that Redis cannot serve raises
+    TaskQueueUnavailableError; nothing falls back to process memory, where
+    a published task would be lost to every worker. A failed XACK is logged
+    and leaves the entry pending. A failed dead-letter write raises, so
+    callers cannot acknowledge the original entry without a durable
+    dead-letter record.
     """
 
-    def __init__(self, fallback: TaskTransport | None = None):
-        self._fallback = fallback or InMemoryTaskTransport()
+    def __init__(self) -> None:
         self._groups_created: set[str] = set()
 
     async def _ensure_group(self, stream_name: str, group: str) -> None:
@@ -142,7 +158,7 @@ class RedisStreamTransport(TaskTransport):
             if "BUSYGROUP" in str(e):
                 self._groups_created.add(group_key)
             else:
-                pass
+                raise
 
     async def publish(self, task: AITask, stream_name: str = TASK_STREAM) -> str:
         try:
@@ -150,8 +166,8 @@ class RedisStreamTransport(TaskTransport):
             task_json = json.dumps(task.to_dict())
             msg_id = await client.xadd(stream_name, {"data": task_json})
             return str(msg_id)
-        except Exception:
-            return await self._fallback.publish(task, stream_name)
+        except Exception as exc:
+            raise TaskQueueUnavailableError(f"publish failed: {type(exc).__name__}") from exc
 
     async def consume(
         self,
@@ -181,8 +197,8 @@ class RedisStreamTransport(TaskTransport):
                             task_dict = json.loads(payload_str)
                             results.append((str(msg_id), AITask.from_dict(task_dict)))
             return results
-        except Exception:
-            return await self._fallback.consume(group, consumer, stream_name, count, block_ms)
+        except Exception as exc:
+            raise TaskQueueUnavailableError(f"read failed: {type(exc).__name__}") from exc
 
     async def ack(
         self,
@@ -193,8 +209,12 @@ class RedisStreamTransport(TaskTransport):
         try:
             client = get_redis_client()
             await client.xack(stream_name, group, stream_msg_id)
-        except Exception:
-            await self._fallback.ack(stream_msg_id, stream_name, group)
+        except Exception as exc:
+            logger.warning(
+                "XACK failed; the entry stays pending: entry=%s error=%s",
+                stream_msg_id,
+                type(exc).__name__,
+            )
 
     async def send_to_dlq(
         self,
@@ -210,8 +230,10 @@ class RedisStreamTransport(TaskTransport):
             }
             msg_id = await client.xadd(dlq_stream_name, envelope)
             return str(msg_id)
-        except Exception:
-            return await self._fallback.send_to_dlq(task, error_reason, dlq_stream_name)
+        except Exception as exc:
+            raise TaskQueueUnavailableError(
+                f"dead-letter write failed: {type(exc).__name__}"
+            ) from exc
 
 
 # Global Transport Provider

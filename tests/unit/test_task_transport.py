@@ -3,7 +3,11 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.core.execution_context import AITask
-from app.services.tasks.transport import InMemoryTaskTransport, RedisStreamTransport
+from app.services.tasks.transport import (
+    InMemoryTaskTransport,
+    RedisStreamTransport,
+    TaskQueueUnavailableError,
+)
 
 
 @pytest.fixture
@@ -47,7 +51,9 @@ async def test_in_memory_task_transport_publish_and_consume(sample_task):
 
 
 @pytest.mark.asyncio
-async def test_redis_stream_transport_fallback_on_error(sample_task):
+async def test_redis_stream_transport_fails_closed_without_redis(sample_task):
+    """A task published while Redis is down must fail the dispatch, never
+    sit in this process's memory where no worker can see it."""
     transport = RedisStreamTransport()
 
     with patch("app.services.tasks.transport.get_redis_client") as mock_get_client:
@@ -58,14 +64,12 @@ async def test_redis_stream_transport_fallback_on_error(sample_task):
         mock_client.xack.side_effect = ConnectionError("Redis unavailable")
         mock_get_client.return_value = mock_client
 
-        # Should fall back to in-memory transport seamlessly
-        msg_id = await transport.publish(sample_task)
-        assert msg_id.startswith("mem_msg_")
-
-        consumed = await transport.consume(count=1, block_ms=100)
-        assert len(consumed) == 1
-        assert consumed[0][1].task_id == sample_task.task_id
-
-        # Ack fallback
-        await transport.ack(msg_id)
-        assert msg_id in transport._fallback._acked
+        with pytest.raises(TaskQueueUnavailableError):
+            await transport.publish(sample_task)
+        with pytest.raises(TaskQueueUnavailableError):
+            await transport.consume(count=1, block_ms=100)
+        # A failed acknowledgement leaves the entry pending (the reclaim
+        # decides it later); it does not fail the caller.
+        await transport.ack("1-0")
+        with pytest.raises(TaskQueueUnavailableError):
+            await transport.send_to_dlq(sample_task, error_reason="x")

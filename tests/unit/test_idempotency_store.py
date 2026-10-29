@@ -100,3 +100,24 @@ def test_each_event_loop_gets_its_own_working_client(monkeypatch):
     # A second loop used to inherit the first loop's dead connection pool.
     assert asyncio.run(ping()) is True
     assert asyncio.run(ping()) is True
+
+
+@pytest.mark.skipif(not TEST_REDIS_URL, reason="TEST_REDIS_URL not set")
+@pytest.mark.asyncio
+async def test_redis_claims_are_marked_and_released_only_by_their_own_task(monkeypatch):
+    monkeypatch.setattr(core_redis, "redis_url", TEST_REDIS_URL)
+    store = RedisIdempotencyStore()
+    key = f"key_claim_{uuid.uuid4().hex}"
+    await store.set_if_absent("t1", key, "task_a", fingerprint="fp")
+    assert (await store.get("t1", key)).accepted is False
+
+    await store.mark_accepted("t1", key, "task_other")  # not its claim: no change
+    assert (await store.get("t1", key)).accepted is False
+    await store.mark_accepted("t1", key, "task_a")
+    claim = await store.get("t1", key)
+    assert (claim.status, claim.fingerprint, claim.accepted) == ("ACCEPTED", "fp", True)
+
+    await store.release("t1", key, "task_other")  # not its claim: kept
+    assert await store.get("t1", key) is not None
+    await store.release("t1", key, "task_a")
+    assert await store.get("t1", key) is None
