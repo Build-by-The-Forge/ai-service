@@ -136,9 +136,10 @@ class RedisStreamTransport(TaskTransport):
 
     It fails closed: a publish or read that Redis cannot serve raises
     TaskQueueUnavailableError; nothing falls back to process memory, where
-    a published task would be lost to every worker. A failed XACK or
-    dead-letter write is logged: the entry stays pending, and the reclaim
-    (P3-6 §7.3) or the task record decides it later.
+    a published task would be lost to every worker. A failed XACK is logged
+    and leaves the entry pending. A failed dead-letter write raises, so
+    callers cannot acknowledge the original entry without a durable
+    dead-letter record.
     """
 
     def __init__(self) -> None:
@@ -157,7 +158,7 @@ class RedisStreamTransport(TaskTransport):
             if "BUSYGROUP" in str(e):
                 self._groups_created.add(group_key)
             else:
-                pass
+                raise
 
     async def publish(self, task: AITask, stream_name: str = TASK_STREAM) -> str:
         try:
@@ -230,10 +231,9 @@ class RedisStreamTransport(TaskTransport):
             msg_id = await client.xadd(dlq_stream_name, envelope)
             return str(msg_id)
         except Exception as exc:
-            logger.warning(
-                "Dead-letter write failed: task=%s error=%s", task.task_id, type(exc).__name__
-            )
-            return ""
+            raise TaskQueueUnavailableError(
+                f"dead-letter write failed: {type(exc).__name__}"
+            ) from exc
 
 
 # Global Transport Provider

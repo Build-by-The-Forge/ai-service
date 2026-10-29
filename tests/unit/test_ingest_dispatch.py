@@ -390,13 +390,19 @@ async def test_dispatch_is_refused_when_the_fence_cannot_be_raised(guard):
 @real_redis
 async def test_the_same_key_for_a_different_request_is_an_integrity_conflict(guard):
     app, recorder = build(guard)
+    from app.services.rag.index_fence import get_index_fence
+
+    index_fence = get_index_fence()
     first = dispatch_body()
     assert (await post(app, first, signed_headers(first))).status_code == 202
+    asset = json.loads(first)["asset_id"]
+    original_fence = index_fence.fences[(TENANT_A, asset)]
     other = dispatch_body(content_sha256="cd" * 32)  # same key, different work
     response = await post(app, other, signed_headers(other))
     assert response.status_code == 409
     assert "IDEMPOTENCY_CONFLICT" in response.text
     assert len(recorder.tasks) == 1  # never answered with, or as, another task
+    assert index_fence.fences[(TENANT_A, asset)] == original_fence
 
 
 @real_redis

@@ -5,12 +5,12 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.core.rag.errors import VectorStoreError
 from app.core.idempotency import (
     IdempotencyStore,
     IdempotencyUnavailableError,
     get_idempotency_store,
 )
+from app.core.rag.errors import VectorStoreError
 from app.core.service_call import signed_dispatch_call, signed_system_call
 from app.core.service_signature_v1 import VerifiedCall
 from app.schemas.ingest import (
@@ -28,7 +28,6 @@ from app.services.tasks.task_records import (
     get_task_record_store,
     reported_state,
 )
-
 from app.services.tasks.transport import TaskQueueUnavailableError
 
 logger = logging.getLogger(__name__)
@@ -89,23 +88,6 @@ async def dispatch_ingest_task(
         "attempt_count": payload.attempt_count,
     }
 
-    # Raise the asset's index fence to this attempt before anything else
-    # (P3-6 §7.5): from now on only this attempt, or a later one, can write
-    # the asset's index. The fence only rises, so a duplicate or a late
-    # older dispatch leaves it unchanged; failing here dispatches nothing.
-    try:
-        await index_fence.raise_fence(
-            tenant_id=tenant_id,
-            asset_id=payload.asset_id,
-            run_number=payload.run_number,
-            attempt=payload.attempt_count,
-        )
-    except VectorStoreError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="service temporarily unavailable",
-        ) from exc
-
     candidate_task_id = f"task_{uuid.uuid4().hex}"
     fingerprint = request_fingerprint(payload)
     try:
@@ -140,6 +122,28 @@ async def dispatch_ingest_task(
             message="Ingestion task already accepted for this idempotency key",
             data=receipt,
         )
+
+    # Only a request that owns a fresh idempotency claim may advance the
+    # asset's fence. In particular, a conflicting reuse of a key must not
+    # fence the legitimate request's index writes.
+    try:
+        await index_fence.raise_fence(
+            tenant_id=tenant_id,
+            asset_id=payload.asset_id,
+            run_number=payload.run_number,
+            attempt=payload.attempt_count,
+        )
+    except VectorStoreError as exc:
+        try:
+            await idempotency_store.release(tenant_id, payload.idempotency_key, candidate_task_id)
+        except IdempotencyUnavailableError:
+            logger.warning(
+                "Dispatch claim not released after fence failure: task=%s", candidate_task_id
+            )
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="service temporarily unavailable",
+        ) from exc
 
     # The record ties the task to the verified tenant and backend attempt;
     # status reconciliation (M3-09) answers only from it. If the record or

@@ -71,4 +71,5 @@ async def test_redis_stream_transport_fails_closed_without_redis(sample_task):
         # A failed acknowledgement leaves the entry pending (the reclaim
         # decides it later); it does not fail the caller.
         await transport.ack("1-0")
-        assert await transport.send_to_dlq(sample_task, error_reason="x") == ""
+        with pytest.raises(TaskQueueUnavailableError):
+            await transport.send_to_dlq(sample_task, error_reason="x")
