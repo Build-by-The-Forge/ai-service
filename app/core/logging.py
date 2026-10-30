@@ -14,6 +14,27 @@ class JsonFormatter(logging.Formatter):
             "module": record.module,
             "timestamp": self.formatTime(record),
         }
+        for field in (
+            "job_id",
+            "task_id",
+            "run_number",
+            "attempt",
+            "worker_id",
+            "consumer",
+            "entry_id",
+            "event_id",
+            "event_type",
+            "outcome",
+            "error_code",
+            "error_type",
+            "retryable",
+            "delivery_attempt",
+            "max_attempts",
+            "status_code",
+        ):
+            value = getattr(record, field, None)
+            if value is not None:
+                log_obj[field] = value
         correlation_id = get_correlation_id()
         if correlation_id:
             log_obj["correlation_id"] = correlation_id

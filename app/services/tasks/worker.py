@@ -9,9 +9,14 @@ from app.core.callbacks.dispatcher import (
     backend_callback_body,
     get_callback_dispatcher,
 )
-from app.core.callbacks.events import CallbackDeliveryResult, CallbackEvent, CallbackEventType
+from app.core.callbacks.events import (
+    CallbackDeliveryResult,
+    CallbackEvent,
+    CallbackEventType,
+)
 from app.core.config import settings
 from app.core.execution_context import AIExecutionContext, AITask, TaskStatus
+from app.core.metrics import callback_delivery_failures_total, task_transitions_total
 from app.core.redis import get_redis_client
 from app.services.tasks.handlers import TaskHandlerRegistry, get_task_handler_registry
 from app.services.tasks.heartbeat import HeartbeatManager, get_heartbeat_manager
@@ -86,9 +91,25 @@ class TaskWorker:
         self._leased: set[str] = set()
         self._fenced: set[str] = set()
         self._handlers: dict[str, tuple[AIExecutionContext, asyncio.Future[Any]]] = {}
+        self._tasks: dict[str, AITask] = {}
 
     def get_active_context(self, execution_id: str) -> AIExecutionContext | None:
         return self._active_contexts.get(execution_id)
+
+    def _transition(self, task: AITask, outcome: str, **fields: Any) -> None:
+        task_transitions_total.labels(outcome=outcome).inc()
+        logger.info(
+            f"ai_service_task_{outcome}",
+            extra={
+                "job_id": task.job_id,
+                "task_id": task.task_id,
+                "run_number": task.run_number,
+                "attempt": task.attempt_count,
+                "worker_id": self.worker_id,
+                "outcome": outcome,
+                **fields,
+            },
+        )
 
     def cancel_task(self, execution_id: str, reason: str = "Cancellation requested") -> bool:
         ctx = self._active_contexts.get(execution_id)
@@ -105,28 +126,54 @@ class TaskWorker:
         """
         if event.external_task_id in self._fenced or not await self._record(event):
             logger.info(
-                "Event dropped for a fenced task: task=%s type=%s",
-                event.external_task_id,
-                event.event_type,
+                "ai_service_task_event_dropped",
+                extra={
+                    "job_id": event.job_id,
+                    "task_id": event.external_task_id,
+                    "run_number": event.run_number,
+                    "attempt": event.attempt_count,
+                    "worker_id": self.worker_id,
+                    "event_id": event.event_id,
+                    "event_type": event.event_type.value,
+                    "outcome": "fenced",
+                },
             )
             return None
         try:
             result = await self.callback_dispatcher.dispatch(event)
             if not result.success:
+                callback_delivery_failures_total.labels(event_type=event.event_type.value).inc()
                 logger.warning(
-                    "Callback delivery failed: event=%s type=%s status=%s error=%s",
-                    event.event_id,
-                    event.event_type,
-                    result.status_code,
-                    result.error_message,
+                    "ai_service_callback_delivery_failed",
+                    extra={
+                        "job_id": event.job_id,
+                        "task_id": event.external_task_id,
+                        "run_number": event.run_number,
+                        "attempt": event.attempt_count,
+                        "worker_id": self.worker_id,
+                        "event_id": event.event_id,
+                        "event_type": event.event_type.value,
+                        "status_code": result.status_code,
+                        "outcome": "failed",
+                    },
                 )
             return result
         except Exception as exc:
             logger.error(
-                "Unexpected exception during callback dispatch: %s",
-                str(exc),
-                exc_info=True,
+                "ai_service_callback_dispatch_error",
+                extra={
+                    "job_id": event.job_id,
+                    "task_id": event.external_task_id,
+                    "run_number": event.run_number,
+                    "attempt": event.attempt_count,
+                    "worker_id": self.worker_id,
+                    "event_id": event.event_id,
+                    "event_type": event.event_type.value,
+                    "error_type": type(exc).__name__,
+                    "outcome": "failed",
+                },
             )
+            callback_delivery_failures_total.labels(event_type=event.event_type.value).inc()
             return None
 
     async def _record(self, event: CallbackEvent) -> bool:
@@ -166,11 +213,17 @@ class TaskWorker:
                 break
             except TaskRecordUnavailableError as exc:
                 logger.warning(
-                    "Task record not updated: task=%s event=%s attempt=%d error=%s",
-                    task_id,
-                    event.event_id,
-                    attempt + 1,
-                    exc,
+                    "ai_service_task_record_update_failed",
+                    extra={
+                        "job_id": event.job_id,
+                        "task_id": task_id,
+                        "run_number": event.run_number,
+                        "attempt": event.attempt_count,
+                        "worker_id": self.worker_id,
+                        "event_id": event.event_id,
+                        "delivery_attempt": attempt + 1,
+                        "error_type": type(exc).__name__,
+                    },
                 )
                 await asyncio.sleep(RECORD_RETRY_SECONDS * (attempt + 1))
         if result != WriteResult.OK:
@@ -186,7 +239,19 @@ class TaskWorker:
         if task_id in self._fenced:
             return
         self._fenced.add(task_id)
-        logger.warning("Task %s fenced: %s", task_id, reason)
+        task = self._tasks.get(task_id)
+        if task is None:
+            task_transitions_total.labels(outcome="fenced").inc()
+            logger.warning(
+                "ai_service_task_fenced",
+                extra={
+                    "task_id": task_id,
+                    "worker_id": self.worker_id,
+                    "outcome": "fenced",
+                },
+            )
+        else:
+            self._transition(task, "fenced")
         running = self._handlers.get(task_id)
         if running is not None:
             ctx, handler = running
@@ -199,7 +264,18 @@ class TaskWorker:
         try:
             result = await self.task_records.start(task.task_id, self.worker_id, self.lease_seconds)
         except TaskRecordUnavailableError as exc:
-            logger.warning("Task lease not taken: task=%s error=%s", task.task_id, exc)
+            logger.warning(
+                "ai_service_task_lease_unconfirmed",
+                extra={
+                    "job_id": task.job_id,
+                    "task_id": task.task_id,
+                    "run_number": task.run_number,
+                    "attempt": task.attempt_count,
+                    "worker_id": self.worker_id,
+                    "error_type": type(exc).__name__,
+                    "outcome": UNCONFIRMED,
+                },
+            )
             return UNCONFIRMED
         if result == WriteResult.OK:
             self._leased.add(task.task_id)
@@ -218,7 +294,19 @@ class TaskWorker:
             try:
                 result = await self.task_records.renew(task_id, self.worker_id, self.lease_seconds)
             except TaskRecordUnavailableError as exc:
-                logger.warning("Task lease not renewed: task=%s error=%s", task_id, exc)
+                task = self._tasks.get(task_id)
+                logger.warning(
+                    "ai_service_task_lease_renewal_unconfirmed",
+                    extra={
+                        "job_id": task.job_id if task else None,
+                        "task_id": task_id,
+                        "run_number": task.run_number if task else None,
+                        "attempt": task.attempt_count if task else None,
+                        "worker_id": self.worker_id,
+                        "error_type": type(exc).__name__,
+                        "outcome": UNCONFIRMED,
+                    },
+                )
                 if loop.time() - confirmed >= self.lease_seconds * 2 / 3:
                     self._fence(task_id, "lease could not be confirmed before it lapses")
                     return
@@ -238,7 +326,19 @@ class TaskWorker:
         except TaskRecordUnavailableError as exc:
             # Not handed back, so no other delivery could take it: stop here.
             # The lapsing lease lets the backend recover the job.
-            logger.warning("Task lease not released: task=%s error=%s", task_id, exc)
+            task = self._tasks.get(task_id)
+            logger.warning(
+                "ai_service_task_lease_release_unconfirmed",
+                extra={
+                    "job_id": task.job_id if task else None,
+                    "task_id": task_id,
+                    "run_number": task.run_number if task else None,
+                    "attempt": task.attempt_count if task else None,
+                    "worker_id": self.worker_id,
+                    "error_type": type(exc).__name__,
+                    "outcome": UNCONFIRMED,
+                },
+            )
             self._fence(task_id, "lease release could not be confirmed")
             return False
         if result != WriteResult.OK:
@@ -272,7 +372,12 @@ class TaskWorker:
     def _stage_reporter(self, task: AITask) -> StageReporter:
         async def deliver(stage: str, metrics: dict[str, Any]) -> tuple[bool, bool]:
             result = await self._emit_callback(
-                self._event(task, CallbackEventType.STAGE_COMPLETED, stage=stage, metrics=metrics)
+                self._event(
+                    task,
+                    CallbackEventType.STAGE_COMPLETED,
+                    stage=stage,
+                    metrics=metrics,
+                )
             )
             if result is None:
                 return False, True
@@ -294,6 +399,7 @@ class TaskWorker:
         retryable: bool,
         details: dict[str, Any] | None = None,
     ) -> None:
+        self._transition(task, "failed", error_code=code, retryable=retryable)
         await self.transport.ack(msg_id, group=self.group_name)
         self._finish(msg_id, ctx)
         await self._emit_callback(
@@ -308,17 +414,19 @@ class TaskWorker:
         )
 
     async def process_single_task(self, msg_id: str, task: AITask) -> TaskStatus:
+        self._tasks[task.task_id] = task
         try:
             return await self._process(msg_id, task)
         finally:
             self._leased.discard(task.task_id)
             self._fenced.discard(task.task_id)
             self._recorded_tasks.discard(task.task_id)
+            self._tasks.pop(task.task_id, None)
 
     async def _process(self, msg_id: str, task: AITask) -> TaskStatus:
         # 1. Check expiration
         if task.is_expired():
-            logger.warning("Task %s is expired (deadline passed). Discarding.", task.task_id)
+            self._transition(task, "expired")
             await self.transport.ack(msg_id, group=self.group_name)
             return TaskStatus.EXPIRED
 
@@ -335,11 +443,13 @@ class TaskWorker:
                 # elsewhere or its record gone: nothing may run this entry, so
                 # it is acknowledged. Store unreachable: it stays pending, and
                 # the reclaim decides once the store is back.
-                logger.warning("Task %s not run: lease %s", task.task_id, taken)
+                self._transition(task, "lease_unconfirmed" if taken == UNCONFIRMED else "fenced")
                 if taken != UNCONFIRMED:
                     await self.transport.ack(msg_id, group=self.group_name)
                 return TaskStatus.CANCELLED
         self._active_contexts[ctx.execution_id] = ctx
+        if is_ingestion:
+            self._transition(task, "started")
 
         # 3. Claim execution lease
         self.heartbeat_mgr.record_heartbeat(ctx.execution_id, self.worker_id, lease_seconds=30)
@@ -351,7 +461,17 @@ class TaskWorker:
         handler = self.registry.get(task.task_type)
         if not handler:
             error_msg = f"No handler registered for task_type: '{task.task_type}'"
-            logger.error(error_msg)
+            logger.error(
+                "ai_service_task_handler_missing",
+                extra={
+                    "job_id": task.job_id,
+                    "task_id": task.task_id,
+                    "run_number": task.run_number,
+                    "attempt": task.attempt_count,
+                    "worker_id": self.worker_id,
+                    "error_code": "UNREGISTERED_HANDLER",
+                },
+            )
             await self.transport.send_to_dlq(task, error_reason=error_msg)
             await self._fail_terminally(
                 msg_id, task, ctx, "UNREGISTERED_HANDLER", error_msg, retryable=False
@@ -368,8 +488,8 @@ class TaskWorker:
         )
         try:
             handler_result = await running
-        except asyncio.CancelledError as ce:
-            logger.info("Task %s execution was cancelled: %s", task.task_id, str(ce))
+        except asyncio.CancelledError:
+            self._transition(task, "cancelled")
             await self.transport.ack(msg_id, group=self.group_name)
             self._finish(msg_id, ctx)
             return TaskStatus.CANCELLED
@@ -378,7 +498,16 @@ class TaskWorker:
                 return await self._stop_fenced(msg_id, ctx)
             # Repeating the same work cannot help: no internal retry.
             logger.warning(
-                "Task %s failed permanently: %s %s", task.task_id, failure.code, failure.message
+                "ai_service_task_failed_permanently",
+                extra={
+                    "job_id": task.job_id,
+                    "task_id": task.task_id,
+                    "run_number": task.run_number,
+                    "attempt": task.attempt_count,
+                    "worker_id": self.worker_id,
+                    "error_code": failure.code,
+                    "retryable": False,
+                },
             )
             await self._fail_terminally(
                 msg_id,
@@ -396,12 +525,19 @@ class TaskWorker:
             transient = isinstance(exc, TransientIngestionError)
             code = exc.code if isinstance(exc, TransientIngestionError) else "AI_UNCLASSIFIED_ERROR"
             logger.error(
-                "Task %s failed on delivery %d/%d: %s",
-                task.task_id,
-                task.delivery_attempt,
-                task.max_attempts,
-                exc,
-                exc_info=not transient,
+                "ai_service_task_handler_error",
+                extra={
+                    "job_id": task.job_id,
+                    "task_id": task.task_id,
+                    "run_number": task.run_number,
+                    "attempt": task.attempt_count,
+                    "worker_id": self.worker_id,
+                    "delivery_attempt": task.delivery_attempt,
+                    "max_attempts": task.max_attempts,
+                    "error_code": code,
+                    "error_type": type(exc).__name__,
+                    "retryable": transient,
+                },
             )
             if task.delivery_attempt < task.max_attempts:
                 # Internal retry of the same backend attempt: only the
@@ -414,6 +550,12 @@ class TaskWorker:
                 )
                 await self.transport.ack(msg_id, group=self.group_name)
                 self._finish(msg_id, ctx)
+                self._transition(
+                    task,
+                    "retry_scheduled",
+                    delivery_attempt=task.delivery_attempt + 1,
+                    error_code=code,
+                )
                 return TaskStatus.FAILED
 
             await self.transport.send_to_dlq(
@@ -454,6 +596,7 @@ class TaskWorker:
                     retryable=False,
                 )
             )
+            self._transition(task, "failed", error_code="INGESTION_INCOMPLETE", retryable=False)
             return TaskStatus.FAILED
 
         extracted_metadata = None
@@ -472,6 +615,7 @@ class TaskWorker:
         )
         if task.task_id in self._fenced:  # completion refused: not this worker's to report
             return TaskStatus.CANCELLED
+        self._transition(task, "completed")
         return TaskStatus.SUCCEEDED
 
     async def run_once(self, block_ms: int = 1000) -> TaskStatus | None:
@@ -507,7 +651,10 @@ class TaskWorker:
             try:
                 await reclaimer.run_once()
             except Exception as e:
-                logger.warning("Reclaim pass failed: %s", e)
+                logger.warning(
+                    "ai_service_reclaim_pass_failed",
+                    extra={"worker_id": self.worker_id, "error_type": type(e).__name__},
+                )
             try:
                 await asyncio.wait_for(stop_event.wait(), timeout=self.lease_seconds)
             except TimeoutError:
@@ -516,7 +663,10 @@ class TaskWorker:
     async def start(
         self, stop_event: asyncio.Event, reclaimer: StreamReclaimer | None = None
     ) -> None:
-        logger.info("TaskWorker %s started listening on group %s", self.worker_id, self.group_name)
+        logger.info(
+            "ai_service_task_worker_started",
+            extra={"worker_id": self.worker_id, "outcome": "started"},
+        )
         reclaimer = reclaimer or self._default_reclaimer()
         reclaiming = (
             asyncio.create_task(self._reclaim_loop(reclaimer, stop_event)) if reclaimer else None
@@ -526,9 +676,18 @@ class TaskWorker:
                 try:
                     await self.run_once(block_ms=2000)
                 except Exception as e:
-                    logger.error("Worker error during loop: %s", str(e), exc_info=True)
+                    logger.error(
+                        "ai_service_task_worker_loop_failed",
+                        extra={
+                            "worker_id": self.worker_id,
+                            "error_type": type(e).__name__,
+                        },
+                    )
                     await asyncio.sleep(1)
         finally:
             if reclaiming is not None:
                 reclaiming.cancel()
-        logger.info("TaskWorker %s shut down gracefully", self.worker_id)
+        logger.info(
+            "ai_service_task_worker_stopped",
+            extra={"worker_id": self.worker_id, "outcome": "stopped"},
+        )

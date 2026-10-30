@@ -40,6 +40,7 @@ The signed context carries the tenant, the user and the one permission the backe
 
 ### Observability
 - JSON logging, request IDs, Prometheus `/metrics`.
+- The separate task worker exposes its task-transition, callback-delivery, and stream-reclaim metrics at `/metrics` on internal port `9102`. Worker transition logs include job/task/run/attempt identity and exclude exception messages and credentials.
 - `/api/v1/system/health` and `/api/v1/system/ready` (unauthenticated; reveal no configuration).
 
 ## Setup

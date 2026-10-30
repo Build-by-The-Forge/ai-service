@@ -20,6 +20,7 @@ import logging
 from collections import Counter
 from typing import Any
 
+from app.core.metrics import expired_lease_candidates, stream_entries_reclaimed_total
 from app.services.tasks.task_records import ReclaimResult, TaskRecordStore
 from app.services.tasks.transport import TASK_STREAM
 
@@ -49,6 +50,7 @@ class StreamReclaimer:
     async def run_once(self) -> dict[str, int]:
         """One pass over the oldest idle candidates; returns outcome counts."""
         outcomes: Counter[str] = Counter()
+        expired_count = 0
         candidates = await self._client.xpending_range(
             self._stream,
             self._group,
@@ -64,6 +66,7 @@ class StreamReclaimer:
                 # Trimmed from the stream while pending: nothing can run it.
                 await self._client.xack(self._stream, self._group, entry)
                 outcomes["trimmed"] += 1
+                stream_entries_reclaimed_total.labels(outcome="trimmed").inc()
                 continue
             task = json.loads(rows[0][1].get("data") or "{}")
             if task.get("task_type") != INGESTION_TASK_TYPE or not task.get("task_id"):
@@ -80,11 +83,21 @@ class StreamReclaimer:
             )
             outcomes[outcome] += 1
             if outcome != ReclaimResult.LIVE:
+                stream_entries_reclaimed_total.labels(outcome=outcome).inc()
+            if outcome in {ReclaimResult.LOST, ReclaimResult.ACKED}:
+                expired_count += 1
+            if outcome != ReclaimResult.LIVE:
                 logger.warning(
-                    "Stream entry reclaimed: entry=%s task=%s consumer=%s outcome=%s",
-                    entry,
-                    task["task_id"],
-                    candidate["consumer"],
-                    outcome,
+                    "ai_service_stream_entry_reclaimed",
+                    extra={
+                        "entry_id": entry,
+                        "task_id": task.get("task_id"),
+                        "job_id": task.get("job_id"),
+                        "run_number": task.get("run_number"),
+                        "attempt": task.get("attempt_count"),
+                        "consumer": candidate["consumer"],
+                        "outcome": outcome,
+                    },
                 )
+        expired_lease_candidates.set(expired_count)
         return dict(outcomes)
