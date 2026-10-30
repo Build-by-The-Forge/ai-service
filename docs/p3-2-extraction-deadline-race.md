@@ -39,8 +39,8 @@ Only timeouts that land during a page read were affected. The chance per timeout
 
 ## The fix
 
-- **The race (`_pdf_page`):** on cancellation, wait for the in-flight page read before leaving the document and directory contexts. The configured deadline is unchanged; the error can arrive later by at most one page read or render.
-- **Exception precedence (`_pdf`):** a cleanup `OSError` during cancellation is logged and the cancellation continues. This still matters if a second cancellation interrupts the wait. Outside cancellation, the `OSError` still propagates.
+- **The race (`_pdf_page`):** on cancellation, wait for the in-flight page read before leaving the document and directory contexts, and keep waiting through any further cancellations (a gap found in review). The configured deadline is unchanged; the error can arrive later by at most one page read or render. A render that never returns would therefore hold the extraction, and its worker, until the process is restarted; rendering is bounded in practice, and no such hang has been observed.
+- **Exception precedence (`_pdf`):** a cleanup `OSError` during cancellation is logged and the cancellation continues, as a defence against cleanup failing for any other reason. Outside cancellation, the `OSError` still propagates.
 - **OCR calls (`PaddleOCRService`):** see below.
 
 ## Evidence
@@ -50,11 +50,12 @@ Deterministic tests in `tests/unit/test_extraction.py`:
 - a page read still running at the deadline: the extraction ends with `EXTRACTION_TIMEOUT` only after the read finished, and no directory remains. This test fails without the fix;
 - the real failure ordering, with a file created during `rmtree` so that `rmdir` genuinely fails: `EXTRACTION_TIMEOUT` is reported and the failure is logged;
 - the same failure without cancellation still raises `OSError`;
-- an outside cancellation (a fenced task) also waits for the read.
+- an outside cancellation (a fenced task) also waits for the read;
+- further cancellations during that wait, after either a deadline or an outside cancellation, cannot end it: the document and directory stay alive until the render ends, then cleanup completes. An outside cancellation stays a `CancelledError`; a deadline alone stays `EXTRACTION_TIMEOUT`.
 
 Stress with the fix: **6,000 iterations, 6,000 `EXTRACTION_TIMEOUT`**. The final 3,000 ran with the cleanup guard in place and logged **zero** cleanup failures, so the guard was not hiding the race.
 
-The limit of that evidence: at the measured rate (3 in 4,200), 6,000 clean iterations would occur by chance about 1.4% of the time with no fix, assuming independent runs. The stress runs use a fake OCR engine, so they exercise the extraction path, not the OCR changes below.
+The limit of that evidence: at the measured rate (3 in 4,200), 6,000 clean iterations would occur by chance about 1.4% of the time with no fix, assuming independent runs. The stress runs use a fake OCR engine, so they exercise the extraction path, not the OCR changes below. They also predate the repeated-cancellation change, whose path they don't reach (it has a single cancellation); its deterministic test covers it.
 
 ## Abandoned OCR calls
 
@@ -76,7 +77,7 @@ Reopen if any of these occurs:
 
 - `test_extraction_has_one_deadline` or its neighbours fail again;
 - a job fails with an unclassified `OSError` from extraction;
-- the log line `Page directory not removed after cancellation` appears, since the wait should prevent that outside a second cancellation;
+- the log line `Page directory not removed after cancellation` appears, since the wait should prevent that;
 - `pages-` or `ocr-` directories accumulate in a worker's temporary directory.
 
 To investigate, run the test's body in a loop, keep every full traceback, and capture the evidence before changing anything.

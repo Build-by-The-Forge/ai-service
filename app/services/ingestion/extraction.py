@@ -236,8 +236,16 @@ class DocumentExtractor:
             # the caller closes the document and removes tmp. Otherwise the
             # cleanup races the render: the directory removal fails with
             # ENOTEMPTY, that OSError replaces the timeout, and the document
-            # is closed under a thread still using it.
-            await asyncio.wait({read})
+            # is closed under a thread still using it. Further cancellations
+            # cannot end this wait; they stay counted on the task, so a real
+            # outside cancellation is still reported as one.
+            while not read.done():
+                try:
+                    await asyncio.wait({read})
+                except asyncio.CancelledError:
+                    continue
+            if not read.cancelled():
+                read.exception()  # retrieved: this page's outcome no longer matters
             raise
         except IngestionFailure:
             raise

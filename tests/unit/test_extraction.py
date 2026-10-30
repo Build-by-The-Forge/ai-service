@@ -354,3 +354,62 @@ async def test_an_outside_cancellation_also_waits_for_the_page_read(tmp_path, mo
     with pytest.raises(asyncio.CancelledError):
         await running
     assert finished.is_set()
+
+
+@pytest.mark.parametrize(
+    "timeout,first_cancel_from_outside",
+    [(0.1, False), (30.0, True)],
+    ids=["deadline-then-cancel", "cancel-then-cancel"],
+)
+async def test_a_second_cancellation_cannot_end_the_wait_for_a_page_read(
+    tmp_path, monkeypatch, timeout, first_cancel_from_outside
+):
+    """The document and the page directory stay alive until the render ends,
+    however many cancellations arrive while waiting for it."""
+    import os
+    import threading
+
+    from app.services.ingestion import extraction
+
+    started, release, finished = threading.Event(), threading.Event(), threading.Event()
+    seen: dict = {}
+    real_read_page = extraction.DocumentExtractor._read_page
+
+    def blocked_read_page(self, pdf, index, tmp):
+        started.set()
+        assert release.wait(10)
+        seen["directory_alive"] = os.path.isdir(tmp)
+        seen["document_open"] = not pdf.is_closed
+        result = real_read_page(self, pdf, index, tmp)
+        finished.set()
+        return result
+
+    monkeypatch.setattr(extraction.DocumentExtractor, "_read_page", blocked_read_page)
+    pages_dir = tmp_path / "pages"
+    pages_dir.mkdir()
+    document = scanned_pdf(tmp_path)
+    monkeypatch.setattr(extraction.tempfile, "tempdir", str(pages_dir))
+    running = asyncio.create_task(
+        extractor(FakeOcr(), timeout=timeout).extract(document, "application/pdf")
+    )
+    while not started.is_set():
+        await asyncio.sleep(0.01)
+
+    if first_cancel_from_outside:
+        running.cancel()
+    await asyncio.sleep(0.2)  # the deadline, or the first cancel, is now being handled
+    for _ in range(2):  # further cancellations, while the wait is active
+        running.cancel()
+        await asyncio.sleep(0.05)
+    assert not running.done()  # still waiting for the render
+    assert not finished.is_set()
+    assert len(list(pages_dir.iterdir())) == 1  # the directory is still there
+
+    release.set()
+    # A cancellation from outside stays a cancellation, as asyncio.timeout
+    # defines: it is not turned into the deadline's failure.
+    with pytest.raises(asyncio.CancelledError):
+        await asyncio.wait_for(running, timeout=10)
+    assert finished.is_set()
+    assert seen == {"directory_alive": True, "document_open": True}
+    assert list(pages_dir.iterdir()) == []  # cleanup completed afterwards
