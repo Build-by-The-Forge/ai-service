@@ -98,6 +98,9 @@ class Settings(BaseSettings):
     # every third of it; a task whose lease lapses is reported stalled, and
     # its stream entry may be reclaimed after twice this, unrenewed.
     TASK_LEASE_SECONDS: float = Field(default=60.0, ge=15.0, le=600.0)
+    # Test-only fault-injection pause points (app/services/tasks/fault_points.py).
+    # Refused outside APP_ENVIRONMENT=testing: startup fails.
+    INGESTION_FAULT_DIR: str | None = None
 
     CALLBACK_TIMEOUT_SECONDS: float = 10.0
     CALLBACK_MAX_ATTEMPTS: int = 3
@@ -147,6 +150,15 @@ class Settings(BaseSettings):
         super().__init__(**values)
         self.DATABASE_URL = _resolve_embedded_hostname(self.DATABASE_URL)
         self.REDIS_URL = _resolve_embedded_hostname(self.REDIS_URL)
+
+    @model_validator(mode="after")
+    def _validate_fault_points(self) -> "Settings":
+        if self.INGESTION_FAULT_DIR and self.APP_ENVIRONMENT != "testing":
+            raise ValueError(
+                "INGESTION_FAULT_DIR is a test-only setting and is refused when "
+                f"APP_ENVIRONMENT={self.APP_ENVIRONMENT}"
+            )
+        return self
 
     @model_validator(mode="after")
     def _validate_backend_callback_url(self) -> "Settings":
