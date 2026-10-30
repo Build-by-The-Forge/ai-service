@@ -14,6 +14,7 @@ from app.services.ingestion.extraction import DocumentExtractor
 from app.services.rag.embedder import EmbeddingPort
 from app.services.rag.onnx_embedder import OnnxMiniLMEmbedder
 from app.services.rag.pg_index import PgChunkIndex
+from app.services.tasks.fault_points import AFTER_INDEX_WRITE, BEFORE_INDEX_WRITE, pause_point
 from app.services.tasks.ingestion_outcomes import (
     PermanentIngestionError,
     PipelineUnavailableError,
@@ -164,6 +165,7 @@ class ContentIngestionTaskHandler(TaskHandler):
             raise TransientIngestionError("EMBEDDING_FAILED", exc.message, evidence) from exc
         if ctx.is_cancelled():
             raise asyncio.CancelledError(f"Task cancelled: {ctx.cancellation_reason}")
+        await pause_point(BEFORE_INDEX_WRITE, ctx.job_id)  # test-only; inert otherwise
         try:
             indexed = await self._chunk_index().replace_asset(
                 tenant_id=ctx.tenant_id,
@@ -187,6 +189,7 @@ class ContentIngestionTaskHandler(TaskHandler):
             "dimension": embedder.dimension,
             "seconds": round(time.monotonic() - started, 3),
         }
+        await pause_point(AFTER_INDEX_WRITE, ctx.job_id)  # test-only; inert otherwise
         # Committed: only now may the job advance towards ready.
         if ctx.stage_reporter is not None:
             await ctx.stage_reporter.report("indexed", indexing)
