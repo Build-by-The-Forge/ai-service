@@ -1,4 +1,5 @@
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
@@ -212,8 +213,9 @@ async def test_paddle_ocr_service_normalizes_engine_output(monkeypatch, tmp_path
     paddle_data = await paddle.extract_text_from_image(str(image))
 
     assert paddle.model.kwargs == {"lang": "en", "ocr_version": "PP-OCRv3"}
-    assert validated == [str(image)]
-    assert paddle.model.calls == [str(image)]
+    # The call works on its own copy of the image, under the image's name.
+    assert validated == paddle.model.calls
+    assert [Path(call).name for call in validated] == [image.name]
     assert paddle_data == [
         {
             "text": "sample extracted text",

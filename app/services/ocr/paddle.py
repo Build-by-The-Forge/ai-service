@@ -1,7 +1,12 @@
 import asyncio
 import json
 import logging
+import os
+import shutil
+import tempfile
 import threading
+import time
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 
 from app.core.config import STRICT_ENVIRONMENTS, settings
@@ -27,6 +32,13 @@ class PaddleOCRService(OCRProvider):
     # One recognition at a time per process: a model instance is not safe
     # across threads, and parallel CPU OCR would only contend.
     _lock = threading.Lock()
+    # Python cannot stop a running thread, so a cancelled recognition (the
+    # extraction deadline, a fenced task) runs on until it ends. Its own
+    # single thread bounds that: at most one call is ever abandoned, a call
+    # still queued is cancelled before it starts, and a hung native call
+    # stalls only later OCR (which reaches its deadline), never the shared
+    # pool that fetching, rendering and embedding use.
+    _executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="ocr")
 
     def __init__(self):
         """Initialize PaddleOCR for real OCR processing."""
@@ -69,7 +81,7 @@ class PaddleOCRService(OCRProvider):
         # Decoding and recognition take seconds of CPU per page: they run in a
         # worker thread so the event loop (heartbeats, callbacks) keeps
         # running (P3-2, audit F3/F4).
-        result = await asyncio.to_thread(self._recognize, image_path)
+        result = await self._recognize_owned_copy(image_path)
 
         if not result or not result[0]:
             return []
@@ -89,6 +101,39 @@ class PaddleOCRService(OCRProvider):
 
         return extracted
 
+    async def _recognize_owned_copy(self, image_path: str):
+        """Recognize a private link or copy of the image, removed when the
+        call ends. The caller deletes its image when cancelled, while this
+        call may still be reading. A cancelled call's result is discarded;
+        how it ended is logged, since nothing is left waiting for it."""
+        private_dir, private = _private_copy(image_path)
+        started = time.monotonic()
+        abandoned = threading.Event()
+
+        def finished(call: Future) -> None:
+            shutil.rmtree(private_dir, ignore_errors=True)
+            if abandoned.is_set() and not call.cancelled():
+                seconds = time.monotonic() - started
+                error = call.exception()
+                if error is None:
+                    logger.warning("Abandoned OCR call finished after %.1f s", seconds)
+                else:
+                    logger.warning(
+                        "Abandoned OCR call failed after %.1f s: %s",
+                        seconds,
+                        type(error).__name__,
+                    )
+
+        call = self._executor.submit(self._recognize, private)
+        call.add_done_callback(finished)
+        try:
+            return await asyncio.wrap_future(call)
+        except asyncio.CancelledError:
+            abandoned.set()
+            if not call.done():
+                logger.warning("OCR call abandoned while still running")
+            raise
+
     def _recognize(self, image_path: str):
         """Validate then recognize one image; runs in a worker thread. One
         model instance is not safe across threads, so calls are serialized:
@@ -100,6 +145,22 @@ class PaddleOCRService(OCRProvider):
                 return self.model.ocr(image_path, cls=True)
             except Exception as exc:  # native decoder/runtime; the cause is kept
                 raise OCRExtractionError(f"{type(exc).__name__}: {exc}") from exc
+
+
+def _private_copy(image_path: str) -> tuple[str, str]:
+    """A link to the image (a copy across filesystems) in a new directory,
+    keeping its file name, which the OCR engine reads the type from."""
+    private_dir = tempfile.mkdtemp(prefix="ocr-")
+    private = os.path.join(private_dir, os.path.basename(image_path))
+    try:
+        try:
+            os.link(image_path, private)
+        except OSError:
+            shutil.copyfile(image_path, private)
+    except BaseException:
+        shutil.rmtree(private_dir, ignore_errors=True)
+        raise
+    return private_dir, private
 
 
 # Decoders Pillow may use for OCR input; the content decides, not the

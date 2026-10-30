@@ -30,6 +30,7 @@ Failures are typed (``ingestion_outcomes``):
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import statistics
 import tempfile
@@ -46,6 +47,8 @@ from app.services.tasks.ingestion_outcomes import (
     PermanentIngestionError,
     PipelineUnavailableError,
 )
+
+logger = logging.getLogger(__name__)
 
 NATIVE_MIN_CHARS = 200
 SCANNED_IMAGE_COVERAGE = 0.5
@@ -207,15 +210,43 @@ class DocumentExtractor:
             if len(pdf) == 0:
                 raise PermanentIngestionError("PDF_UNREADABLE", "the PDF has no pages")
             pages = []
-            with tempfile.TemporaryDirectory(prefix="pages-") as tmp:
-                for index in range(len(pdf)):
-                    pages.append(await self._pdf_page(pdf, index, tmp))
+            try:
+                with tempfile.TemporaryDirectory(prefix="pages-") as tmp:
+                    for index in range(len(pdf)):
+                        pages.append(await self._pdf_page(pdf, index, tmp))
+            except OSError as exc:
+                # Only a cleanup failure during cancellation: it must not
+                # replace the cancellation, or the deadline is reported as
+                # an unclassified OSError. Any other OSError still propagates.
+                if not isinstance(exc.__context__, asyncio.CancelledError):
+                    raise
+                logger.warning("Page directory not removed after cancellation: %s", exc)
+                raise exc.__context__ from None
             return pages
 
     async def _pdf_page(self, pdf: fitz.Document, index: int, tmp: str) -> ExtractedPage:
         number = index + 1
+        read = asyncio.ensure_future(asyncio.to_thread(self._read_page, pdf, index, tmp))
         try:
-            kind, text, image = await asyncio.to_thread(self._read_page, pdf, index, tmp)
+            kind, text, image = await asyncio.shield(read)
+        except asyncio.CancelledError:
+            # The deadline arrived while a worker thread reads this page from
+            # the open document and may still render it into tmp. A thread
+            # cannot be interrupted: wait for it (one page, bounded) before
+            # the caller closes the document and removes tmp. Otherwise the
+            # cleanup races the render: the directory removal fails with
+            # ENOTEMPTY, that OSError replaces the timeout, and the document
+            # is closed under a thread still using it. Further cancellations
+            # cannot end this wait; they stay counted on the task, so a real
+            # outside cancellation is still reported as one.
+            while not read.done():
+                try:
+                    await asyncio.wait({read})
+                except asyncio.CancelledError:
+                    continue
+            if not read.cancelled():
+                read.exception()  # retrieved: this page's outcome no longer matters
+            raise
         except IngestionFailure:
             raise
         except Exception as exc:  # a damaged page: reported, the rest continue
