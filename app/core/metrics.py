@@ -25,6 +25,15 @@ expired_lease_candidates = Gauge(
     "ai_service_expired_lease_candidates",
     "Expired task leases identified during the most recent reclaim pass",
 )
+learning_memory_enabled = Gauge(
+    "ai_service_learning_memory_enabled",
+    "1 when learning memory is enabled in this process, 0 when the gate keeps it off",
+)
+learning_memory_refusals_total = Counter(
+    "ai_service_learning_memory_refusals_total",
+    "Learning-memory reads and writes refused by the production gate",
+    ["operation"],
+)
 
 
 def setup_metrics(app):

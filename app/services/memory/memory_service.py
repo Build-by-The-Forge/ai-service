@@ -4,6 +4,9 @@ from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
+from app.core.learning_memory_gate import LearningMemoryDisabled
+from app.core.metrics import learning_memory_refusals_total
 from app.core.tenant import get_tenant_id
 from app.db.models.learning_memory import LearningMemory
 from app.services.memory.reward import LearningReward
@@ -18,11 +21,20 @@ def _current_tenant_id() -> str:
     return get_tenant_id()
 
 
+def _require_gate_open(operation: str) -> None:
+    # Before the tenant lookup and any query: every read and write of learning
+    # memory goes through this class, so this is the one enforcement point.
+    if not settings.learning_memory_enabled:
+        learning_memory_refusals_total.labels(operation=operation).inc()
+        raise LearningMemoryDisabled
+
+
 class MemoryService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
     async def get_user_memory(self, user_id: str):
+        _require_gate_open("read")
         tenant_id = _current_tenant_id()
         result = await self.db.execute(
             select(LearningMemory).where(
@@ -34,6 +46,7 @@ class MemoryService:
         return result.scalars().all()
 
     async def update_mastery(self, user_id: str, topic: str, delta: float):
+        _require_gate_open("write")
         tenant_id = _current_tenant_id()
         result = await self.db.execute(
             select(LearningMemory).where(
@@ -65,6 +78,7 @@ class MemoryService:
 
     async def query(self, user_id: str, topics: list[str] | None = None) -> list[LearningMemory]:
         """The user's memory in the request tenant, optionally for some topics."""
+        _require_gate_open("read")
         statement = select(LearningMemory).where(
             LearningMemory.tenant_id == _current_tenant_id(),
             LearningMemory.user_id == user_id,
@@ -81,6 +95,7 @@ class MemoryService:
         LearningReward delta, clamped to [0, 1]; attempts counts observations.
         One atomic upsert per observation, so concurrent submissions for the
         same topic never lose an update or create a second row."""
+        _require_gate_open("write")
         tenant_id = _current_tenant_id()
         reward = LearningReward()
         now = datetime.now(UTC).isoformat()

@@ -10,6 +10,16 @@ import pytest  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
+def learning_memory_enabled(monkeypatch):
+    """Tests run with memory on, as development can; tests of the closed gate
+    turn it off themselves. On the settings object, not the environment, so a
+    test building its own Settings still starts from the default (off)."""
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "LEARNING_MEMORY_ENABLED", True)
+
+
+@pytest.fixture(autouse=True)
 def in_memory_task_records():
     """Unit tests keep task records in memory; tests that exercise the real
     Redis store install their own."""

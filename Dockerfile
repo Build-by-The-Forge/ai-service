@@ -110,3 +110,13 @@ assert len(v) == 384 and abs(sum(x * x for x in v) - 1) < 1e-4, len(v); print('e
 EXPOSE 8000
 
 ENTRYPOINT ["./docker/entrypoint.sh"]
+
+
+# --- What production runs, and the default target ------------------------------
+# The marker makes the service refuse learning memory while the production gate
+# is closed, whatever APP_ENVIRONMENT says (app/core/learning_memory_gate.py). A
+# file, since an ENV could be overridden at runtime. Only the boundary gate
+# builds --target app, to exercise memory in its development topology.
+FROM app AS production
+
+RUN touch /opt/build-ai/production-image && chmod a-w /opt/build-ai/production-image

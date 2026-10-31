@@ -94,6 +94,7 @@ Bodies reject unknown fields. Naming `tenant_id`, `user_id`, `membership_id` or 
 | `REDIS_URL` | Replay protection, task queue and task records |
 | `DATABASE_URL` | Runtime role with DML on the AI-owned tables only |
 | `MODEL_PROVIDER`, `OPENAI_API_KEY` | See above |
+| `LEARNING_MEMORY_ENABLED` | Off by default. Refused at startup while the learning-memory production gate is closed, except in development and testing outside the production image. See `app/core/learning_memory_gate.py` |
 | `SERVICE_REPLAY_TIMEOUT_SECONDS` | Replay-guard Redis timeout, 0.05–5.0 (default 1.0) |
 
 ## Project structure

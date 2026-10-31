@@ -6,9 +6,10 @@ from app.api.v1.ai.router import ai_router
 from app.api.v1.ingest import router as ingest_router
 from app.api.v1.router import api_router
 from app.core.config import STRICT_ENVIRONMENTS, settings
-from app.core.errors import app_exception_handler
-from app.core.logging import setup_logging
-from app.core.metrics import setup_metrics
+from app.core.errors import app_exception_handler, learning_memory_disabled_handler
+from app.core.learning_memory_gate import LearningMemoryDisabled
+from app.core.logging import logger, setup_logging
+from app.core.metrics import learning_memory_enabled, setup_metrics
 from app.core.middleware.request_id import RequestIDMiddleware
 from app.core.middleware.service_auth import ReplayGuard, SignedServiceRequestMiddleware
 from app.core.replay_guard import RedisReplayGuard
@@ -25,6 +26,10 @@ async def lifespan(app: FastAPI):
     # backend, and AI-owned tables come only from Alembic (docker/entrypoint.sh
     # runs `alembic upgrade head` before starting the app).
     setup_logging()
+
+    enabled = settings.learning_memory_enabled
+    learning_memory_enabled.set(1 if enabled else 0)
+    logger.info(f"Learning memory: {'enabled' if enabled else 'disabled by the production gate'}")
 
     yield
 
@@ -70,6 +75,7 @@ def create_app(replay_guard: ReplayGuard | None = None) -> FastAPI:
     setup_metrics(app)
 
     # Exception handlers
+    app.add_exception_handler(LearningMemoryDisabled, learning_memory_disabled_handler)
     app.add_exception_handler(Exception, app_exception_handler)
 
     # Routes

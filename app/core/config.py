@@ -6,6 +6,8 @@ from urllib.parse import urlparse, urlsplit, urlunparse
 from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.core.learning_memory_gate import memory_allowed
+
 # Where a missing, short or known service secret must stop startup (design A.1).
 STRICT_ENVIRONMENTS = frozenset({"staging", "production"})
 MIN_SERVICE_SECRET_BYTES = 32
@@ -144,6 +146,11 @@ class Settings(BaseSettings):
     EMBEDDING_THREADS: int = Field(default=4, ge=1, le=64)
     EMBEDDING_BATCH_SIZE: int = Field(default=32, ge=1, le=256)
 
+    # Learning memory, reads and writes (app/core/learning_memory_gate.py).
+    # Refused at startup while the production gate is closed, except in
+    # development and testing outside the production image.
+    LEARNING_MEMORY_ENABLED: bool = False
+
     LOG_LEVEL: str = "INFO"
 
     def __init__(self, **values):
@@ -238,6 +245,19 @@ class Settings(BaseSettings):
                 f"MODEL_PROVIDER=deterministic is refused when APP_ENVIRONMENT={self.APP_ENVIRONMENT}"
             )
         return self
+
+    @model_validator(mode="after")
+    def _validate_learning_memory(self) -> "Settings":
+        if self.LEARNING_MEMORY_ENABLED and not self.learning_memory_enabled:
+            raise ValueError(
+                "LEARNING_MEMORY_ENABLED is refused while the learning-memory production "
+                f"gate is closed (APP_ENVIRONMENT={self.APP_ENVIRONMENT})"
+            )
+        return self
+
+    @property
+    def learning_memory_enabled(self) -> bool:
+        return memory_allowed(self.LEARNING_MEMORY_ENABLED, self.APP_ENVIRONMENT)
 
     @property
     def backend_to_ai_verification_secrets(self) -> tuple[str, ...]:

@@ -1,3 +1,4 @@
+from app.core.learning_memory_gate import LearningMemoryDisabled
 from app.core.prompt_builder import PromptBuilder
 from app.services.ai.llm import LLMProvider
 from app.services.generation.structured_questions import StructuredQuestionGenerator
@@ -14,7 +15,11 @@ class AIOrchestrator:
         self.prompts = PromptBuilder()
 
     async def chat(self, user_id: str, question: str):
-        user_memory = await self.memory.get_user_memory(user_id)
+        try:
+            user_memory = await self.memory.get_user_memory(user_id)
+        except LearningMemoryDisabled:
+            # Expected while the gate is closed: chat continues without memory.
+            user_memory = []
 
         memory_items = []
         for memory in user_memory:
