@@ -140,7 +140,9 @@ CALLS = [
     ("get_user_memory", ("u1",), "read"),
     ("query", ("u1", ["secret-topic"]), "read"),
     ("record", ("u1", [("secret-topic", True)]), "write"),
-    ("update_mastery", ("u1", "secret-topic", 0.1), "write"),
+    ("revise_event", ("u1", "event-1", [("secret-topic", True)]), "write"),
+    ("delete_event", ("u1", "event-1"), "write"),
+    ("recompute", ("u1", "secret-topic"), "write"),
 ]
 CALL_IDS = [c[0] for c in CALLS]
 

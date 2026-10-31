@@ -161,16 +161,6 @@ async def test_memory_service_get_user_memory_and_update_mastery(monkeypatch):
     records = await memory_service.get_user_memory(user_id="u1")
     assert records == [dummy_record]
 
-    dummy_update_db = DummyAsyncSession(execute_result=DummyResult(scalar=None))
-    updated = await MemoryService(db=dummy_update_db).update_mastery(
-        user_id="u1", topic="math", delta=0.1
-    )
-
-    assert updated.tenant_id == "77"
-    assert updated.mastery_score == 0.1
-    assert updated.attempts == 1
-    assert dummy_update_db.committed is True
-
 
 def test_pdf_parser_raises_when_pymupdf_is_missing(monkeypatch):
     monkeypatch.setattr("app.services.ocr.pdf_parser.fitz", None)
