@@ -113,6 +113,62 @@ async def test_an_event_id_with_a_different_body_is_refused_and_changes_nothing(
     assert await snapshot(t, user) == before
 
 
+SOURCE = ("assessment_attempt", "attempt-1")
+
+
+async def test_an_unchanged_source_on_a_repeat_succeeds_and_changes_nothing(scope):
+    t, user = scope
+    await call(t, user, "record", [RIGHT], event_id="e1", source=SOURCE)
+    before = await snapshot(t, user)
+    await call(t, user, "record", [RIGHT], event_id="e1", source=SOURCE)
+    assert await snapshot(t, user) == before
+    assert await contributions(t, user) == 1
+
+
+@pytest.mark.parametrize(
+    "changed",
+    [
+        ("document", "attempt-1"),
+        ("assessment_attempt", "attempt-2"),
+        None,
+    ],
+    ids=["changed_kind", "changed_id", "removed"],
+)
+async def test_a_repeat_with_a_different_source_is_refused_and_changes_nothing(scope, changed):
+    t, user = scope
+    await call(t, user, "record", [RIGHT], event_id="e1", source=SOURCE)
+    before = await snapshot(t, user)
+    with pytest.raises(LearningMemoryEventConflict):
+        await call(t, user, "record", [RIGHT], event_id="e1", source=changed)
+    assert await snapshot(t, user) == before
+    assert await contributions(t, user) == 1
+
+
+async def test_a_repeat_cannot_add_a_source_the_event_did_not_have(scope):
+    t, user = scope
+    await call(t, user, "record", [RIGHT], event_id="e1")
+    with pytest.raises(LearningMemoryEventConflict):
+        await call(t, user, "record", [RIGHT], event_id="e1", source=SOURCE)
+
+
+@pytest.mark.parametrize("change", ["delete", "revise"])
+async def test_after_a_change_a_late_retry_still_needs_the_same_source(scope, change):
+    # The same retry changes nothing and succeeds; another source is refused.
+    t, user = scope
+    await call(t, user, "record", [RIGHT], event_id="e1", source=SOURCE)
+    if change == "delete":
+        await call(t, user, "delete_event", "e1")
+    else:
+        await call(t, user, "revise_event", "e1", [WRONG])
+    after = await snapshot(t, user)
+
+    await call(t, user, "record", [RIGHT], event_id="e1", source=SOURCE)
+    assert await snapshot(t, user) == after
+    with pytest.raises(LearningMemoryEventConflict):
+        await call(t, user, "record", [RIGHT], event_id="e1", source=("document", "d1"))
+    assert await snapshot(t, user) == after
+
+
 async def test_another_students_event_id_is_refused_and_writes_nothing(scope):
     t, user = scope
     other = str(uuid.uuid4())

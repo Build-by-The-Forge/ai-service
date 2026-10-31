@@ -100,7 +100,7 @@ class MemoryService:
         topics = sorted({topic for topic, _ in observations})
         event_row_id = await self._insert_event(tenant_id, user_id, event_id, source, now)
         if event_row_id is None:
-            await self._check_repeat(tenant_id, user_id, event_id or "", observations)
+            await self._check_repeat(tenant_id, user_id, event_id or "", observations, source)
             await self.db.commit()
             return await self.query(user_id, topics)
 
@@ -212,10 +212,15 @@ class MemoryService:
         return (await self.db.execute(statement)).scalar_one_or_none()
 
     async def _check_repeat(
-        self, tenant_id: str, user_id: str, event_id: str, observations: list[tuple[str, bool]]
+        self,
+        tenant_id: str,
+        user_id: str,
+        event_id: str,
+        observations: list[tuple[str, bool]],
+        source: tuple[str, str] | None,
     ) -> None:
-        """A repeat must be the same event. Another student's or a different
-        body is a caller's bug, and silently dropping it would lose data."""
+        """A repeat must be the same event. Another student's, another source or
+        a different body is a caller's bug, and silently dropping it would lose data."""
         event = (
             await self.db.execute(
                 select(LearningMemoryEvent).where(
@@ -225,6 +230,10 @@ class MemoryService:
             )
         ).scalar_one()
         if event.user_id != user_id:
+            raise LearningMemoryEventConflict
+        # What the event came from never changes, even after a revision or delete.
+        stored_source = (event.source_kind, event.source_id) if event.source_kind else None
+        if stored_source != source:
             raise LearningMemoryEventConflict
         if event.changed_at is not None:
             return  # deliberately changed since: the retry has nothing to say
