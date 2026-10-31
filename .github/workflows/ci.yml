@@ -7,6 +7,28 @@ on:
     branches: [ main ]
 
 jobs:
+  # The learning-memory gate on real images: only the production stage has
+  # the marker, so no unit test can prove a misconfigured image refuses.
+  production-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+
+      # No --target: what a plain build produces must be the production stage.
+      - name: Build the default stage
+        run: docker build --secret id=github_token,env=GITHUB_TOKEN -t build-ai-default .
+
+      - name: Build the app stage
+        run: docker build --secret id=github_token,env=GITHUB_TOKEN --target app -t build-ai-app .
+
+      - name: Check the learning-memory gate
+        run: scripts/check_memory_gate_image.sh build-ai-default build-ai-app
+
   test:
     runs-on: ubuntu-latest
     services:
