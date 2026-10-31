@@ -12,8 +12,12 @@ import uuid
 import pytest
 
 from app.core import tenant
+from app.core.config import settings
+from app.core.learning_memory_gate import LearningMemoryDisabled
 from app.db.session import get_async_session_local, initialize_database, reset_engine
+from app.services.ai.orchestrator import AIOrchestrator
 from app.services.memory.memory_service import MemoryService
+from app.services.rag.evidence import Evidence, Passage
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("DATABASE_URL", "").startswith("postgresql"), reason="needs PostgreSQL"
@@ -74,3 +78,51 @@ async def test_concurrent_upserts_keep_one_row_and_every_attempt(scope):
     assert len(rows) == 1
     assert rows[0].attempts == 10
     assert rows[0].mastery_score == pytest.approx(1.0)
+
+
+class RecordingLLM:
+    def __init__(self):
+        self.prompts = []
+
+    async def generate(self, prompt):
+        self.prompts.append(prompt)
+        return "Water moves [1]."
+
+
+class OnePassage:
+    async def evidence(self, query):
+        passage = Passage(
+            number=1, text="Osmosis.", chunk_id="c1", document_id="d1", page_start=1, page_end=1
+        )
+        return Evidence(query=query, passages=(passage,))
+
+
+async def test_stored_memories_are_unreachable_while_the_gate_is_closed(scope, monkeypatch):
+    t, user = scope
+    marker = f"stored-{uuid.uuid4().hex[:8]}"
+    await record(t, user, [(marker, True)])
+
+    monkeypatch.setattr(settings, "LEARNING_MEMORY_ENABLED", False)
+    tenant.set_request_scope(t, user)
+    async with get_async_session_local()() as db:
+        service = MemoryService(db)
+        with pytest.raises(LearningMemoryDisabled):
+            await service.query(user, [marker])
+        with pytest.raises(LearningMemoryDisabled):
+            await service.get_user_memory(user)
+        with pytest.raises(LearningMemoryDisabled):
+            await service.record(user, [(marker, True)])
+        with pytest.raises(LearningMemoryDisabled):
+            await service.update_mastery(user, marker, 0.1)
+
+        llm = RecordingLLM()
+        chat = await AIOrchestrator(llm=llm, retriever=OnePassage(), memory=service).chat(user, "q")
+    assert chat["memory_used"] == ""
+    assert chat["grounded"] is True
+    assert marker not in llm.prompts[0]
+
+    # The rows are kept, unchanged: the refused write above changed nothing.
+    monkeypatch.setattr(settings, "LEARNING_MEMORY_ENABLED", True)
+    [row] = await query(t, user, [marker])
+    assert row.attempts == 1
+    assert row.mastery_score == pytest.approx(0.6)

@@ -12,9 +12,11 @@ import pytest
 from httpx import ASGITransport, AsyncClient
 
 from app.api.v1.ai.memory import get_memory_service
+from app.core.config import settings
 from app.core.replay_guard import RedisReplayGuard
 from app.core.tenant import get_tenant_id
 from app.main import create_app
+from app.services.memory.memory_service import MemoryService
 from tests.signing import TENANT_A, USER_ID, signed_headers, user_context
 
 REDIS_URL = os.getenv("TEST_REDIS_URL")
@@ -55,6 +57,49 @@ async def post(app, path, body: dict, *permissions):
     headers = signed_headers(raw, target=path, context=user_context(permissions=permissions))
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://ai") as http:
         return await http.post(path, content=raw, headers=headers)
+
+
+class RefusingSession:
+    def __getattr__(self, name):
+        raise AssertionError(f"the database was used: {name}")
+
+
+@pytest.fixture
+async def closed_app(monkeypatch):
+    # The real MemoryService, not the recorder: it is what refuses.
+    monkeypatch.setattr(settings, "LEARNING_MEMORY_ENABLED", False)
+    guard = RedisReplayGuard.connect(REDIS_URL, timeout=2.0)
+    app = create_app(replay_guard=guard)
+    app.dependency_overrides[get_memory_service] = lambda: MemoryService(RefusingSession())
+    yield app
+    await guard.close()
+
+
+@pytest.mark.parametrize(
+    "path,body,permission",
+    [
+        (QUERY, {"topics": ["secret-topic"]}, "ai.use"),
+        (
+            UPSERT,
+            {"observations": [{"topic": "secret-topic", "correct": True}]},
+            "assessment.attempt.submit",
+        ),
+    ],
+)
+async def test_a_closed_gate_answers_503_with_no_memory_content(closed_app, path, body, permission):
+    response = await post(closed_app, path, body, permission)
+    assert response.status_code == 503, response.text
+    assert response.json() == {
+        "success": False,
+        "message": "Learning memory is unavailable",
+        "data": {},
+    }
+
+
+async def test_a_closed_gate_does_not_replace_authorization(closed_app):
+    assert (await post(closed_app, QUERY, {}, "assessment.attempt.submit")).status_code == 403
+    async with AsyncClient(transport=ASGITransport(app=closed_app), base_url="http://ai") as http:
+        assert (await http.post(QUERY, json={})).status_code == 401
 
 
 async def test_query_reads_the_signed_users_memory(app):
