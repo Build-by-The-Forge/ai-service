@@ -30,6 +30,10 @@ class LearningMemoryEventConflict(Exception):
     """An event ID came back with another student or a different body."""
 
 
+class LearningMemoryHistoryIncomplete(Exception):
+    """A topic's row predates contributions, so it can't be rebuilt from them."""
+
+
 def fold_mastery(outcomes: list[bool]) -> float:
     """The aggregate's value for these outcomes, in order. Clamping depends on
     order, so a recompute must apply them in the order they were recorded."""
@@ -112,6 +116,8 @@ class MemoryService:
                 mastery_score=min(1.0, max(0.0, INITIAL_MASTERY + delta)),
                 attempts=1,
                 last_interaction=stamp,
+                # Not in the update below: a legacy row stays incomplete.
+                history_complete=True,
             )
             statement = statement.on_conflict_do_update(
                 constraint="uq_learning_memory_tenant_user_topic",
@@ -269,6 +275,19 @@ class MemoryService:
         await self.db.flush()
 
     async def _recompute(self, tenant_id: str, user_id: str, topics: set[str]) -> None:
+        # Before any change, so a refusal leaves every topic as it was. The
+        # caller's uncommitted work rolls back with the session.
+        incomplete = await self.db.execute(
+            select(LearningMemory.topic).where(
+                LearningMemory.tenant_id == tenant_id,
+                LearningMemory.user_id == user_id,
+                LearningMemory.topic.in_(topics),
+                LearningMemory.history_complete.is_(False),
+            )
+        )
+        if incomplete.first() is not None:
+            await self.db.rollback()
+            raise LearningMemoryHistoryIncomplete
         for topic in topics:
             rows = (
                 await self.db.execute(
@@ -303,6 +322,7 @@ class MemoryService:
                 mastery_score=mastery,
                 attempts=len(rows),
                 last_interaction=stamp,
+                history_complete=True,
             )
             await self.db.execute(
                 statement.on_conflict_do_update(

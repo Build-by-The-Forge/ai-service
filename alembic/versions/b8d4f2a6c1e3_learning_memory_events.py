@@ -1,9 +1,9 @@
 """learning_memory_events and learning_memory_contributions
 
 One row per reported event, and one per observation, so a repeat changes
-nothing and the aggregate can be recomputed. Existing learning_memory rows get
-no contributions: nothing has been written in production, since the memory gate
-keeps writes off there, and a recompute must not be run on rows from before this.
+nothing and the aggregate can be recomputed. Existing learning_memory rows have
+no source events to rebuild from, and no history is manufactured: they're marked
+history_complete = false, and a recompute refuses them.
 
 Revision ID: b8d4f2a6c1e3
 Revises: f1a3c6e8b2d5
@@ -22,6 +22,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    # The server default marks every existing row; new rows set true themselves.
+    op.add_column(
+        "learning_memory",
+        sa.Column("history_complete", sa.Boolean(), nullable=False, server_default=sa.false()),
+    )
     op.create_table(
         "learning_memory_events",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -64,3 +69,4 @@ def upgrade() -> None:
 def downgrade() -> None:
     op.drop_table("learning_memory_contributions")
     op.drop_table("learning_memory_events")
+    op.drop_column("learning_memory", "history_complete")

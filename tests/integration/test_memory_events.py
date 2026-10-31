@@ -10,10 +10,15 @@ import pytest
 from sqlalchemy import func, select
 
 from app.core import tenant
-from app.db.models.learning_memory import LearningMemoryContribution, LearningMemoryEvent
+from app.db.models.learning_memory import (
+    LearningMemory,
+    LearningMemoryContribution,
+    LearningMemoryEvent,
+)
 from app.db.session import get_async_session_local, initialize_database, reset_engine
 from app.services.memory.memory_service import (
     LearningMemoryEventConflict,
+    LearningMemoryHistoryIncomplete,
     MemoryService,
     fold_mastery,
 )
@@ -264,3 +269,178 @@ async def test_changing_another_students_event_is_refused(scope):
     with pytest.raises(LookupError):
         await call(t, other, "revise_event", "e1", [WRONG])
     assert (await snapshot(t, user))[0][2] == 1
+
+
+# --- the per-student lock, with the interleaving forced ---------------------------------
+
+
+class PausesBeforeTheAggregate(MemoryService):
+    """Holds a record after its event and contributions, before the aggregate."""
+
+    def __init__(self, db, inserted: asyncio.Event, resume: asyncio.Event) -> None:
+        super().__init__(db)
+        self.inserted, self.resume = inserted, resume
+
+    async def _add_contributions(self, *args, **kwargs):
+        await super()._add_contributions(*args, **kwargs)
+        self.inserted.set()
+        await self.resume.wait()
+
+
+class PausesWithoutTheLock(PausesBeforeTheAggregate):
+    async def _lock_student(self, tenant_id, user_id):
+        return None
+
+
+class NoLock(MemoryService):
+    async def _lock_student(self, tenant_id, user_id):
+        return None
+
+
+async def _first_wrong_then_right(t, user, slow_class, fast_class):
+    """Mastery starts at the ceiling. The slow record (wrong) takes the earlier
+    contribution number and pauses; the fast one (right) then runs. Clamping
+    makes order matter: wrong then right ends at 1.0, right then wrong at 0.95."""
+    for index in range(6):
+        await call(t, user, "record", [RIGHT], event_id=f"seed{index}")
+    assert (await snapshot(t, user))[0][1] == 1.0
+    inserted, resume = asyncio.Event(), asyncio.Event()
+
+    async def slow():
+        tenant.set_request_scope(t, user)
+        async with get_async_session_local()() as db:
+            await slow_class(db, inserted, resume).record(user, [WRONG], event_id="slow")
+
+    async def fast():
+        await inserted.wait()
+        tenant.set_request_scope(t, user)
+        async with get_async_session_local()() as db:
+            await fast_class(db).record(user, [RIGHT], event_id="fast")
+
+    slow_task, fast_task = asyncio.create_task(slow()), asyncio.create_task(fast())
+    await inserted.wait()
+    done, _ = await asyncio.wait({fast_task}, timeout=1.0)
+    finished_while_paused = bool(done)
+    resume.set()
+    await asyncio.gather(slow_task, fast_task)
+    return finished_while_paused
+
+
+async def _history(t, user):
+    """The outcomes in contribution order: what a recompute would fold."""
+    async with get_async_session_local()() as db:
+        rows = await db.execute(
+            select(LearningMemoryContribution.correct)
+            .where(
+                LearningMemoryContribution.tenant_id == t,
+                LearningMemoryContribution.user_id == user,
+            )
+            .order_by(LearningMemoryContribution.event_row_id, LearningMemoryContribution.position)
+        )
+        return list(rows.scalars().all())
+
+
+async def test_with_the_lock_memory_matches_its_ordered_history(scope):
+    t, user = scope
+
+    finished_while_paused = await _first_wrong_then_right(
+        t, user, PausesBeforeTheAggregate, MemoryService
+    )
+
+    assert finished_while_paused is False  # the second record waited
+    running = await snapshot(t, user)
+    assert running == [("algebra", round(fold_mastery(await _history(t, user)), 6), 8)]
+    assert running[0][1] == 1.0
+    await call(t, user, "recompute", "algebra")
+    assert await snapshot(t, user) == running
+
+
+async def test_without_the_lock_memory_disagrees_with_its_ordered_history(scope):
+    # The failure the lock rules out: the two applied in the opposite order to
+    # their contribution numbers, so a recompute changes the student's mastery.
+    t, user = scope
+
+    finished_while_paused = await _first_wrong_then_right(t, user, PausesWithoutTheLock, NoLock)
+
+    assert finished_while_paused is True
+    running = await snapshot(t, user)
+    assert running[0][1] == 0.95
+    assert fold_mastery(await _history(t, user)) == pytest.approx(1.0)
+    await call(t, user, "recompute", "algebra")
+    assert (await snapshot(t, user))[0][1] == 1.0
+
+
+# --- memory from before contributions existed -------------------------------------------
+
+
+async def _legacy_row(t, user, topic="algebra"):
+    tenant.set_request_scope(t, user)
+    async with get_async_session_local()() as db:
+        db.add(
+            LearningMemory(
+                tenant_id=t,
+                user_id=user,
+                topic=topic,
+                mastery_score=0.8,
+                attempts=7,
+                last_interaction="2026-01-01T00:00:00+00:00",
+                history_complete=False,
+            )
+        )
+        await db.commit()
+
+
+async def test_recomputing_a_legacy_row_is_refused_and_keeps_it(scope):
+    t, user = scope
+    await _legacy_row(t, user)
+    with pytest.raises(LearningMemoryHistoryIncomplete):
+        await call(t, user, "recompute", "algebra")
+    assert await snapshot(t, user) == [("algebra", 0.8, 7)]
+
+
+async def test_a_new_event_on_a_legacy_row_applies_and_it_stays_incomplete(scope):
+    # Its history is still missing, however much is added to it.
+    t, user = scope
+    await _legacy_row(t, user)
+    await call(t, user, "record", [RIGHT], event_id="e1")
+    assert await snapshot(t, user) == [("algebra", 0.9, 8)]
+    assert await contributions(t, user) == 1
+    with pytest.raises(LearningMemoryHistoryIncomplete):
+        await call(t, user, "recompute", "algebra")
+    assert await snapshot(t, user) == [("algebra", 0.9, 8)]
+
+
+@pytest.mark.parametrize(
+    "method,args",
+    [("delete_event", ("e1",)), ("revise_event", ("e1", [WRONG]))],
+    ids=["delete", "revise"],
+)
+async def test_changing_an_event_on_a_legacy_row_is_refused_and_changes_nothing(
+    scope, method, args
+):
+    t, user = scope
+    await _legacy_row(t, user)
+    await call(t, user, "record", [RIGHT], event_id="e1")
+
+    with pytest.raises(LearningMemoryHistoryIncomplete):
+        await call(t, user, method, *args)
+
+    assert await snapshot(t, user) == [("algebra", 0.9, 8)]
+    assert await contributions(t, user) == 1
+    # It wasn't recorded as changed either, so a repeat is still just a repeat.
+    await call(t, user, "record", [RIGHT], event_id="e1")
+    assert await snapshot(t, user) == [("algebra", 0.9, 8)]
+
+
+async def test_a_legacy_row_does_not_stop_other_topics_recomputing(scope):
+    t, user = scope
+    await _legacy_row(t, user)
+    await call(t, user, "record", [("cells", True)], event_id="e1")
+    await call(t, user, "recompute", "cells")
+    assert (await snapshot(t, user, "cells"))[0][2] == 1
+
+
+async def test_rows_written_now_are_marked_complete(scope):
+    t, user = scope
+    [row] = await call(t, user, "record", [RIGHT], event_id="e1")
+    assert row.history_complete is True

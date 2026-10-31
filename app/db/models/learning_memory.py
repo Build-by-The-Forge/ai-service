@@ -1,6 +1,15 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    UniqueConstraint,
+    false,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
@@ -25,6 +34,9 @@ class LearningMemory(Base):
     mastery_score: Mapped[float] = mapped_column(Float, default=0.0)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     last_interaction: Mapped[str] = mapped_column(String(50))
+    # False for a row from before contributions existed. Its history is gone and
+    # is never manufactured, so it can't be recomputed: a recompute would lose it.
+    history_complete: Mapped[bool] = mapped_column(Boolean, default=True, server_default=false())
 
 
 class LearningMemoryEvent(Base):
