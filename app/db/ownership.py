@@ -10,7 +10,14 @@ any backend table it reflects from the shared database.
 from typing import Any
 
 AI_OWNED_TABLES = frozenset(
-    {"document_chunks", "ingestion_fences", "learning_memory", "session_memory"}
+    {
+        "document_chunks",
+        "ingestion_fences",
+        "learning_memory",
+        "learning_memory_contributions",
+        "learning_memory_events",
+        "session_memory",
+    }
 )
 
 

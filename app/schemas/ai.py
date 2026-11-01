@@ -68,8 +68,16 @@ class MemoryObservation(SignedAIRequest):
     correct: bool
 
 
+class MemorySource(SignedAIRequest):
+    kind: str = Field(min_length=1, max_length=50)
+    id: str = Field(min_length=1, max_length=255)
+
+
 class MemoryUpsertRequest(SignedAIRequest):
     observations: list[MemoryObservation] = Field(min_length=1, max_length=MAX_MEMORY_OBSERVATIONS)
+    # With an ID, a repeat changes nothing. Without one, each call counts.
+    event_id: str | None = Field(default=None, min_length=1, max_length=255)
+    source: MemorySource | None = None
 
 
 # --- Responses (M5): the `data` of each route, so OpenAPI is the contract --------------

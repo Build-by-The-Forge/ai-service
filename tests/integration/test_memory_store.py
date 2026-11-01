@@ -113,7 +113,9 @@ async def test_stored_memories_are_unreachable_while_the_gate_is_closed(scope, m
         with pytest.raises(LearningMemoryDisabled):
             await service.record(user, [(marker, True)])
         with pytest.raises(LearningMemoryDisabled):
-            await service.update_mastery(user, marker, 0.1)
+            await service.revise_event(user, "event", [(marker, True)])
+        with pytest.raises(LearningMemoryDisabled):
+            await service.delete_event(user, "event")
 
         llm = RecordingLLM()
         chat = await AIOrchestrator(llm=llm, retriever=OnePassage(), memory=service).chat(user, "q")

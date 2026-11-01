@@ -6,7 +6,7 @@ either. The backend reports graded outcomes after an attempt is submitted
 mastery (ai.use).
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 from app.core.service_call import signed_user_call_with
 from app.core.service_signature_v1 import VerifiedCall
@@ -19,7 +19,7 @@ from app.schemas.ai import (
     MemoryUpsertRequest,
 )
 from app.services.ai.dependencies import get_db_session
-from app.services.memory.memory_service import MemoryService
+from app.services.memory.memory_service import LearningMemoryEventConflict, MemoryService
 
 router = APIRouter()
 
@@ -55,7 +55,15 @@ async def record_memory(
     call: VerifiedCall = Depends(signed_user_call_with(MEMORY_RECORD_PERMISSION)),
     memory: MemoryService = Depends(get_memory_service),
 ) -> MemoryResponse:
-    rows = await memory.record(
-        call.context.user_id or "", [(o.topic, o.correct) for o in body.observations]
-    )
+    try:
+        rows = await memory.record(
+            call.context.user_id or "",
+            [(o.topic, o.correct) for o in body.observations],
+            event_id=body.event_id,
+            source=(body.source.kind, body.source.id) if body.source else None,
+        )
+    except LearningMemoryEventConflict as exc:
+        raise HTTPException(
+            status_code=409, detail="event_id was already used differently"
+        ) from exc
     return MemoryResponse(data=_data(rows), message="Memory updated")

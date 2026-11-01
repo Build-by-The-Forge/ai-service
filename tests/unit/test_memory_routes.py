@@ -16,7 +16,7 @@ from app.core.config import settings
 from app.core.replay_guard import RedisReplayGuard
 from app.core.tenant import get_tenant_id
 from app.main import create_app
-from app.services.memory.memory_service import MemoryService
+from app.services.memory.memory_service import LearningMemoryEventConflict, MemoryService
 from tests.signing import TENANT_A, USER_ID, signed_headers, user_context
 
 REDIS_URL = os.getenv("TEST_REDIS_URL")
@@ -36,8 +36,9 @@ class RecordingMemory:
         self.calls.append(("query", get_tenant_id(), user_id, topics))
         return [self._row(t) for t in topics or ["algebra"]]
 
-    async def record(self, user_id, observations):
+    async def record(self, user_id, observations, *, event_id=None, source=None):
         self.calls.append(("record", get_tenant_id(), user_id, observations))
+        self.event = (event_id, source)
         return [self._row(t) for t, _ in observations]
 
 
@@ -100,6 +101,27 @@ async def test_a_closed_gate_does_not_replace_authorization(closed_app):
     assert (await post(closed_app, QUERY, {}, "assessment.attempt.submit")).status_code == 403
     async with AsyncClient(transport=ASGITransport(app=closed_app), base_url="http://ai") as http:
         assert (await http.post(QUERY, json={})).status_code == 401
+
+
+async def test_upsert_passes_the_event_and_its_source(app):
+    body = {
+        "observations": [{"topic": "algebra", "correct": True}],
+        "event_id": "event-1",
+        "source": {"kind": "assessment_attempt", "id": "attempt-1"},
+    }
+    response = await post(app, UPSERT, body, "assessment.attempt.submit")
+    assert response.status_code == 200, response.text
+    assert app.state.memory.event == ("event-1", ("assessment_attempt", "attempt-1"))
+
+
+async def test_an_event_id_used_differently_answers_409(app):
+    class Conflicting:
+        async def record(self, *args, **kwargs):
+            raise LearningMemoryEventConflict
+
+    app.dependency_overrides[get_memory_service] = Conflicting
+    body = {"observations": [{"topic": "algebra", "correct": True}], "event_id": "event-1"}
+    assert (await post(app, UPSERT, body, "assessment.attempt.submit")).status_code == 409
 
 
 async def test_query_reads_the_signed_users_memory(app):
