@@ -35,6 +35,7 @@ def upgrade() -> None:
         sa.Column("event_id", sa.String(255), nullable=False),
         sa.Column("source_kind", sa.String(50), nullable=True),
         sa.Column("source_id", sa.String(255), nullable=True),
+        sa.Column("payload_fingerprint", sa.String(64), nullable=False),
         sa.Column("received_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("changed_at", sa.DateTime(timezone=True), nullable=True),
         sa.UniqueConstraint("tenant_id", "event_id", name="uq_learning_memory_events_tenant_event"),

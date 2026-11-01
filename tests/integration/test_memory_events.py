@@ -20,6 +20,7 @@ from app.services.memory.memory_service import (
     LearningMemoryEventConflict,
     LearningMemoryHistoryIncomplete,
     MemoryService,
+    event_fingerprint,
     fold_mastery,
 )
 
@@ -167,6 +168,62 @@ async def test_after_a_change_a_late_retry_still_needs_the_same_source(scope, ch
     with pytest.raises(LearningMemoryEventConflict):
         await call(t, user, "record", [RIGHT], event_id="e1", source=("document", "d1"))
     assert await snapshot(t, user) == after
+
+
+@pytest.mark.parametrize("change", ["delete", "revise"])
+async def test_after_a_change_a_late_retry_still_needs_the_original_body(scope, change):
+    t, user = scope
+    await call(t, user, "record", [RIGHT], event_id="e1", source=SOURCE)
+    if change == "delete":
+        await call(t, user, "delete_event", "e1")
+    else:
+        await call(t, user, "revise_event", "e1", [WRONG])
+    after = await snapshot(t, user)
+
+    # WRONG is also what a revision stored: the original report is what counts.
+    for body in ([WRONG], [("geometry", True)], [RIGHT, RIGHT], []):
+        with pytest.raises(LearningMemoryEventConflict):
+            await call(t, user, "record", body, event_id="e1", source=SOURCE)
+    assert await snapshot(t, user) == after
+
+    await call(t, user, "record", [RIGHT], event_id="e1", source=SOURCE)
+    assert await snapshot(t, user) == after
+
+
+async def test_a_repeat_in_another_order_is_refused(scope):
+    # Clamping depends on order, so the order is part of the event.
+    t, user = scope
+    await call(t, user, "record", [RIGHT, WRONG], event_id="e1")
+    with pytest.raises(LearningMemoryEventConflict):
+        await call(t, user, "record", [WRONG, RIGHT], event_id="e1")
+
+
+@pytest.mark.parametrize("change", ["delete", "revise"])
+async def test_changing_an_event_leaves_its_fingerprint_as_first_reported(scope, change):
+    t, user = scope
+    await call(t, user, "record", [RIGHT], event_id="e1", source=SOURCE)
+    if change == "delete":
+        await call(t, user, "delete_event", "e1")
+    else:
+        await call(t, user, "revise_event", "e1", [WRONG])
+    async with get_async_session_local()() as db:
+        event = (
+            await db.execute(select(LearningMemoryEvent).where(LearningMemoryEvent.tenant_id == t))
+        ).scalar_one()
+    assert event.payload_fingerprint == event_fingerprint(t, "e1", [RIGHT], SOURCE)
+
+
+async def test_two_events_with_one_body_have_different_fingerprints(scope):
+    t, user = scope
+    await call(t, user, "record", [RIGHT], event_id="e1")
+    await call(t, user, "record", [RIGHT], event_id="e2")
+    async with get_async_session_local()() as db:
+        rows = await db.execute(
+            select(LearningMemoryEvent.payload_fingerprint).where(
+                LearningMemoryEvent.tenant_id == t
+            )
+        )
+    assert len(set(rows.scalars().all())) == 2
 
 
 async def test_another_students_event_id_is_refused_and_writes_nothing(scope):

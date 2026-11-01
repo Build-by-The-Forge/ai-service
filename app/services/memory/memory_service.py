@@ -1,3 +1,5 @@
+import hashlib
+import json
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -42,6 +44,22 @@ def fold_mastery(outcomes: list[bool]) -> float:
     for correct in outcomes:
         mastery = min(1.0, max(0.0, mastery + reward.calculate(correct)))
     return mastery
+
+
+def event_fingerprint(
+    tenant_id: str,
+    event_id: str,
+    observations: list[tuple[str, bool]],
+    source: tuple[str, str] | None,
+) -> str:
+    """What identifies an event as first reported, order included. Contributions
+    change on purpose, so they can't answer that after a revision or delete. The
+    tenant and event ID keep two events with the same body from sharing a value."""
+    canonical = json.dumps(
+        [tenant_id, event_id, [list(item) for item in observations], source],
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 def _require_gate_open(operation: str) -> None:
@@ -98,7 +116,9 @@ class MemoryService:
         await self._lock_student(tenant_id, user_id)
         now = datetime.now(UTC)
         topics = sorted({topic for topic, _ in observations})
-        event_row_id = await self._insert_event(tenant_id, user_id, event_id, source, now)
+        event_row_id = await self._insert_event(
+            tenant_id, user_id, event_id, observations, source, now
+        )
         if event_row_id is None:
             await self._check_repeat(tenant_id, user_id, event_id or "", observations, source)
             await self.db.commit()
@@ -192,18 +212,23 @@ class MemoryService:
         tenant_id: str,
         user_id: str,
         event_id: str | None,
+        observations: list[tuple[str, bool]],
         source: tuple[str, str] | None,
         now: datetime,
     ) -> int | None:
         """The new row's id, or None if this event was already reported."""
+        row_event_id = event_id or f"unidentified-{uuid4()}"
         statement = (
             insert(LearningMemoryEvent)
             .values(
                 tenant_id=tenant_id,
                 user_id=user_id,
-                event_id=event_id or f"unidentified-{uuid4()}",
+                event_id=row_event_id,
                 source_kind=source[0] if source else None,
                 source_id=source[1] if source else None,
+                payload_fingerprint=event_fingerprint(
+                    tenant_id, row_event_id, observations, source
+                ),
                 received_at=now,
             )
             .on_conflict_do_nothing(constraint="uq_learning_memory_events_tenant_event")
@@ -235,14 +260,10 @@ class MemoryService:
         stored_source = (event.source_kind, event.source_id) if event.source_kind else None
         if stored_source != source:
             raise LearningMemoryEventConflict
-        if event.changed_at is not None:
-            return  # deliberately changed since: the retry has nothing to say
-        stored = await self.db.execute(
-            select(LearningMemoryContribution.topic, LearningMemoryContribution.correct)
-            .where(LearningMemoryContribution.event_row_id == event.id)
-            .order_by(LearningMemoryContribution.position)
-        )
-        if [tuple(row) for row in stored.all()] != list(observations):
+        # Against the original report, so this holds after a revision or delete too.
+        if event.payload_fingerprint != event_fingerprint(
+            tenant_id, event_id, observations, source
+        ):
             raise LearningMemoryEventConflict
 
     async def _event(self, tenant_id: str, user_id: str, event_id: str) -> LearningMemoryEvent:

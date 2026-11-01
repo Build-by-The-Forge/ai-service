@@ -42,7 +42,8 @@ class LearningMemory(Base):
 class LearningMemoryEvent(Base):
     """One reported event, kept as long as the memory it fed. It's what makes a
     repeat a no-op, so it survives its contributions being deleted or revised:
-    a late retry must not bring them back. Holds IDs only, no answers or documents.
+    a late retry must not bring them back. Holds IDs and a fingerprint, no answers
+    or documents.
     """
 
     __tablename__ = "learning_memory_events"
@@ -57,6 +58,8 @@ class LearningMemoryEvent(Base):
     # Generic, so document sources can be added later without a redesign.
     source_kind: Mapped[str | None] = mapped_column(String(50), nullable=True)
     source_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # SHA-256 of the event as first reported. Written once, never updated.
+    payload_fingerprint: Mapped[str] = mapped_column(String(64))
     received_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     # Set once its contributions are changed or removed on purpose.
     changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
