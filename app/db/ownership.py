@@ -11,6 +11,7 @@ from typing import Any
 
 AI_OWNED_TABLES = frozenset(
     {
+        "asset_scopes",
         "document_chunks",
         "ingestion_fences",
         "learning_memory",
