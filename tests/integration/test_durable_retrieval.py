@@ -85,3 +85,30 @@ async def test_sources_used_names_the_run_and_attempt_that_were_retrieved(durabl
     finally:
         tenant.clear_request_scope()
     assert found.sources_used == evidence.sources_used == (SourceUsed(asset, 3, 2),)
+
+
+async def test_a_citation_names_the_run_and_attempt_whose_chunk_it_quotes(durable):
+    from app.services.rag.evidence import check_grounded
+
+    index, embedder, engine = durable
+    owner = str(uuid.uuid4())
+    asset = f"asset-{uuid.uuid4().hex[:12]}"
+    await index.raise_fence(tenant_id=owner, asset_id=asset, run_number=4, attempt=2)
+    await index.replace_asset(
+        tenant_id=owner,
+        asset_id=asset,
+        run_number=4,
+        attempt=2,
+        chunks=[Chunk(chunk_id(owner, asset, 4, 0), 0, TEXT, 6, 6)],
+        embeddings=[await embedder.embed_text(TEXT)],
+        embedding_model="mock",
+    )
+    await stored_scope(owner, asset)
+    tenant.set_request_scope(owner)
+    try:
+        evidence = await RetrievalService(engine).evidence("charge of the electron", frozenset())
+    finally:
+        tenant.clear_request_scope()
+    [citation] = check_grounded("Millikan measured it [1].", evidence).citations
+    assert (citation["document_id"], citation["run_number"], citation["attempt"]) == (asset, 4, 2)
+    assert citation["excerpt"] == TEXT and citation["page_start"] == 6

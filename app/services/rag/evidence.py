@@ -62,6 +62,11 @@ class Passage:
             "document_id": self.document_id,
             "page_start": self.page_start,
             "page_end": self.page_end,
+            # The cited passage itself, so a stored citation can show what it
+            # quoted without retrieving again (M3-F).
+            "excerpt": self.text,
+            "run_number": self.run_number,
+            "attempt": self.attempt,
         }
 
 

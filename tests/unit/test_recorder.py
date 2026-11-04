@@ -109,3 +109,17 @@ def test_a_passage_of_another_run_or_attempt_than_recorded_is_refused():
     with pytest.raises(UnrecordedPassageError):
         Evidence("q", (passage,), (SourceUsed("asset-x", 1, 1),))
     assert Evidence("q", (passage,), (SourceUsed("asset-x", 2, 1),)).passages == (passage,)
+
+
+def test_a_citation_carries_its_excerpt_and_document_version():
+    passage = Passage(3, "Osmosis moves water.", "c9", "asset-x", 4, 5, run_number=2, attempt=3)
+    assert passage.citation() == {
+        "number": 3,
+        "chunk_id": "c9",
+        "document_id": "asset-x",
+        "page_start": 4,
+        "page_end": 5,
+        "excerpt": "Osmosis moves water.",
+        "run_number": 2,
+        "attempt": 3,
+    }
