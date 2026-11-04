@@ -152,3 +152,57 @@ async def test_a_denied_document_is_excluded_whatever_its_scope(store):
         assert [c.document_id for c, _ in dense] == [kept]
         assert [c.document_id for c, _ in sparse] == [kept]
     assert await found(store, tenant) == {kept, denied}  # nothing changed in the index
+
+
+async def test_an_unassigned_document_that_would_rank_first_is_excluded(store):
+    # The unassigned document is an exact match on both sides; the eligible
+    # one is not. Only the eligible one may come back.
+    tenant = str(uuid.uuid4())
+    eligible, unassigned = asset(), asset()
+    await index(store, tenant, eligible, text="Charge flows in circuits.", vector=unit(7))
+    await stored_scope(tenant, eligible, "institutional")
+    await index(store, tenant, unassigned, text="charge junction charge junction", vector=unit(0))
+    filter = RetrievalFilter(tenant_id=tenant, denied_assets=frozenset())
+    dense = await store.query_dense(unit(0), filter, top_k=1)
+    sparse = await store.query_sparse("charge junction", filter, top_k=1)
+    assert [c.document_id for c, _ in dense] == [eligible]
+    assert [c.document_id for c, _ in sparse] == [eligible]
+
+
+async def test_the_scope_filter_denial_and_limit_run_in_the_database(store):
+    # The statements sent carry the scope join, the denial list and the
+    # caller's limit, and the store returns exactly the rows the database
+    # returned: nothing is fetched wide and filtered in Python.
+    from sqlalchemy import event
+
+    from app.db import session as db_session
+
+    tenant = str(uuid.uuid4())
+    documents = [asset() for _ in range(4)]
+    for document in documents:
+        await index(store, tenant, document)
+        await stored_scope(tenant, document, "institutional")
+    denied = documents[0]
+    sent: list[tuple[str, object]] = []
+
+    def capture(conn, cursor, statement, parameters, context, executemany):
+        if "document_chunks" in statement and "SET LOCAL" not in statement:
+            sent.append((statement, parameters))
+
+    engine = db_session.engine.sync_engine
+    event.listen(engine, "before_cursor_execute", capture)
+    try:
+        filter = RetrievalFilter(tenant_id=tenant, denied_assets=frozenset({denied}))
+        dense = await store.query_dense(unit(0), filter, top_k=2)
+        sparse = await store.query_sparse("charge junction", filter, top_k=2)
+    finally:
+        event.remove(engine, "before_cursor_execute", capture)
+
+    assert len(sent) == 2, sent
+    for statement, parameters in sent:
+        assert "JOIN asset_scopes" in statement, statement
+        assert "LIMIT" in statement, statement
+        flat = repr(parameters)
+        assert denied in flat and "institutional" in flat, flat
+    assert len(dense) == 2 and len(sparse) == 2
+    assert denied not in {c.document_id for c, _ in dense} | {c.document_id for c, _ in sparse}

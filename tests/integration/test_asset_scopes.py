@@ -109,3 +109,71 @@ async def test_the_table_refuses_a_scope_or_version_outside_its_rules(store, sco
                 ),
                 {"t": tenant, "a": asset, "s": scope, "v": version},
             )
+
+
+async def test_concurrent_assignments_end_at_the_highest_version(store):
+    # Each assignment opens its own transaction; whatever order they commit
+    # in, the row ends at the highest version and its scope.
+    import asyncio
+    import random
+
+    rng = random.Random(3)
+    for _ in range(6):
+        tenant, asset = ids()
+        versions = list(range(1, 13))
+        rng.shuffle(versions)
+        scopes = {v: (INSTITUTIONAL if v % 2 else PERSONAL) for v in versions}
+        await asyncio.gather(
+            *(
+                store.assign(tenant_id=tenant, asset_id=asset, scope=scopes[v], version=v)
+                for v in versions
+            )
+        )
+        final = await store.assign(tenant_id=tenant, asset_id=asset, scope=UNKNOWN, version=1)
+        assert (final.scope, final.version) == (scopes[12], 12)
+
+
+async def test_a_failed_assignment_writes_nothing_and_keeps_the_previous_state():
+    from sqlalchemy.exc import OperationalError
+    from sqlalchemy.sql.dml import Insert
+
+    from app.services.rag.scopes import ScopeStoreUnavailableError
+
+    await initialize_database()
+    try:
+        factory = get_async_session_local()
+
+        def failing_insert():
+            session = factory()
+            original = session.execute
+
+            async def execute(statement, *args, **kwargs):
+                if isinstance(statement, Insert):
+                    raise OperationalError("INSERT INTO asset_scopes", {}, Exception("injected"))
+                return await original(statement, *args, **kwargs)
+
+            session.execute = execute
+            return session
+
+        tenant, asset = ids()
+        healthy, failing = PgScopeStore(factory), PgScopeStore(failing_insert)
+        await healthy.assign(tenant_id=tenant, asset_id=asset, scope=PERSONAL, version=1)
+        with pytest.raises(ScopeStoreUnavailableError):
+            await failing.assign(tenant_id=tenant, asset_id=asset, scope=INSTITUTIONAL, version=2)
+        other_tenant, new_asset = ids()
+        with pytest.raises(ScopeStoreUnavailableError):
+            await failing.assign(
+                tenant_id=other_tenant, asset_id=new_asset, scope=INSTITUTIONAL, version=1
+            )
+
+        stored = await healthy.assign(tenant_id=tenant, asset_id=asset, scope=UNKNOWN, version=1)
+        assert (stored.scope, stored.version) == (PERSONAL, 1)
+        async with factory() as db:
+            rows = (
+                await db.execute(
+                    text("SELECT count(*) FROM asset_scopes WHERE asset_id = :a"), {"a": new_asset}
+                )
+            ).scalar_one()
+        assert rows == 0
+    finally:
+        await reset_engine()
