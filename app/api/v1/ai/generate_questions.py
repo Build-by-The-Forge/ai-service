@@ -18,6 +18,7 @@ async def generate_questions(
 ):
     result = await orchestrator.generate_questions(
         body.topic,
+        frozenset(body.denied_assets),
         count=body.count,
         difficulty=body.difficulty,
         question_type=body.question_type,

@@ -89,6 +89,8 @@ class InMemoryVectorStore(VectorStorePort):
             # Filtering: the document's scope first (M3-D).
             if not self._retrievable(tid, chunk.document_id):
                 continue
+            if chunk.document_id in filter.denied_assets:
+                continue
             if filter.course_code and chunk.course_code != filter.course_code:
                 continue
             if filter.document_ids and chunk.document_id not in filter.document_ids:

@@ -51,7 +51,7 @@ async def index(store, tenant, asset, *, run=1, text=TEXT, vector=None) -> None:
 
 async def found(store, tenant) -> set[str]:
     """The documents each side of retrieval returns for the tenant."""
-    filter = RetrievalFilter(tenant_id=tenant)
+    filter = RetrievalFilter(tenant_id=tenant, denied_assets=frozenset())
     dense = await store.query_dense(unit(0), filter, top_k=50)
     sparse = await store.query_sparse("charge junction", filter, top_k=50)
     return {c.document_id for c, _ in dense} | {c.document_id for c, _ in sparse}
@@ -130,8 +130,25 @@ async def test_the_filter_runs_before_the_limit(store):
         near[0], near[5] = 1.0, 0.01 * (i + 1)
         await index(store, tenant, asset(), text=f"charge junction {i}", vector=near)
 
-    filter = RetrievalFilter(tenant_id=tenant)
+    filter = RetrievalFilter(tenant_id=tenant, denied_assets=frozenset())
     dense = await store.query_dense(unit(0), filter, top_k=1)
     sparse = await store.query_sparse("charge junction", filter, top_k=1)
     assert [c.document_id for c, _ in dense] == [eligible]
     assert [c.document_id for c, _ in sparse] == [eligible]
+
+
+async def test_a_denied_document_is_excluded_whatever_its_scope(store):
+    # Lowered by the backend, not yet acknowledged: still institutional here.
+    tenant = str(uuid.uuid4())
+    kept, denied = asset(), asset()
+    for document in (kept, denied):
+        await index(store, tenant, document)
+        await stored_scope(tenant, document, "institutional")
+    filter = RetrievalFilter(tenant_id=tenant, denied_assets=frozenset({denied}))
+    for _ in range(7):  # past five executions
+        dense = await store.query_dense(unit(0), filter, top_k=1)
+        sparse = await store.query_sparse("charge junction", filter, top_k=1)
+        # Excluded before the limit: top_k=1 still finds the other document.
+        assert [c.document_id for c, _ in dense] == [kept]
+        assert [c.document_id for c, _ in sparse] == [kept]
+    assert await found(store, tenant) == {kept, denied}  # nothing changed in the index

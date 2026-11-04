@@ -34,10 +34,14 @@ ROOT = {
 
 # path, permission, a valid body
 ROUTES = [
-    ("/v1/ai/chat", "ai.use", {"message": "What is osmosis?"}),
-    ("/v1/ai/explain", "ai.use", {"subject": "osmosis"}),
-    ("/v1/ai/generate-questions", "ai.questions.generate", {"topic": "cells", "count": 3}),
-    ("/v1/ai/retrieve", "ai.use", {"query": "osmosis"}),
+    ("/v1/ai/chat", "ai.use", {"denied_assets": [], "message": "What is osmosis?"}),
+    ("/v1/ai/explain", "ai.use", {"denied_assets": [], "subject": "osmosis"}),
+    (
+        "/v1/ai/generate-questions",
+        "ai.questions.generate",
+        {"denied_assets": [], "topic": "cells", "count": 3},
+    ),
+    ("/v1/ai/retrieve", "ai.use", {"denied_assets": [], "query": "osmosis"}),
     ("/v1/ai/tree/generate", "ai.use", {"course_title": "Biology", "topics": ["Cells"]}),
     ("/v1/ai/read/start", "ai.use", {"root": ROOT}),
 ]
@@ -114,7 +118,7 @@ async def index_osmosis_notes(engine) -> None:
 
 async def test_chat_uses_the_context_tenant_and_user(app, memory, in_memory_retrieval):
     await index_osmosis_notes(in_memory_retrieval)
-    raw = encode({"message": "What is osmosis?"})
+    raw = encode({"denied_assets": [], "message": "What is osmosis?"})
     response = await post(app, "/v1/ai/chat", raw, signed("/v1/ai/chat", raw, "ai.use"))
 
     data = response.json()["data"]
@@ -127,7 +131,7 @@ async def test_chat_uses_the_context_tenant_and_user(app, memory, in_memory_retr
 
 async def test_retrieval_follows_the_context_tenant(app, in_memory_retrieval):
     await index_osmosis_notes(in_memory_retrieval)
-    raw = encode({"query": "osmosis"})
+    raw = encode({"denied_assets": [], "query": "osmosis"})
     for tenant_id in (TENANT_A, TENANT_B):
         headers = signed("/v1/ai/retrieve", raw, "ai.use", tenant_id=tenant_id)
         response = await post(app, "/v1/ai/retrieve", raw, headers)
@@ -213,9 +217,9 @@ async def test_the_old_unsigned_paths_are_gone(app, path):
 
 
 async def test_a_body_changed_after_signing_is_401(app):
-    raw = encode({"message": "What is osmosis?"})
+    raw = encode({"denied_assets": [], "message": "What is osmosis?"})
     headers = signed("/v1/ai/chat", raw, "ai.use")
-    tampered = encode({"message": "What is osmosiz?"})
+    tampered = encode({"denied_assets": [], "message": "What is osmosiz?"})
     assert (await post(app, "/v1/ai/chat", tampered, headers)).status_code == 401
 
 
@@ -225,12 +229,20 @@ async def test_a_body_changed_after_signing_is_401(app):
 @pytest.mark.parametrize(
     "path,permission,body",
     [
-        ("/v1/ai/chat", "ai.use", {"message": "x" * 4001}),
-        ("/v1/ai/chat", "ai.use", {"message": ""}),
-        ("/v1/ai/explain", "ai.use", {"subject": "x" * 4001}),
-        ("/v1/ai/generate-questions", "ai.questions.generate", {"topic": "t", "count": 51}),
-        ("/v1/ai/generate-questions", "ai.questions.generate", {"topic": "t", "count": 0}),
-        ("/v1/ai/retrieve", "ai.use", {"query": "x" * 4001}),
+        ("/v1/ai/chat", "ai.use", {"denied_assets": [], "message": "x" * 4001}),
+        ("/v1/ai/chat", "ai.use", {"denied_assets": [], "message": ""}),
+        ("/v1/ai/explain", "ai.use", {"denied_assets": [], "subject": "x" * 4001}),
+        (
+            "/v1/ai/generate-questions",
+            "ai.questions.generate",
+            {"denied_assets": [], "topic": "t", "count": 51},
+        ),
+        (
+            "/v1/ai/generate-questions",
+            "ai.questions.generate",
+            {"denied_assets": [], "topic": "t", "count": 0},
+        ),
+        ("/v1/ai/retrieve", "ai.use", {"denied_assets": [], "query": "x" * 4001}),
     ],
 )
 async def test_inputs_beyond_the_limits_are_422(app, path, permission, body):
@@ -239,7 +251,7 @@ async def test_inputs_beyond_the_limits_are_422(app, path, permission, body):
 
 
 async def test_the_limits_themselves_are_accepted(app):
-    raw = encode({"topic": "t", "count": 50})
+    raw = encode({"denied_assets": [], "topic": "t", "count": 50})
     path = "/v1/ai/generate-questions"
     response = await post(app, path, raw, signed(path, raw, "ai.questions.generate"))
     assert response.status_code == 200
@@ -251,7 +263,13 @@ async def test_the_limits_themselves_are_accepted(app):
 async def test_generated_questions_are_structured(app, in_memory_retrieval):
     await index_osmosis_notes(in_memory_retrieval)  # questions need course material
     raw = encode(
-        {"topic": "cells", "count": 3, "difficulty": "hard", "question_type": "true_false"}
+        {
+            "denied_assets": [],
+            "topic": "cells",
+            "count": 3,
+            "difficulty": "hard",
+            "question_type": "true_false",
+        }
     )
     path = "/v1/ai/generate-questions"
     response = await post(app, path, raw, signed(path, raw, "ai.questions.generate"))
@@ -268,7 +286,7 @@ async def test_generated_questions_are_structured(app, in_memory_retrieval):
 
 @pytest.mark.parametrize("change", [{"difficulty": "extreme"}, {"question_type": "essay"}])
 async def test_unknown_difficulty_or_type_is_422(app, change):
-    raw = encode({"topic": "cells", **change})
+    raw = encode({"denied_assets": [], "topic": "cells", **change})
     path = "/v1/ai/generate-questions"
     response = await post(app, path, raw, signed(path, raw, "ai.questions.generate"))
     assert response.status_code == 422
@@ -282,7 +300,7 @@ async def test_the_verified_correlation_id_is_echoed_and_logged(app, caplog):
 
     from app.core.logging import JsonFormatter
 
-    raw = encode({"message": "hello"})
+    raw = encode({"denied_assets": [], "message": "hello"})
     response = await post(app, "/v1/ai/chat", raw, signed("/v1/ai/chat", raw, "ai.use"))
     assert response.headers["x-correlation-id"] == "corr-test"
 
@@ -299,7 +317,57 @@ async def test_the_verified_correlation_id_is_echoed_and_logged(app, caplog):
 
 
 async def test_rejected_requests_carry_no_correlation_header(app):
-    raw = encode({"message": "hello"})
+    raw = encode({"denied_assets": [], "message": "hello"})
     response = await post(app, "/v1/ai/chat", raw, {"Content-Type": "application/json"})
     assert response.status_code == 401
     assert "x-correlation-id" not in response.headers
+
+
+# --- M3-D: immediate denial on every retrieving call -------------------------------------
+
+RETRIEVING = [r for r in ROUTES if "denied_assets" in r[2]]
+
+
+@pytest.mark.parametrize("path,permission,body", RETRIEVING, ids=[r[0] for r in RETRIEVING])
+async def test_a_retrieving_call_without_denied_assets_is_422(app, path, permission, body):
+    # Absence never means "none": the backend must send the list, even empty.
+    raw = encode({k: v for k, v in body.items() if k != "denied_assets"})
+    response = await post(app, path, raw, signed(path, raw, permission))
+    assert response.status_code == 422, response.text
+
+
+@pytest.mark.parametrize(
+    "denied",
+    [None, "asset-1", [None], ["a/b"], ["a\u0000b"], ["x" * 65], [f"a{i}" for i in range(1001)]],
+    ids=["null", "not-a-list", "null-item", "slash", "nul", "too-long", "past-the-limit"],
+)
+async def test_a_malformed_or_oversized_denial_list_is_422(app, denied):
+    raw = encode({"denied_assets": denied, "query": "osmosis"})
+    response = await post(app, "/v1/ai/retrieve", raw, signed("/v1/ai/retrieve", raw, "ai.use"))
+    assert response.status_code == 422, response.text
+
+
+async def test_a_denial_list_at_the_limit_is_accepted(app):
+    raw = encode({"denied_assets": [f"a{i}" for i in range(1000)], "query": "osmosis"})
+    response = await post(app, "/v1/ai/retrieve", raw, signed("/v1/ai/retrieve", raw, "ai.use"))
+    assert response.status_code == 200, response.text
+
+
+async def test_a_denied_document_is_excluded_on_every_path(app, in_memory_retrieval):
+    # Institutional in the AI service, but lowered by the backend and not yet
+    # acknowledged: every path must leave it out.
+    await index_osmosis_notes(in_memory_retrieval)
+    denied = [f"notes-{TENANT_A}"]
+    calls = {
+        "/v1/ai/chat": ({"message": "What is osmosis?"}, "ai.use"),
+        "/v1/ai/explain": ({"subject": "osmosis"}, "ai.use"),
+        "/v1/ai/generate-questions": ({"topic": "osmosis", "count": 2}, "ai.questions.generate"),
+        "/v1/ai/retrieve": ({"query": "osmosis"}, "ai.use"),
+    }
+    for path, (body, permission) in calls.items():
+        raw = encode({"denied_assets": denied, **body})
+        response = await post(app, path, raw, signed(path, raw, permission))
+        assert response.status_code == 200, (path, response.text)
+        data = response.json()["data"]
+        assert f"notes-{TENANT_A}" not in json.dumps(data), path
+        assert "osmosis moves water" not in json.dumps(data), path

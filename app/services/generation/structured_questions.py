@@ -38,9 +38,15 @@ class StructuredQuestionGenerator:
         self.prompts = PromptBuilder()
 
     async def generate(
-        self, topic: str, *, count: int, difficulty: str, question_type: str
+        self,
+        topic: str,
+        *,
+        denied_assets: frozenset[str],
+        count: int,
+        difficulty: str,
+        question_type: str,
     ) -> GeneratedQuestions:
-        evidence = await self.retriever.evidence(topic)
+        evidence = await self.retriever.evidence(topic, denied_assets)
         if not evidence.passages:
             return GeneratedQuestions(questions=[], discarded=0, grounded=False)
         prompt = self.prompts.build(

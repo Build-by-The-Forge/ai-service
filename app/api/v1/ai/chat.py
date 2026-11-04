@@ -20,7 +20,9 @@ async def chat(
 ):
     # Memory is the verified user's, in the verified tenant (design B.4).
     user_id = call.context.user_id or ""
-    result = await orchestrator.chat(user_id=user_id, question=body.message)
+    result = await orchestrator.chat(
+        user_id=user_id, question=body.message, denied_assets=frozenset(body.denied_assets)
+    )
 
     return APIResponse(
         success=True,

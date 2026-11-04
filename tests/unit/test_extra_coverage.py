@@ -95,11 +95,11 @@ def test_ocr_route_placeholder_returns_success():
 @pytest.mark.asyncio
 async def test_retrieve_route_returns_api_response_with_dummy_retriever():
     class DummyRetriever:
-        async def retrieve(self, query: str):
+        async def retrieve(self, query: str, denied_assets: frozenset[str]):
             return [{"text": f"dummy {query}"}]
 
     response = await retrieve_route.retrieve(
-        body=RetrieveRequest(query="test"), call=None, retriever=DummyRetriever()
+        body=RetrieveRequest(query="test", denied_assets=[]), call=None, retriever=DummyRetriever()
     )
 
     assert response.success is True

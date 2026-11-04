@@ -18,7 +18,7 @@ PASSAGE = (
 class NoRetrieval:
     """One course passage on the topic."""
 
-    async def evidence(self, query):
+    async def evidence(self, query, denied_assets):
         passage = Passage(1, PASSAGE, "chunk-1", "asset-1", 1, 1)
         return Evidence(query=query, passages=(passage,))
 
@@ -61,7 +61,11 @@ class Scripted(LLMProvider):
 
 async def generate(llm, count=5, difficulty="medium", question_type="mcq"):
     return await StructuredQuestionGenerator(llm, NoRetrieval()).generate(
-        "cells", count=count, difficulty=difficulty, question_type=question_type
+        "cells",
+        denied_assets=frozenset(),
+        count=count,
+        difficulty=difficulty,
+        question_type=question_type,
     )
 
 

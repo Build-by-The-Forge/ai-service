@@ -23,7 +23,7 @@ async def test_retrieval_service_uses_the_verified_tenant(in_memory_retrieval, i
     await institutional(in_memory_scopes, "11111111-1111-4111-8111-111111111111", "asset-1")
     tenant.set_request_scope("11111111-1111-4111-8111-111111111111", "user-1")
 
-    result = await RetrievalService().retrieve("hello")
+    result = await RetrievalService().retrieve("hello", frozenset())
 
     assert result[0]["text"] == "hello and welcome to the course"
 
@@ -31,4 +31,4 @@ async def test_retrieval_service_uses_the_verified_tenant(in_memory_retrieval, i
 @pytest.mark.asyncio
 async def test_retrieval_without_a_verified_tenant_fails_closed():
     with pytest.raises(tenant.RequestScopeMissingError):
-        await RetrievalService().retrieve("hello")
+        await RetrievalService().retrieve("hello", frozenset())

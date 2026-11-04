@@ -16,7 +16,7 @@ async def explain(
     call: VerifiedCall = Depends(signed_user_call_with("ai.use")),
     orchestrator: AIOrchestrator = Depends(get_ai_orchestrator),
 ):
-    result = await orchestrator.explain(body.subject)
+    result = await orchestrator.explain(body.subject, frozenset(body.denied_assets))
 
     return APIResponse(
         success=True,

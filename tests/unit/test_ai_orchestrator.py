@@ -32,7 +32,7 @@ class EvidenceRetriever:
         self.passages = passages
         self.queries: list[str] = []
 
-    async def evidence(self, query: str) -> Evidence:
+    async def evidence(self, query: str, denied_assets: frozenset[str]) -> Evidence:
         self.queries.append(query)
         return Evidence(query=query, passages=self.passages)
 
@@ -51,7 +51,7 @@ def orchestrator(llm=None, *passages):
 async def test_a_cited_answer_is_kept_with_its_citations_and_full_passages():
     llm = ScriptedLLM()
 
-    result = await orchestrator(llm, OSMOSIS).chat("user-1", "What is osmosis?")
+    result = await orchestrator(llm, OSMOSIS).chat("user-1", "What is osmosis?", frozenset())
 
     assert result["answer"] == "Water moves across the membrane [1]."
     assert result["grounded"] is True
@@ -76,7 +76,9 @@ async def test_a_cited_answer_is_kept_with_its_citations_and_full_passages():
     ids=["no-citation", "cites-a-passage-it-was-not-given", "one-unknown-citation"],
 )
 async def test_an_answer_not_grounded_in_the_passages_is_replaced(reply):
-    result = await orchestrator(ScriptedLLM(reply), OSMOSIS).chat("user-1", "What is osmosis?")
+    result = await orchestrator(ScriptedLLM(reply), OSMOSIS).chat(
+        "user-1", "What is osmosis?", frozenset()
+    )
 
     assert (result["answer"], result["grounded"], result["citations"]) == (NOT_COVERED, False, [])
 
@@ -84,7 +86,7 @@ async def test_an_answer_not_grounded_in_the_passages_is_replaced(reply):
 async def test_without_evidence_the_model_is_not_asked():
     llm = ScriptedLLM()
 
-    result = await orchestrator(llm).chat("user-1", "Who won the World Cup?")
+    result = await orchestrator(llm).chat("user-1", "Who won the World Cup?", frozenset())
 
     assert (result["answer"], result["grounded"], result["context_used"]) == (
         NOT_COVERED,
@@ -95,8 +97,8 @@ async def test_without_evidence_the_model_is_not_asked():
 
 
 async def test_explanations_are_grounded_the_same_way():
-    grounded = await orchestrator(ScriptedLLM(), OSMOSIS).explain("osmosis")
-    uncovered = await orchestrator(ScriptedLLM()).explain("quantum chromodynamics")
+    grounded = await orchestrator(ScriptedLLM(), OSMOSIS).explain("osmosis", frozenset())
+    uncovered = await orchestrator(ScriptedLLM()).explain("quantum chromodynamics", frozenset())
 
     assert (grounded["grounded"], grounded["citations"][0]["page_start"]) == (True, 2)
     assert (uncovered["explanation"], uncovered["grounded"]) == (NOT_COVERED, False)
@@ -105,7 +107,7 @@ async def test_explanations_are_grounded_the_same_way():
 async def test_no_questions_are_generated_without_course_material():
     llm = ScriptedLLM()
 
-    result = await orchestrator(llm).generate_questions("geometry")
+    result = await orchestrator(llm).generate_questions("geometry", frozenset())
 
     assert result == {"questions": [], "discarded": 0, "grounded": False, "rejected": {}}
     assert llm.prompts == []
@@ -114,7 +116,7 @@ async def test_no_questions_are_generated_without_course_material():
 async def test_questions_are_generated_from_the_passages():
     llm = ScriptedLLM()
 
-    result = await orchestrator(llm, OSMOSIS).generate_questions("osmosis")
+    result = await orchestrator(llm, OSMOSIS).generate_questions("osmosis", frozenset())
 
     # The scripted model does not answer with JSON: all discarded, but grounded.
     assert result == {"questions": [], "discarded": 5, "grounded": True, "rejected": {}}

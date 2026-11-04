@@ -37,7 +37,7 @@ class DummyLLM:
 
 
 class DummyRetriever:
-    async def retrieve(self, query: str):
+    async def retrieve(self, query: str, denied_assets: frozenset[str]):
         return [{"text": f"doc for {query}"}]
 
 
@@ -86,7 +86,7 @@ def test_ai_router_includes_routes():
 async def test_tenant_aware_retriever_delegates_to_inner_retriever():
     service = TenantAwareRetrievalService(retriever=DummyRetriever())
 
-    result = await service.retrieve("query")
+    result = await service.retrieve("query", frozenset())
 
     assert result == [{"text": "doc for query"}]
 
@@ -98,6 +98,7 @@ async def test_cbt_ai_generator_returns_question_payload():
     result = await generator.generate_exam_questions(
         course="math",
         topic="algebra",
+        denied_assets=frozenset(),
         difficulty="hard",
         count=2,
     )

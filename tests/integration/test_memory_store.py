@@ -90,7 +90,7 @@ class RecordingLLM:
 
 
 class OnePassage:
-    async def evidence(self, query):
+    async def evidence(self, query, denied_assets):
         passage = Passage(
             number=1, text="Osmosis.", chunk_id="c1", document_id="d1", page_start=1, page_end=1
         )
@@ -118,7 +118,9 @@ async def test_stored_memories_are_unreachable_while_the_gate_is_closed(scope, m
             await service.delete_event(user, "event")
 
         llm = RecordingLLM()
-        chat = await AIOrchestrator(llm=llm, retriever=OnePassage(), memory=service).chat(user, "q")
+        chat = await AIOrchestrator(llm=llm, retriever=OnePassage(), memory=service).chat(
+            user, "q", frozenset()
+        )
     assert chat["memory_used"] == ""
     assert chat["grounded"] is True
     assert marker not in llm.prompts[0]

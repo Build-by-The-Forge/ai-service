@@ -24,8 +24,8 @@ async def test_gather_returns_the_tenants_passages_in_full_and_numbered(
     )
     await institutional(in_memory_scopes, "tenant-a", "asset-chm101")
 
-    evidence = await gather("Hess's law", "tenant-a")
-    other = await gather("Hess's law", "tenant-b")
+    evidence = await gather("Hess's law", "tenant-a", frozenset())
+    other = await gather("Hess's law", "tenant-b", frozenset())
 
     [first] = evidence.passages
     assert (first.number, first.document_id, first.text) == (1, "asset-chm101", LONG.strip())

@@ -32,7 +32,7 @@ async def durable():
 async def retrieve_as(engine, tenant_id: str, query: str) -> list[dict]:
     tenant.set_request_scope(tenant_id)
     try:
-        return await RetrievalService(engine).retrieve(query)
+        return await RetrievalService(engine).retrieve(query, frozenset())
     finally:
         tenant.clear_request_scope()
 

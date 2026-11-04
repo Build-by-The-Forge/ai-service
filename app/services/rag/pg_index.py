@@ -19,6 +19,8 @@ sparse entries are written, replaced and deleted together.
   and returns only RETRIEVABLE_SCOPES, inside the SQL and before any
   ranking or limit. A document without a scope row is `unknown` and never
   returned; its chunks carry no copy of the scope that could go stale.
+  The filter's denied_assets are excluded the same way, whatever their
+  stored scope.
 - Dense queries use the HNSW index with pgvector 0.8's iterative scan, so a
   tenant filter cannot starve the result set; sparse queries OR the query's
   terms (plainto_tsquery would AND them and miss most questions) and rank
@@ -71,6 +73,7 @@ _SPARSE = text(
     " (SELECT replace(plainto_tsquery('english', :query)::text, '&', '|')::tsquery AS query) q"
     " WHERE c.tenant_id = :tenant_id AND c.content_tsv @@ q.query"
     " AND s.scope = ANY(CAST(:scopes AS text[]))"
+    " AND NOT (c.asset_id = ANY(CAST(:denied AS text[])))"
     " AND (CAST(:asset_ids AS text[]) IS NULL OR c.asset_id = ANY(CAST(:asset_ids AS text[])))"
     " ORDER BY score DESC, c.chunk_id LIMIT :top_k"
 )
@@ -231,6 +234,8 @@ class PgChunkIndex(VectorStorePort, LexicalIndexPort):
         )
         if filter.document_ids:
             stmt = stmt.where(ChunkRow.asset_id.in_(filter.document_ids))
+        if filter.denied_assets:
+            stmt = stmt.where(ChunkRow.asset_id.not_in(sorted(filter.denied_assets)))
         try:
             async with self._session() as db, db.begin():
                 await db.execute(text("SET LOCAL hnsw.iterative_scan = relaxed_order"))
@@ -253,6 +258,7 @@ class PgChunkIndex(VectorStorePort, LexicalIndexPort):
             "query": query,
             "tenant_id": tenant_id,
             "scopes": list(RETRIEVABLE_SCOPES),
+            "denied": sorted(filter.denied_assets),
             "asset_ids": list(filter.document_ids) if filter.document_ids else None,
             "top_k": top_k,
         }

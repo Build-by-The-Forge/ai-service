@@ -82,13 +82,17 @@ def _pages(passage: Passage) -> str:
 
 
 async def gather(
-    query: str, tenant_id: str, engine: HybridRetrievalEngine | None = None
+    query: str,
+    tenant_id: str,
+    denied_assets: frozenset[str],
+    engine: HybridRetrievalEngine | None = None,
 ) -> Evidence:
-    """The tenant's top passages for a query, in full and numbered."""
+    """The tenant's top passages for a query, in full and numbered, with
+    the backend's denied documents excluded."""
     engine = engine or get_retrieval_engine()
     context = await engine.retrieve(
         query,
-        filter=RetrievalFilter(tenant_id=tenant_id),
+        filter=RetrievalFilter(tenant_id=tenant_id, denied_assets=denied_assets),
         policy=RetrievalPolicy(top_k=PASSAGES),
     )
     passages = []

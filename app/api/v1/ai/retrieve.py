@@ -20,7 +20,7 @@ async def retrieve(
     retriever: TenantAwareRetrievalService = Depends(get_tenant_aware_retriever),
 ):
     # Scoped to the verified tenant only (the request scope).
-    results = await retriever.retrieve(body.query)
+    results = await retriever.retrieve(body.query, frozenset(body.denied_assets))
 
     return APIResponse(
         success=True,

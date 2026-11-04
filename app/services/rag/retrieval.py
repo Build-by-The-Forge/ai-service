@@ -218,12 +218,12 @@ class RetrievalService:
     def __init__(self, engine: HybridRetrievalEngine | None = None):
         self.engine = engine or get_retrieval_engine()
 
-    async def retrieve(self, query: str) -> list[dict[str, Any]]:
+    async def retrieve(self, query: str, denied_assets: frozenset[str]) -> list[dict[str, Any]]:
         from app.core import tenant
 
         # Scoped to the verified tenant only; no scope means no retrieval.
         tenant_id = tenant.get_tenant_id()
-        filter_obj = RetrievalFilter(tenant_id=tenant_id)
+        filter_obj = RetrievalFilter(tenant_id=tenant_id, denied_assets=denied_assets)
         ctx = await self.engine.retrieve(query, filter=filter_obj)
         # Every item carries the passage in full as `text` (the contract field
         # chat and the backend read), with `snippet` for display. Nothing
@@ -233,9 +233,9 @@ class RetrievalService:
             for retrieved, c in zip(ctx.chunks, ctx.to_citation_summary())
         ]
 
-    async def evidence(self, query: str) -> "Evidence":
+    async def evidence(self, query: str, denied_assets: frozenset[str]) -> "Evidence":
         """The verified tenant's numbered passages for grounded answers."""
         from app.core import tenant
         from app.services.rag.evidence import gather
 
-        return await gather(query, tenant.get_tenant_id(), engine=self.engine)
+        return await gather(query, tenant.get_tenant_id(), denied_assets, engine=self.engine)

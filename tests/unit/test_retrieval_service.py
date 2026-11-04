@@ -23,7 +23,7 @@ def no_scope():
 async def retrieve_as(tenant_id: str, query: str) -> list[dict]:
     tenant.set_request_scope(tenant_id)
     try:
-        return await RetrievalService().retrieve(query)
+        return await RetrievalService().retrieve(query, frozenset())
     finally:
         tenant.clear_request_scope()
 
@@ -79,7 +79,9 @@ async def test_a_document_that_is_not_institutional_is_never_retrieved(
     assert await retrieve_as(TENANT_A, "derivative of a constant") == []
     tenant.set_request_scope(TENANT_A)
     try:
-        assert (await RetrievalService().evidence("derivative of a constant")).passages == ()
+        assert (
+            await RetrievalService().evidence("derivative of a constant", frozenset())
+        ).passages == ()
     finally:
         tenant.clear_request_scope()
 
@@ -90,4 +92,8 @@ async def test_stores_without_scopes_return_nothing():
     await bare.index_document(
         tenant_id=TENANT_A, document_id="asset-1", document_title="t", text="hello world"
     )
-    assert (await bare.retrieve("hello", filter=RetrievalFilter(tenant_id=TENANT_A))).chunks == []
+    assert (
+        await bare.retrieve(
+            "hello", filter=RetrievalFilter(tenant_id=TENANT_A, denied_assets=frozenset())
+        )
+    ).chunks == []

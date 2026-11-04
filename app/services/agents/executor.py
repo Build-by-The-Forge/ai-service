@@ -132,6 +132,7 @@ class AgentExecutor:
             permissions=context.permissions,
             capabilities=context.capabilities,
             deadline=context.deadline,
+            denied_assets=context.denied_assets,
             _is_cancelled=context._is_cancelled,
         )
 

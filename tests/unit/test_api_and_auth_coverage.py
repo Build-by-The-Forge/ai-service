@@ -14,13 +14,15 @@ from app.schemas.common import APIResponse
 
 
 class DummyOrchestrator:
-    async def chat(self, user_id: str, question: str):
+    async def chat(self, user_id: str, question: str, denied_assets: frozenset[str]):
         return {"answer": "ok", "context_used": [], "memory_used": ""}
 
-    async def explain(self, subject: str):
+    async def explain(self, subject: str, denied_assets: frozenset[str]):
         return {"explanation": f"explained {subject}"}
 
-    async def generate_questions(self, topic: str, count: int = 5, **_options):
+    async def generate_questions(
+        self, topic: str, denied_assets: frozenset[str], count: int = 5, **_options
+    ):
         return {"questions": [f"question about {topic}"] * count}
 
 
@@ -29,7 +31,7 @@ USER_CALL = types.SimpleNamespace(context=types.SimpleNamespace(user_id="u1"))
 
 
 class DummyRetriever:
-    async def retrieve(self, query: str):
+    async def retrieve(self, query: str, denied_assets: frozenset[str]):
         return [{"text": f"document for {query}"}]
 
 
@@ -75,7 +77,7 @@ class DummyAsyncSession:
 @pytest.mark.asyncio
 async def test_chat_route_returns_api_response():
     response = await chat_route.chat(
-        body=ai_schemas.ChatRequest(message="What is AI?"),
+        body=ai_schemas.ChatRequest(message="What is AI?", denied_assets=[]),
         call=USER_CALL,
         orchestrator=DummyOrchestrator(),
     )
@@ -87,7 +89,7 @@ async def test_chat_route_returns_api_response():
 @pytest.mark.asyncio
 async def test_retrieve_route_returns_api_response():
     response = await retrieve_route.retrieve(
-        body=ai_schemas.RetrieveRequest(query="query"),
+        body=ai_schemas.RetrieveRequest(query="query", denied_assets=[]),
         call=USER_CALL,
         retriever=DummyRetriever(),
     )
@@ -99,7 +101,7 @@ async def test_retrieve_route_returns_api_response():
 @pytest.mark.asyncio
 async def test_explain_route_returns_api_response():
     response = await explain_route.explain(
-        body=ai_schemas.ExplainRequest(subject="algebra"),
+        body=ai_schemas.ExplainRequest(subject="algebra", denied_assets=[]),
         call=USER_CALL,
         orchestrator=DummyOrchestrator(),
     )
@@ -110,7 +112,7 @@ async def test_explain_route_returns_api_response():
 @pytest.mark.asyncio
 async def test_generate_questions_route_returns_api_response():
     response = await generate_questions_route.generate_questions(
-        body=ai_schemas.GenerateQuestionsRequest(topic="geometry", count=2),
+        body=ai_schemas.GenerateQuestionsRequest(topic="geometry", count=2, denied_assets=[]),
         call=USER_CALL,
         orchestrator=DummyOrchestrator(),
     )

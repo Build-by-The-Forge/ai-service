@@ -200,7 +200,7 @@ class RecordingLLM:
 
 
 class OnePassage:
-    async def evidence(self, query):
+    async def evidence(self, query, denied_assets):
         passage = Passage(
             number=1, text="Osmosis.", chunk_id="c1", document_id="d1", page_start=1, page_end=1
         )
@@ -213,7 +213,7 @@ async def test_chat_answers_without_memory_when_the_gate_is_closed(closed):
         llm=llm, retriever=OnePassage(), memory=MemoryService(UntouchableSession())
     )
 
-    result = await orchestrator.chat("u1", "What is osmosis?")
+    result = await orchestrator.chat("u1", "What is osmosis?", frozenset())
 
     assert result["grounded"] is True
     assert result["memory_used"] == ""
@@ -228,7 +228,7 @@ async def test_a_real_failure_reading_memory_still_fails_chat():
 
     orchestrator = AIOrchestrator(llm=RecordingLLM(), retriever=OnePassage(), memory=Broken())
     with pytest.raises(RuntimeError):
-        await orchestrator.chat("u1", "What is osmosis?")
+        await orchestrator.chat("u1", "What is osmosis?", frozenset())
 
 
 async def test_adaptive_difficulty_falls_back_to_the_neutral_level(closed):

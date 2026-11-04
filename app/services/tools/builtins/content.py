@@ -2,6 +2,7 @@ from typing import Any
 
 from app.core.rag.contracts import RetrievalFilter, RetrievalPolicy
 from app.core.tools.contracts import ToolContext, ToolDefinition, ToolSideEffect
+from app.core.tools.errors import ToolExecutionFailedError
 from app.services.rag.retrieval import get_retrieval_engine
 
 CONTENT_SEARCH_DEFINITION = ToolDefinition(
@@ -49,6 +50,12 @@ async def content_search_handler(context: ToolContext, arguments: dict[str, Any]
     Authoritative handler for content.search tool.
     Executes live hybrid dense/sparse retrieval filtered strictly by the authoritative ToolContext.tenant_id.
     """
+    # Retrieval needs the backend's denial list (M3-D). A run that didn't
+    # come from a signed backend call has none, and is refused.
+    if context.denied_assets is None:
+        raise ToolExecutionFailedError(
+            "content.search", "retrieval needs the backend's denied_assets for this run"
+        )
     query = str(arguments["query"])
     limit = int(arguments.get("limit", 3))
     course_code = arguments.get("course_code")
@@ -57,6 +64,7 @@ async def content_search_handler(context: ToolContext, arguments: dict[str, Any]
     retrieval_filter = RetrievalFilter(
         tenant_id=context.tenant_id,
         course_code=str(course_code) if course_code else None,
+        denied_assets=context.denied_assets,
     )
     retrieval_policy = RetrievalPolicy(top_k=max(1, min(limit, 10)))
 

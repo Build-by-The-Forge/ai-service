@@ -91,6 +91,10 @@ class RetrievalFilter:
     document_ids: list[str] | None = None
     authority_tiers: list[ContentAuthority] | None = None
     min_score: float = 0.0
+    # Documents the backend has lowered and the AI service hasn't yet
+    # acknowledged (M3-D immediate denial). Excluded before ranking whatever
+    # their stored scope. Required: there is no default meaning "none".
+    denied_assets: frozenset[str] = field(kw_only=True)
 
 
 @dataclass(frozen=True)

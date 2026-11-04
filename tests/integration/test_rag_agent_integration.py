@@ -113,6 +113,7 @@ async def test_agent_to_tool_to_rag_hybrid_retrieval():
         actor_role="student",
         permissions=["curriculum:read", "content:read", "assessment:generate"],
         capabilities=["curriculum_intelligence", "content_search", "cbt_generation"],
+        denied_assets=frozenset(),
     )
 
     result = await executor.run(
@@ -157,6 +158,7 @@ async def test_agent_tool_rag_cross_tenant_isolation():
         actor_role="student",
         permissions=["content:read"],
         capabilities=["content_search"],
+        denied_assets=frozenset(),
     )
 
     inv = ToolInvocation(
