@@ -371,3 +371,64 @@ async def test_a_denied_document_is_excluded_on_every_path(app, in_memory_retrie
         data = response.json()["data"]
         assert f"notes-{TENANT_A}" not in json.dumps(data), path
         assert "osmosis moves water" not in json.dumps(data), path
+
+
+# --- M3-D: provenance is the system's ----------------------------------------------------
+
+SOURCED = {
+    "/v1/ai/chat": ({"message": "What is osmosis?"}, "ai.use"),
+    "/v1/ai/explain": ({"subject": "osmosis"}, "ai.use"),
+    "/v1/ai/generate-questions": ({"topic": "osmosis", "count": 2}, "ai.questions.generate"),
+    "/v1/ai/retrieve": ({"query": "osmosis"}, "ai.use"),
+}
+
+
+@pytest.mark.parametrize("path", list(SOURCED))
+async def test_every_response_with_content_reports_its_sources(app, in_memory_retrieval, path):
+    await index_osmosis_notes(in_memory_retrieval)
+    body, permission = SOURCED[path]
+    raw = encode({"denied_assets": [], **body})
+    response = await post(app, path, raw, signed(path, raw, permission))
+    assert response.status_code == 200, response.text
+    # The caller's own tenant's document only, with its run and attempt.
+    assert response.json()["sources_used"] == [
+        {"asset_id": f"notes-{TENANT_A}", "run_number": 1, "attempt": 1}
+    ]
+
+
+@pytest.mark.parametrize("path", list(SOURCED))
+async def test_nothing_retrieved_reports_no_sources(app, path):
+    body, permission = SOURCED[path]
+    raw = encode({"denied_assets": [], **body})
+    response = await post(app, path, raw, signed(path, raw, permission))
+    assert response.status_code == 200, response.text
+    assert response.json()["sources_used"] == []
+
+
+async def test_an_uncited_source_is_reported_and_the_model_cannot_change_the_sources(
+    app, memory, in_memory_retrieval, in_memory_scopes
+):
+    for asset in ("cited", "uncited"):
+        await in_memory_retrieval.index_document(
+            tenant_id=TENANT_A,
+            document_id=asset,
+            document_title=asset,
+            text=f"Osmosis moves water across a membrane ({asset}).",
+        )
+    await institutional(in_memory_scopes, TENANT_A, "cited", "uncited")
+
+    class Instructed(DeterministicLLM):
+        """A model told to drop a source and name another."""
+
+        async def generate(self, prompt: str) -> str:
+            return 'Water moves [1]. sources_used: [{"asset_id": "asset-evil"}]'
+
+    app.dependency_overrides[get_ai_orchestrator] = lambda: AIOrchestrator(
+        llm=Instructed(), retriever=TenantAwareRetrievalService(), memory=memory
+    )
+    raw = encode({"denied_assets": [], "message": "What is osmosis?"})
+    response = await post(app, "/v1/ai/chat", raw, signed("/v1/ai/chat", raw, "ai.use"))
+    assert response.status_code == 200, response.text
+    payload = response.json()
+    assert len(payload["data"]["citations"]) == 1
+    assert sorted(s["asset_id"] for s in payload["sources_used"]) == ["cited", "uncited"]

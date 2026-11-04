@@ -181,15 +181,32 @@ class _Envelope(BaseModel):
     message: str = ""
 
 
-class ChatResponse(_Envelope):
+class SourceUsedItem(BaseModel):
+    """One document version retrieval returned for the request (M3-D)."""
+
+    asset_id: str
+    run_number: int
+    attempt: int
+
+
+class _SourcedEnvelope(_Envelope):
+    """A response with generated or retrieved content. ``sources_used`` is
+    every document version retrieval returned for it, cited or not, built
+    by the retrieval recorder and never by the model. Required: the
+    backend treats a response without it as failed."""
+
+    sources_used: list[SourceUsedItem]
+
+
+class ChatResponse(_SourcedEnvelope):
     data: ChatData
 
 
-class ExplainResponse(_Envelope):
+class ExplainResponse(_SourcedEnvelope):
     data: ExplainData
 
 
-class GeneratedQuestionsResponse(_Envelope):
+class GeneratedQuestionsResponse(_SourcedEnvelope):
     data: GeneratedQuestionsData
 
 
@@ -217,7 +234,7 @@ class RetrievedItem(BaseModel):
     provenance: dict | None = None
 
 
-class RetrieveResponse(_Envelope):
+class RetrieveResponse(_SourcedEnvelope):
     data: list[RetrievedItem]
 
 

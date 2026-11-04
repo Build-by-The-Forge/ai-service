@@ -18,6 +18,7 @@ from app.db.session import get_async_session_local, initialize_database, reset_e
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.memory.memory_service import MemoryService
 from app.services.rag.evidence import Evidence, Passage
+from tests.rag_support import sources_for
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("DATABASE_URL", "").startswith("postgresql"), reason="needs PostgreSQL"
@@ -94,7 +95,7 @@ class OnePassage:
         passage = Passage(
             number=1, text="Osmosis.", chunk_id="c1", document_id="d1", page_start=1, page_end=1
         )
-        return Evidence(query=query, passages=(passage,))
+        return Evidence(query=query, passages=(passage,), sources_used=sources_for(passage))
 
 
 async def test_stored_memories_are_unreachable_while_the_gate_is_closed(scope, monkeypatch):

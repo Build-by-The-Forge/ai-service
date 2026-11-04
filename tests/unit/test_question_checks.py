@@ -12,6 +12,7 @@ from app.services.generation.question_checks import (
     count_reasons,
 )
 from app.services.rag.evidence import Evidence, Passage
+from tests.rag_support import sources_for
 
 ROOT = Path(__file__).resolve().parents[2]
 SAMPLES = json.loads((ROOT / "data/question_checks/v1/samples.json").read_text(encoding="utf-8"))
@@ -35,7 +36,7 @@ def evidence_for(sample) -> Evidence:
         )
         for n, p in enumerate(sample["passages"], start=1)
     )
-    return Evidence(query="", passages=passages)
+    return Evidence(query="", passages=passages, sources_used=sources_for(*passages))
 
 
 def verdicts():

@@ -18,7 +18,7 @@ class CBTAIGenerator:
         difficulty: str = "medium",
         count: int = 5,
     ):
-        context_docs = await self.retriever.retrieve(topic, denied_assets)
+        context_docs = (await self.retriever.retrieve(topic, denied_assets)).items
 
         context_text = "\n".join(doc.get("text", "") for doc in context_docs)
 

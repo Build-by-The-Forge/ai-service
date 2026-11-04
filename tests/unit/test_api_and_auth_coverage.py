@@ -11,19 +11,26 @@ from app.api.v1.ai import tree as tree_route
 from app.core import metrics as core_metrics
 from app.schemas import ai as ai_schemas
 from app.schemas.common import APIResponse
+from app.services.rag.recorder import SourceUsed
+from app.services.rag.retrieval import Retrieved
 
 
 class DummyOrchestrator:
     async def chat(self, user_id: str, question: str, denied_assets: frozenset[str]):
-        return {"answer": "ok", "context_used": [], "memory_used": ""}
+        return {
+            "answer": "ok",
+            "context_used": [],
+            "memory_used": "",
+            "sources_used": [{"asset_id": "a1", "run_number": 1, "attempt": 1}],
+        }
 
     async def explain(self, subject: str, denied_assets: frozenset[str]):
-        return {"explanation": f"explained {subject}"}
+        return {"explanation": f"explained {subject}", "sources_used": []}
 
     async def generate_questions(
         self, topic: str, denied_assets: frozenset[str], count: int = 5, **_options
     ):
-        return {"questions": [f"question about {topic}"] * count}
+        return {"questions": [], "discarded": count, "grounded": False, "sources_used": []}
 
 
 # What the signed-route dependency hands a route (a verified user call).
@@ -32,7 +39,9 @@ USER_CALL = types.SimpleNamespace(context=types.SimpleNamespace(user_id="u1"))
 
 class DummyRetriever:
     async def retrieve(self, query: str, denied_assets: frozenset[str]):
-        return [{"text": f"document for {query}"}]
+        return Retrieved(
+            items=[{"text": f"document for {query}"}], sources_used=(SourceUsed("a1", 1, 1),)
+        )
 
 
 class DummyAsyncResult:
@@ -82,8 +91,9 @@ async def test_chat_route_returns_api_response():
         orchestrator=DummyOrchestrator(),
     )
 
-    assert isinstance(response, APIResponse)
-    assert response.data["answer"] == "ok"
+    assert isinstance(response, ai_schemas.ChatResponse)
+    assert response.data.answer == "ok"
+    assert [s.asset_id for s in response.sources_used] == ["a1"]
 
 
 @pytest.mark.asyncio
@@ -94,8 +104,9 @@ async def test_retrieve_route_returns_api_response():
         retriever=DummyRetriever(),
     )
 
-    assert isinstance(response, APIResponse)
-    assert response.data[0]["text"] == "document for query"
+    assert isinstance(response, ai_schemas.RetrieveResponse)
+    assert response.data[0].text == "document for query"
+    assert [s.asset_id for s in response.sources_used] == ["a1"]
 
 
 @pytest.mark.asyncio
@@ -106,7 +117,8 @@ async def test_explain_route_returns_api_response():
         orchestrator=DummyOrchestrator(),
     )
 
-    assert response.data["explanation"] == "explained algebra"
+    assert response.data.explanation == "explained algebra"
+    assert response.sources_used == []
 
 
 @pytest.mark.asyncio
@@ -117,8 +129,8 @@ async def test_generate_questions_route_returns_api_response():
         orchestrator=DummyOrchestrator(),
     )
 
-    assert response.data["questions"][0].startswith("question about geometry")
-    assert len(response.data["questions"]) == 2
+    assert response.data.questions == [] and response.data.discarded == 2
+    assert response.sources_used == []
 
 
 def test_generate_route_placeholder_returns_success():

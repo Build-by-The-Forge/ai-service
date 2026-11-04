@@ -11,6 +11,7 @@ would."""
 from app.core.rag.scope import KnowledgeScope
 from app.services.rag.embedder import MockEmbeddingAdapter
 from app.services.rag.lexical import BM25Index
+from app.services.rag.recorder import SourceUsed
 from app.services.rag.retrieval import HybridRetrievalEngine
 from app.services.rag.scopes import InMemoryScopes
 from app.services.rag.vector_store import InMemoryVectorStore
@@ -52,3 +53,9 @@ async def stored_scope(
             ),
             {"t": tenant_id, "a": asset_id, "s": scope, "v": version},
         )
+
+
+def sources_for(*passages) -> tuple[SourceUsed, ...]:
+    """The sources fake passages came from, as the recorder reports them:
+    one per document, run 1, attempt 1."""
+    return tuple(sorted({SourceUsed(p.document_id, 1, 1) for p in passages}))

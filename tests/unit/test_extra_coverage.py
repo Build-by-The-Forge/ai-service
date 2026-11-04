@@ -15,6 +15,7 @@ from app.schemas.ai import ReadStartRequest, RetrieveRequest
 from app.schemas.tree import TreeNode
 from app.services.memory.memory_service import MemoryService
 from app.services.ocr.pdf_parser import PDFParser
+from app.services.rag.retrieval import Retrieved
 
 
 class DummyResult:
@@ -96,14 +97,14 @@ def test_ocr_route_placeholder_returns_success():
 async def test_retrieve_route_returns_api_response_with_dummy_retriever():
     class DummyRetriever:
         async def retrieve(self, query: str, denied_assets: frozenset[str]):
-            return [{"text": f"dummy {query}"}]
+            return Retrieved(items=[{"text": f"dummy {query}"}], sources_used=())
 
     response = await retrieve_route.retrieve(
         body=RetrieveRequest(query="test", denied_assets=[]), call=None, retriever=DummyRetriever()
     )
 
     assert response.success is True
-    assert response.data[0]["text"] == "dummy test"
+    assert response.data[0].text == "dummy test"
 
 
 def test_start_reading_route_generates_path():

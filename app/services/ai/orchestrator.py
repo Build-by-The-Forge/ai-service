@@ -47,6 +47,7 @@ class AIOrchestrator:
             "citations": answer.citations,
             "context_used": evidence.context(),
             "memory_used": memory_text,
+            "sources_used": [s.as_dict() for s in evidence.sources_used],
         }
 
     async def explain(self, subject: str, denied_assets: frozenset[str]):
@@ -58,6 +59,7 @@ class AIOrchestrator:
             "explanation": answer.text,
             "grounded": answer.grounded,
             "citations": answer.citations,
+            "sources_used": [s.as_dict() for s in evidence.sources_used],
         }
 
     async def _grounded(self, evidence: Evidence, template: str, **fields) -> GroundedAnswer:
@@ -91,4 +93,5 @@ class AIOrchestrator:
             "discarded": result.discarded,
             "grounded": result.grounded,
             "rejected": result.rejected,
+            "sources_used": [s.as_dict() for s in result.sources_used],
         }

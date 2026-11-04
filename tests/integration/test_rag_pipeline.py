@@ -10,6 +10,6 @@ async def test_rag_retrieval_monkeypatched_tenant(monkeypatch):
     monkeypatch.setattr(tenant, "get_tenant_id", lambda: "tenant-1")
 
     retriever = RetrievalService()
-    res = await retriever.retrieve("sample query", frozenset())
+    res = (await retriever.retrieve("sample query", frozenset())).items
 
     assert isinstance(res, list)

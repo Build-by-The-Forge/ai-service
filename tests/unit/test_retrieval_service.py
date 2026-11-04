@@ -23,7 +23,7 @@ def no_scope():
 async def retrieve_as(tenant_id: str, query: str) -> list[dict]:
     tenant.set_request_scope(tenant_id)
     try:
-        return await RetrievalService().retrieve(query, frozenset())
+        return (await RetrievalService().retrieve(query, frozenset())).items
     finally:
         tenant.clear_request_scope()
 

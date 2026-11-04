@@ -6,6 +6,7 @@ import pytest
 from app.services.ai.llm import LLMProvider
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.rag.evidence import NOT_COVERED, Evidence, Passage
+from tests.rag_support import sources_for
 
 OSMOSIS = Passage(
     number=1,
@@ -34,7 +35,9 @@ class EvidenceRetriever:
 
     async def evidence(self, query: str, denied_assets: frozenset[str]) -> Evidence:
         self.queries.append(query)
-        return Evidence(query=query, passages=self.passages)
+        return Evidence(
+            query=query, passages=self.passages, sources_used=sources_for(*self.passages)
+        )
 
 
 class DummyMemory:
@@ -109,7 +112,13 @@ async def test_no_questions_are_generated_without_course_material():
 
     result = await orchestrator(llm).generate_questions("geometry", frozenset())
 
-    assert result == {"questions": [], "discarded": 0, "grounded": False, "rejected": {}}
+    assert result == {
+        "questions": [],
+        "discarded": 0,
+        "grounded": False,
+        "rejected": {},
+        "sources_used": [],
+    }
     assert llm.prompts == []
 
 
@@ -119,5 +128,12 @@ async def test_questions_are_generated_from_the_passages():
     result = await orchestrator(llm, OSMOSIS).generate_questions("osmosis", frozenset())
 
     # The scripted model does not answer with JSON: all discarded, but grounded.
-    assert result == {"questions": [], "discarded": 5, "grounded": True, "rejected": {}}
+    assert result == {
+        "questions": [],
+        "discarded": 5,
+        "grounded": True,
+        "rejected": {},
+        # Retrieval supplied the passage, so it is a source whatever the model did.
+        "sources_used": [{"asset_id": "asset-bio101", "run_number": 1, "attempt": 1}],
+    }
     assert OSMOSIS.text in llm.prompts[0]
