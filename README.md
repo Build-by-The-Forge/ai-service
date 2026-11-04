@@ -40,6 +40,9 @@ The signed context carries the tenant, the user and the one permission the backe
 - **Adaptive difficulty** and **personalised generation** (`app/services/generation/`).
 - **Ingestion worker**: consumes dispatched tasks and reports signed callbacks to `BACKEND_CALLBACK_URL`. Phase 1 has no real pipeline, so tasks fail with `INGESTION_PIPELINE_UNAVAILABLE`.
 - **Model provider**: `MODEL_PROVIDER=openai` (default) or `deterministic`, an offline stand-in for development and tests that is refused in staging/production.
+  - **Agreed target (PRD §0.2 and §38, 2026-11-04):** the Gemini SDK as the online provider behind the Model Gateway: free models for development and testing, and Gemini 3.8 Flash in production once its exact model identifier and availability are verified. **The Gemini adapter isn't implemented yet**, and nothing couples to it directly when it is. Answers about academic material always pass through the grounding layer: retrieval, provenance, evidence validation and access control.
+  - **Offline:** a portfolio of small on-device models (PRD §146.3), starting from Qwen3-1.7B with Qwen3-0.6B as the fallback, chosen by benchmark. This service's ONNX MiniLM embedder is not offline generative AI.
+  - **Retrieval strategy:** Naive RAG by default, and bounded Agentic RAG for multi-step work (PRD §26.1).
 
 ### Observability
 - JSON logging, request IDs, Prometheus `/metrics`.
