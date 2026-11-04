@@ -158,6 +158,8 @@ jobs:
       - name: Start SeaweedFS with generated identities
         run: scripts/seaweedfs_test_storage.sh start "$GITHUB_ENV"
       - name: Asset fetcher against the real service (required, none skipped)
+        # pipefail: pytest's exit code must survive the pipe into tee.
+        shell: bash
         env:
           OBJECT_STORAGE_TESTS_REQUIRED: '1'
         run: |
@@ -222,6 +224,8 @@ jobs:
           PGPASSWORD=postgres psql -h localhost -U postgres -d build_ai -v ON_ERROR_STOP=1 \
             -c "CREATE EXTENSION IF NOT EXISTS vector"
       - name: Retrieval quality against the baseline (required, none skipped)
+        # pipefail: pytest's exit code must survive the pipe into tee.
+        shell: bash
         env:
           RETRIEVAL_QUALITY_REQUIRED: '1'
           RETRIEVAL_QUALITY_REPORT: retrieval-report.json
