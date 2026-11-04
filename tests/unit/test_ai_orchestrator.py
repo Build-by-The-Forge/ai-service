@@ -65,6 +65,10 @@ async def test_a_cited_answer_is_kept_with_its_citations_and_full_passages():
             "document_id": "asset-bio101",
             "page_start": 2,
             "page_end": 2,
+            # M3-F: what the citation quotes, and the version it came from.
+            "excerpt": OSMOSIS.text,
+            "run_number": 1,
+            "attempt": 1,
         }
     ]
     # The model saw the whole passage, numbered, with its document and page.

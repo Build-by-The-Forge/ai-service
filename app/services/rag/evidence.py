@@ -21,7 +21,12 @@ import re
 from dataclasses import dataclass
 
 from app.core.rag.contracts import RetrievalFilter, RetrievalPolicy
-from app.services.rag.recorder import RetrievalRecorder, SourceUsed, UnrecordedPassageError
+from app.services.rag.recorder import (
+    RetrievalRecorder,
+    SourceUsed,
+    UnrecordedPassageError,
+    source_of,
+)
 from app.services.rag.retrieval import HybridRetrievalEngine, get_retrieval_engine
 
 NOT_COVERED = (
@@ -40,6 +45,15 @@ class Passage:
     document_id: str
     page_start: int | None
     page_end: int | None
+    # The run and attempt whose chunk this is (M3-F): with the document, the
+    # exact source version a citation names. gather sets both from the
+    # recorded chunk, as sources_used does.
+    run_number: int = 1
+    attempt: int = 1
+
+    @property
+    def source(self) -> SourceUsed:
+        return SourceUsed(self.document_id, self.run_number, self.attempt)
 
     def citation(self) -> dict:
         return {
@@ -48,6 +62,11 @@ class Passage:
             "document_id": self.document_id,
             "page_start": self.page_start,
             "page_end": self.page_end,
+            # The cited passage itself, so a stored citation can show what it
+            # quoted without retrieving again (M3-F).
+            "excerpt": self.text,
+            "run_number": self.run_number,
+            "attempt": self.attempt,
         }
 
 
@@ -60,11 +79,11 @@ class Evidence:
     sources_used: tuple[SourceUsed, ...]
 
     def __post_init__(self) -> None:
-        # No passage reaches a prompt without its document among the sources.
-        recorded = {source.asset_id for source in self.sources_used}
-        unrecorded = {p.document_id for p in self.passages} - recorded
+        # No passage reaches a prompt without its exact source version, the
+        # document's run and attempt, among the recorded sources.
+        unrecorded = {p.source for p in self.passages} - set(self.sources_used)
         if unrecorded:
-            raise UnrecordedPassageError(sorted(unrecorded))
+            raise UnrecordedPassageError(sorted(s.asset_id for s in unrecorded))
 
     def prompt_block(self) -> str:
         """Numbered passages for a prompt: '[n] (document, pages) text'."""
@@ -114,6 +133,7 @@ async def gather(
         chunk = recorder.passage(retrieved.chunk.chunk_id)
         meta = chunk.metadata or {}
         page = chunk.provenance.page_number if chunk.provenance else None
+        source = source_of(chunk)
         passages.append(
             Passage(
                 number=number,
@@ -122,6 +142,8 @@ async def gather(
                 document_id=chunk.document_id,
                 page_start=meta.get("page_start", page),
                 page_end=meta.get("page_end", page),
+                run_number=source.run_number,
+                attempt=source.attempt,
             )
         )
     return Evidence(query=query, passages=tuple(passages), sources_used=recorder.sources_used())

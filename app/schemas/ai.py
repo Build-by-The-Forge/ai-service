@@ -119,6 +119,10 @@ class Citation(BaseModel):
     document_id: str
     page_start: int | None = None
     page_end: int | None = None
+    # M3-F: the cited passage's text, and the document version it came from.
+    excerpt: str
+    run_number: int
+    attempt: int
 
 
 class ChatData(BaseModel):
