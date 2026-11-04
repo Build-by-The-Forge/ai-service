@@ -101,3 +101,11 @@ async def test_a_denied_document_is_not_a_source(in_memory_scopes):
     await institutional(in_memory_scopes, TENANT, "kept", "denied")
     evidence = await gather("osmosis", TENANT, frozenset({"denied"}), engine=engine)
     assert [s.asset_id for s in evidence.sources_used] == ["kept"]
+
+
+def test_a_passage_of_another_run_or_attempt_than_recorded_is_refused():
+    # The exact version must be a source, not just the document (M3-F).
+    passage = Passage(1, "text", "c1", "asset-x", 1, 1, run_number=2, attempt=1)
+    with pytest.raises(UnrecordedPassageError):
+        Evidence("q", (passage,), (SourceUsed("asset-x", 1, 1),))
+    assert Evidence("q", (passage,), (SourceUsed("asset-x", 2, 1),)).passages == (passage,)

@@ -35,7 +35,7 @@ class SourceUsed:
         return {"asset_id": self.asset_id, "run_number": self.run_number, "attempt": self.attempt}
 
 
-def _source(chunk: DocumentChunk) -> SourceUsed:
+def source_of(chunk: DocumentChunk) -> SourceUsed:
     meta = chunk.metadata or {}
     # The durable index always sets both; the in-memory test store indexes
     # one run, written once.
@@ -61,4 +61,4 @@ class RetrievalRecorder:
             raise UnrecordedPassageError(chunk_id) from None
 
     def sources_used(self) -> tuple[SourceUsed, ...]:
-        return tuple(sorted({_source(chunk) for chunk in self._chunks.values()}))
+        return tuple(sorted({source_of(chunk) for chunk in self._chunks.values()}))
