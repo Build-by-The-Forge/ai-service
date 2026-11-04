@@ -9,6 +9,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.core.service_signature_v1 import RESPONSE_NONCE_PATTERN
 from app.schemas.ingest import ASSET_ID_PATTERN
 from app.schemas.tree import TreeNode
 
@@ -37,9 +38,14 @@ class RetrievingRequest(SignedAIRequest):
     ``denied_assets`` lists the documents the backend has lowered and the
     AI service hasn't acknowledged yet; they are excluded before ranking,
     whatever their stored scope. Absence never means none, so the field
-    is required and an empty list must be sent explicitly."""
+    is required and an empty list must be sent explicitly.
+
+    ``response_nonce`` is the single-use nonce the backend issued for this
+    request. The response signature covers it, and the backend accepts one
+    response per nonce, once."""
 
     denied_assets: list[DeniedAssetId] = Field(..., max_length=MAX_DENIED_ASSETS)
+    response_nonce: str = Field(..., pattern=RESPONSE_NONCE_PATTERN)
 
 
 class ChatRequest(RetrievingRequest):

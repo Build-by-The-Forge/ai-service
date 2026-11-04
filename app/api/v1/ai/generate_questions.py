@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.core.service_call import signed_user_call_with
+from app.core.signed_response import signed_response
 from app.core.service_signature_v1 import VerifiedCall
 from app.schemas.ai import GeneratedQuestionsResponse, GenerateQuestionsRequest
 from app.services.ai.dependencies import get_ai_orchestrator
@@ -24,6 +25,7 @@ async def generate_questions(
     )
 
     sources_used = result.pop("sources_used")
-    return GeneratedQuestionsResponse(
+    payload = GeneratedQuestionsResponse(
         data=result, message="Questions generated", sources_used=sources_used
     )
+    return signed_response(call, body.response_nonce, payload)

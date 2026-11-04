@@ -5,13 +5,23 @@ the deterministic provider; memory is a recorder that reads the request scope
 at call time, so the tests show which tenant and user a route acted for.
 """
 
+import hashlib
 import json
 import os
+import time
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
+from app.core.config import settings
 from app.core.replay_guard import RedisReplayGuard
+from app.core.service_signature_v1 import (
+    AI_SERVICE_ID,
+    REQUEST_ID_HEADER,
+    RESPONSE_SIGNATURE_HEADER,
+    RESPONSE_TIMESTAMP_HEADER,
+    CanonicalResponse,
+)
 from app.core.tenant import get_tenant_id
 from app.main import create_app
 from app.services.ai.deterministic import DeterministicLLM
@@ -25,6 +35,9 @@ from tests.signing import TENANT_A, TENANT_B, USER_ID, signed_headers, user_cont
 REDIS_URL = os.getenv("TEST_REDIS_URL")
 pytestmark = pytest.mark.skipif(not REDIS_URL, reason="TEST_REDIS_URL not set")
 
+# The single-use nonce the backend issues per retrieving request (M3-D).
+NONCE = "Zt3m0VbqO9aX1yR4kLw2pQ8sHn6uJc5d"
+
 ROOT = {
     "id": "c1",
     "title": "Course",
@@ -34,14 +47,26 @@ ROOT = {
 
 # path, permission, a valid body
 ROUTES = [
-    ("/v1/ai/chat", "ai.use", {"denied_assets": [], "message": "What is osmosis?"}),
-    ("/v1/ai/explain", "ai.use", {"denied_assets": [], "subject": "osmosis"}),
+    (
+        "/v1/ai/chat",
+        "ai.use",
+        {"response_nonce": NONCE, "denied_assets": [], "message": "What is osmosis?"},
+    ),
+    (
+        "/v1/ai/explain",
+        "ai.use",
+        {"response_nonce": NONCE, "denied_assets": [], "subject": "osmosis"},
+    ),
     (
         "/v1/ai/generate-questions",
         "ai.questions.generate",
-        {"denied_assets": [], "topic": "cells", "count": 3},
+        {"response_nonce": NONCE, "denied_assets": [], "topic": "cells", "count": 3},
     ),
-    ("/v1/ai/retrieve", "ai.use", {"denied_assets": [], "query": "osmosis"}),
+    (
+        "/v1/ai/retrieve",
+        "ai.use",
+        {"response_nonce": NONCE, "denied_assets": [], "query": "osmosis"},
+    ),
     ("/v1/ai/tree/generate", "ai.use", {"course_title": "Biology", "topics": ["Cells"]}),
     ("/v1/ai/read/start", "ai.use", {"root": ROOT}),
 ]
@@ -118,7 +143,7 @@ async def index_osmosis_notes(engine) -> None:
 
 async def test_chat_uses_the_context_tenant_and_user(app, memory, in_memory_retrieval):
     await index_osmosis_notes(in_memory_retrieval)
-    raw = encode({"denied_assets": [], "message": "What is osmosis?"})
+    raw = encode({"response_nonce": NONCE, "denied_assets": [], "message": "What is osmosis?"})
     response = await post(app, "/v1/ai/chat", raw, signed("/v1/ai/chat", raw, "ai.use"))
 
     data = response.json()["data"]
@@ -131,7 +156,7 @@ async def test_chat_uses_the_context_tenant_and_user(app, memory, in_memory_retr
 
 async def test_retrieval_follows_the_context_tenant(app, in_memory_retrieval):
     await index_osmosis_notes(in_memory_retrieval)
-    raw = encode({"denied_assets": [], "query": "osmosis"})
+    raw = encode({"response_nonce": NONCE, "denied_assets": [], "query": "osmosis"})
     for tenant_id in (TENANT_A, TENANT_B):
         headers = signed("/v1/ai/retrieve", raw, "ai.use", tenant_id=tenant_id)
         response = await post(app, "/v1/ai/retrieve", raw, headers)
@@ -217,9 +242,9 @@ async def test_the_old_unsigned_paths_are_gone(app, path):
 
 
 async def test_a_body_changed_after_signing_is_401(app):
-    raw = encode({"denied_assets": [], "message": "What is osmosis?"})
+    raw = encode({"response_nonce": NONCE, "denied_assets": [], "message": "What is osmosis?"})
     headers = signed("/v1/ai/chat", raw, "ai.use")
-    tampered = encode({"denied_assets": [], "message": "What is osmosiz?"})
+    tampered = encode({"response_nonce": NONCE, "denied_assets": [], "message": "What is osmosiz?"})
     assert (await post(app, "/v1/ai/chat", tampered, headers)).status_code == 401
 
 
@@ -229,20 +254,32 @@ async def test_a_body_changed_after_signing_is_401(app):
 @pytest.mark.parametrize(
     "path,permission,body",
     [
-        ("/v1/ai/chat", "ai.use", {"denied_assets": [], "message": "x" * 4001}),
-        ("/v1/ai/chat", "ai.use", {"denied_assets": [], "message": ""}),
-        ("/v1/ai/explain", "ai.use", {"denied_assets": [], "subject": "x" * 4001}),
         (
-            "/v1/ai/generate-questions",
-            "ai.questions.generate",
-            {"denied_assets": [], "topic": "t", "count": 51},
+            "/v1/ai/chat",
+            "ai.use",
+            {"response_nonce": NONCE, "denied_assets": [], "message": "x" * 4001},
+        ),
+        ("/v1/ai/chat", "ai.use", {"response_nonce": NONCE, "denied_assets": [], "message": ""}),
+        (
+            "/v1/ai/explain",
+            "ai.use",
+            {"response_nonce": NONCE, "denied_assets": [], "subject": "x" * 4001},
         ),
         (
             "/v1/ai/generate-questions",
             "ai.questions.generate",
-            {"denied_assets": [], "topic": "t", "count": 0},
+            {"response_nonce": NONCE, "denied_assets": [], "topic": "t", "count": 51},
         ),
-        ("/v1/ai/retrieve", "ai.use", {"denied_assets": [], "query": "x" * 4001}),
+        (
+            "/v1/ai/generate-questions",
+            "ai.questions.generate",
+            {"response_nonce": NONCE, "denied_assets": [], "topic": "t", "count": 0},
+        ),
+        (
+            "/v1/ai/retrieve",
+            "ai.use",
+            {"response_nonce": NONCE, "denied_assets": [], "query": "x" * 4001},
+        ),
     ],
 )
 async def test_inputs_beyond_the_limits_are_422(app, path, permission, body):
@@ -251,7 +288,7 @@ async def test_inputs_beyond_the_limits_are_422(app, path, permission, body):
 
 
 async def test_the_limits_themselves_are_accepted(app):
-    raw = encode({"denied_assets": [], "topic": "t", "count": 50})
+    raw = encode({"response_nonce": NONCE, "denied_assets": [], "topic": "t", "count": 50})
     path = "/v1/ai/generate-questions"
     response = await post(app, path, raw, signed(path, raw, "ai.questions.generate"))
     assert response.status_code == 200
@@ -264,6 +301,7 @@ async def test_generated_questions_are_structured(app, in_memory_retrieval):
     await index_osmosis_notes(in_memory_retrieval)  # questions need course material
     raw = encode(
         {
+            "response_nonce": NONCE,
             "denied_assets": [],
             "topic": "cells",
             "count": 3,
@@ -286,7 +324,7 @@ async def test_generated_questions_are_structured(app, in_memory_retrieval):
 
 @pytest.mark.parametrize("change", [{"difficulty": "extreme"}, {"question_type": "essay"}])
 async def test_unknown_difficulty_or_type_is_422(app, change):
-    raw = encode({"denied_assets": [], "topic": "cells", **change})
+    raw = encode({"response_nonce": NONCE, "denied_assets": [], "topic": "cells", **change})
     path = "/v1/ai/generate-questions"
     response = await post(app, path, raw, signed(path, raw, "ai.questions.generate"))
     assert response.status_code == 422
@@ -300,7 +338,7 @@ async def test_the_verified_correlation_id_is_echoed_and_logged(app, caplog):
 
     from app.core.logging import JsonFormatter
 
-    raw = encode({"denied_assets": [], "message": "hello"})
+    raw = encode({"response_nonce": NONCE, "denied_assets": [], "message": "hello"})
     response = await post(app, "/v1/ai/chat", raw, signed("/v1/ai/chat", raw, "ai.use"))
     assert response.headers["x-correlation-id"] == "corr-test"
 
@@ -317,7 +355,7 @@ async def test_the_verified_correlation_id_is_echoed_and_logged(app, caplog):
 
 
 async def test_rejected_requests_carry_no_correlation_header(app):
-    raw = encode({"denied_assets": [], "message": "hello"})
+    raw = encode({"response_nonce": NONCE, "denied_assets": [], "message": "hello"})
     response = await post(app, "/v1/ai/chat", raw, {"Content-Type": "application/json"})
     assert response.status_code == 401
     assert "x-correlation-id" not in response.headers
@@ -342,13 +380,19 @@ async def test_a_retrieving_call_without_denied_assets_is_422(app, path, permiss
     ids=["null", "not-a-list", "null-item", "slash", "nul", "too-long", "past-the-limit"],
 )
 async def test_a_malformed_or_oversized_denial_list_is_422(app, denied):
-    raw = encode({"denied_assets": denied, "query": "osmosis"})
+    raw = encode({"response_nonce": NONCE, "denied_assets": denied, "query": "osmosis"})
     response = await post(app, "/v1/ai/retrieve", raw, signed("/v1/ai/retrieve", raw, "ai.use"))
     assert response.status_code == 422, response.text
 
 
 async def test_a_denial_list_at_the_limit_is_accepted(app):
-    raw = encode({"denied_assets": [f"a{i}" for i in range(1000)], "query": "osmosis"})
+    raw = encode(
+        {
+            "response_nonce": NONCE,
+            "denied_assets": [f"a{i}" for i in range(1000)],
+            "query": "osmosis",
+        }
+    )
     response = await post(app, "/v1/ai/retrieve", raw, signed("/v1/ai/retrieve", raw, "ai.use"))
     assert response.status_code == 200, response.text
 
@@ -365,7 +409,7 @@ async def test_a_denied_document_is_excluded_on_every_path(app, in_memory_retrie
         "/v1/ai/retrieve": ({"query": "osmosis"}, "ai.use"),
     }
     for path, (body, permission) in calls.items():
-        raw = encode({"denied_assets": denied, **body})
+        raw = encode({"response_nonce": NONCE, "denied_assets": denied, **body})
         response = await post(app, path, raw, signed(path, raw, permission))
         assert response.status_code == 200, (path, response.text)
         data = response.json()["data"]
@@ -387,7 +431,7 @@ SOURCED = {
 async def test_every_response_with_content_reports_its_sources(app, in_memory_retrieval, path):
     await index_osmosis_notes(in_memory_retrieval)
     body, permission = SOURCED[path]
-    raw = encode({"denied_assets": [], **body})
+    raw = encode({"response_nonce": NONCE, "denied_assets": [], **body})
     response = await post(app, path, raw, signed(path, raw, permission))
     assert response.status_code == 200, response.text
     # The caller's own tenant's document only, with its run and attempt.
@@ -399,7 +443,7 @@ async def test_every_response_with_content_reports_its_sources(app, in_memory_re
 @pytest.mark.parametrize("path", list(SOURCED))
 async def test_nothing_retrieved_reports_no_sources(app, path):
     body, permission = SOURCED[path]
-    raw = encode({"denied_assets": [], **body})
+    raw = encode({"response_nonce": NONCE, "denied_assets": [], **body})
     response = await post(app, path, raw, signed(path, raw, permission))
     assert response.status_code == 200, response.text
     assert response.json()["sources_used"] == []
@@ -426,9 +470,56 @@ async def test_an_uncited_source_is_reported_and_the_model_cannot_change_the_sou
     app.dependency_overrides[get_ai_orchestrator] = lambda: AIOrchestrator(
         llm=Instructed(), retriever=TenantAwareRetrievalService(), memory=memory
     )
-    raw = encode({"denied_assets": [], "message": "What is osmosis?"})
+    raw = encode({"response_nonce": NONCE, "denied_assets": [], "message": "What is osmosis?"})
     response = await post(app, "/v1/ai/chat", raw, signed("/v1/ai/chat", raw, "ai.use"))
     assert response.status_code == 200, response.text
     payload = response.json()
     assert len(payload["data"]["citations"]) == 1
     assert sorted(s["asset_id"] for s in payload["sources_used"]) == ["cited", "uncited"]
+
+
+# --- M3-D: the response envelope ---------------------------------------------------------
+
+
+@pytest.mark.parametrize("path,permission,body", RETRIEVING, ids=[r[0] for r in RETRIEVING])
+@pytest.mark.parametrize("nonce", [None, "", "short", "has space in it 0123456789", "x" * 129])
+async def test_a_missing_or_malformed_response_nonce_is_422(app, path, permission, body, nonce):
+    sent = {k: v for k, v in body.items() if k != "response_nonce"}
+    if nonce is not None:
+        sent["response_nonce"] = nonce
+    raw = encode(sent)
+    response = await post(app, path, raw, signed(path, raw, permission))
+    assert response.status_code == 422, response.text
+
+
+@pytest.mark.parametrize("path", list(SOURCED))
+async def test_a_sourced_response_is_signed_for_its_request_and_nonce(
+    app, in_memory_retrieval, path
+):
+    await index_osmosis_notes(in_memory_retrieval)
+    body, permission = SOURCED[path]
+    raw = encode({"response_nonce": NONCE, "denied_assets": [], **body})
+    headers = signed(path, raw, permission)
+    response = await post(app, path, raw, headers)
+    assert response.status_code == 200, response.text
+
+    def signature(request_id=headers[REQUEST_ID_HEADER], nonce=NONCE, content=response.content):
+        return CanonicalResponse(
+            sender=AI_SERVICE_ID,
+            request_id=request_id,
+            nonce=nonce,
+            timestamp=response.headers[RESPONSE_TIMESTAMP_HEADER],
+            body_sha256=hashlib.sha256(content).hexdigest(),
+        ).signature(settings.AI_TO_BACKEND_SECRET)
+
+    # The exact bytes received, for this request and nonce, under AI_TO_BACKEND.
+    assert response.headers[RESPONSE_SIGNATURE_HEADER] == signature()
+    assert abs(int(response.headers[RESPONSE_TIMESTAMP_HEADER]) - time.time()) < 60
+    # Bound to each: another request, nonce or body doesn't verify.
+    assert response.headers[RESPONSE_SIGNATURE_HEADER] != signature(
+        request_id="9d8c7b6a-5f4e-4d3c-8b2a-1f0e9d8c7b6a"
+    )
+    assert response.headers[RESPONSE_SIGNATURE_HEADER] != signature(nonce=NONCE[:-1] + "x")
+    assert response.headers[RESPONSE_SIGNATURE_HEADER] != signature(
+        content=response.content.replace(b"notes", b"Notes")
+    )

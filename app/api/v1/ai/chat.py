@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 
+from app.core.signed_response import signed_response
 from app.core.service_call import signed_user_call_with
 from app.core.service_signature_v1 import VerifiedCall
 from app.schemas.ai import ChatRequest, ChatResponse
@@ -24,4 +25,7 @@ async def chat(
     )
 
     sources_used = result.pop("sources_used")
-    return ChatResponse(data=result, message="Chat response generated", sources_used=sources_used)
+    payload = ChatResponse(
+        data=result, message="Chat response generated", sources_used=sources_used
+    )
+    return signed_response(call, body.response_nonce, payload)
