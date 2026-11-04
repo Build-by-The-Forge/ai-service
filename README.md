@@ -83,7 +83,7 @@ All routes below except System require a signed backend request.
 
 Bodies reject unknown fields. Naming `tenant_id`, `user_id`, `membership_id` or `role` is 422.
 
-The four retrieving routes need `denied_assets` (at most 1,000 asset ids, `[]` when none) and `response_nonce` (22–128 URL-safe characters). Their 200 responses carry `sources_used` beside `data`, and are signed.
+The four retrieving routes need `denied_assets` (at most 1,000 asset ids, `[]` when none; the limit is shared with the backend, which never sends more, and a change moves in both repositories, tested together) and `response_nonce` (22–128 URL-safe characters). Their 200 responses carry `sources_used` beside `data`, and are signed.
 
 ### Ingestion (signed)
 - `POST /v1/ingest/dispatch`: user context with `content.job.manage`.

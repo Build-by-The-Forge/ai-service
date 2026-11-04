@@ -43,3 +43,19 @@ def test_request_and_response_data_are_typed(path):
     # A named model, or a list of one; never an untyped `Any`.
     assert "$ref" in data or "$ref" in data.get("items", {}), data
     assert "data" in response.get("required", [])
+
+
+RETRIEVING_PATHS = ["/v1/ai/chat", "/v1/ai/explain", "/v1/ai/generate-questions", "/v1/ai/retrieve"]
+
+
+@pytest.mark.parametrize("path", RETRIEVING_PATHS)
+def test_retrieving_routes_publish_the_shared_denial_limit_and_the_envelope(path):
+    """M3-D: the denial list and the response nonce are required, and the
+    1,000-entry limit is part of the published contract. It is shared with
+    the backend: a change moves in both repositories, tested together."""
+    operation = SPEC["paths"][path]["post"]
+    request = schema(operation["requestBody"]["content"]["application/json"]["schema"])
+    assert {"denied_assets", "response_nonce"} <= set(request["required"])
+    assert request["properties"]["denied_assets"]["maxItems"] == 1000
+    response = schema(operation["responses"]["200"]["content"]["application/json"]["schema"])
+    assert "sources_used" in response["required"]
