@@ -4,6 +4,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.core.rag.scope import KnowledgeScope
+
 
 class ContentAuthority(str, Enum):
     REGULATORY = "REGULATORY"
@@ -113,3 +115,29 @@ class IngestTaskStatusResponse(BaseModel):
     events: list[IngestCallbackPayload]
     lease_until: float | None = None
     heartbeat_at: float | None = None
+
+
+ASSET_ID_PATTERN = r"^[A-Za-z0-9_-]{1,64}$"
+MAX_SCOPE_VERSION = 2**63 - 1
+
+
+class ScopeAssignmentRequest(BaseModel):
+    """A signed scope assignment (M3-D): the backend's decision on what one
+    document may be retrieved as. The tenant is the verified context's; the
+    body names only the asset. Unknown fields are rejected."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    asset_id: str = Field(..., pattern=ASSET_ID_PATTERN)
+    scope: KnowledgeScope
+    version: int = Field(..., ge=1, le=MAX_SCOPE_VERSION)
+
+
+class ScopeAssignmentResponse(BaseModel):
+    """The scope now stored for the document. A version equal to or higher
+    than the one sent acknowledges it: a replayed or older assignment
+    changes nothing and is still acknowledged."""
+
+    asset_id: str
+    scope: KnowledgeScope
+    version: int
