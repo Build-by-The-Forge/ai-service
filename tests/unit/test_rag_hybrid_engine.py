@@ -7,12 +7,15 @@ from app.core.rag.contracts import (
     RetrievalPolicy,
 )
 from app.core.rag.errors import TenantContextMissingError
-from tests.rag_support import in_memory_engine
+from app.services.rag.scopes import InMemoryScopes
+from tests.rag_support import in_memory_engine, institutional
 
 
 @pytest.mark.asyncio
 async def test_hybrid_retrieval_engine_index_and_retrieve():
-    engine = in_memory_engine()
+    scopes = InMemoryScopes()
+    engine = in_memory_engine(scopes)
+    await institutional(scopes, "school_1", "doc_chem_101")
 
     prov = ChunkProvenance(
         source_uri="s3://school-assets/che101.pdf",
@@ -33,7 +36,9 @@ async def test_hybrid_retrieval_engine_index_and_retrieve():
     assert indexed > 0
 
     # Query matching indexed document
-    filter_obj = RetrievalFilter(tenant_id="school_1", course_code="CHE101")
+    filter_obj = RetrievalFilter(
+        tenant_id="school_1", course_code="CHE101", denied_assets=frozenset()
+    )
     policy = RetrievalPolicy(top_k=3, dense_weight=0.6, sparse_weight=0.4)
 
     ctx = await engine.retrieve("What is Hess's law of enthalpy?", filter=filter_obj, policy=policy)
@@ -64,7 +69,7 @@ async def test_hybrid_retrieval_engine_enforces_tenant_boundary():
     )
 
     # Query from school_B
-    filter_school_b = RetrievalFilter(tenant_id="school_B")
+    filter_school_b = RetrievalFilter(tenant_id="school_B", denied_assets=frozenset())
     ctx = await engine.retrieve("Navier-Stokes fluid dynamics", filter=filter_school_b)
 
     assert len(ctx.chunks) == 0
@@ -75,4 +80,6 @@ async def test_hybrid_retrieval_engine_enforces_tenant_boundary():
 async def test_hybrid_retrieval_missing_tenant_id_raises():
     engine = in_memory_engine()
     with pytest.raises(TenantContextMissingError):
-        await engine.retrieve("test query", filter=RetrievalFilter(tenant_id=""))
+        await engine.retrieve(
+            "test query", filter=RetrievalFilter(tenant_id="", denied_assets=frozenset())
+        )

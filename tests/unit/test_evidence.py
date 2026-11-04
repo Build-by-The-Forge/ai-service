@@ -2,6 +2,8 @@
 tenant, and an answer kept only if it cites them."""
 
 from app.services.rag.evidence import NOT_COVERED, Evidence, Passage, check_grounded, gather
+from tests.rag_support import institutional
+from tests.rag_support import sources_for
 
 LONG = (
     "Hess's law states that the total enthalpy change of a reaction is the same "
@@ -15,13 +17,16 @@ def passage(number, page_start=3, page_end=3):
     )
 
 
-async def test_gather_returns_the_tenants_passages_in_full_and_numbered(in_memory_retrieval):
+async def test_gather_returns_the_tenants_passages_in_full_and_numbered(
+    in_memory_retrieval, in_memory_scopes
+):
     await in_memory_retrieval.index_document(
         tenant_id="tenant-a", document_id="asset-chm101", document_title="CHM 101", text=LONG
     )
+    await institutional(in_memory_scopes, "tenant-a", "asset-chm101")
 
-    evidence = await gather("Hess's law", "tenant-a")
-    other = await gather("Hess's law", "tenant-b")
+    evidence = await gather("Hess's law", "tenant-a", frozenset())
+    other = await gather("Hess's law", "tenant-b", frozenset())
 
     [first] = evidence.passages
     assert (first.number, first.document_id, first.text) == (1, "asset-chm101", LONG.strip())
@@ -30,7 +35,8 @@ async def test_gather_returns_the_tenants_passages_in_full_and_numbered(in_memor
 
 
 def test_the_prompt_names_each_passage_with_its_document_and_pages():
-    evidence = Evidence("q", (passage(1), passage(2, 4, 5)))
+    passages = (passage(1), passage(2, 4, 5))
+    evidence = Evidence("q", passages, sources_for(*passages))
 
     assert evidence.prompt_block() == (
         "[1] (asset-chm101, p. 3) text 1\n\n[2] (asset-chm101, pp. 4-5) text 2"
@@ -39,7 +45,8 @@ def test_the_prompt_names_each_passage_with_its_document_and_pages():
 
 def test_citations_are_kept_once_each_in_order():
     answer = check_grounded(
-        "Route-independent [2], see also [1] and [2].", Evidence("q", (passage(1), passage(2)))
+        "Route-independent [2], see also [1] and [2].",
+        Evidence("q", (passage(1), passage(2)), sources_for(passage(1), passage(2))),
     )
 
     assert answer.grounded is True
@@ -47,5 +54,8 @@ def test_citations_are_kept_once_each_in_order():
 
 
 def test_an_empty_answer_or_no_evidence_is_not_covered():
-    assert check_grounded("", Evidence("q", (passage(1),))).text == NOT_COVERED
-    assert check_grounded("Something [1].", Evidence("q", ())).text == NOT_COVERED
+    assert (
+        check_grounded("", Evidence("q", (passage(1),), sources_for(passage(1)))).text
+        == NOT_COVERED
+    )
+    assert check_grounded("Something [1].", Evidence("q", (), ())).text == NOT_COVERED

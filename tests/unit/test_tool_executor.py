@@ -22,6 +22,7 @@ def auth_context():
         correlation_id="corr_tool_1",
         permissions=["curriculum:read", "content:read", "assessment:generate"],
         capabilities=["curriculum_intelligence", "content_search", "cbt_generation"],
+        denied_assets=frozenset(),
     )
 
 
@@ -170,3 +171,19 @@ async def test_executor_enforces_budget_limits(auth_context):
     res2 = await executor.execute(invocation, policy=policy)
     assert res2.success is False
     assert res2.error_code == "TOOL_BUDGET_EXCEEDED"
+
+
+@pytest.mark.asyncio
+async def test_content_search_without_the_backends_denial_list_is_refused(auth_context):
+    # A run that didn't come from a signed backend call has no denial list
+    # (M3-D), so it can't retrieve.
+    from dataclasses import replace
+
+    invocation = ToolInvocation(
+        tool_name="content.search",
+        arguments={"query": "algorithms"},
+        context=replace(auth_context, denied_assets=None),
+    )
+    result = await ToolExecutor().execute(invocation)
+    assert result.success is False
+    assert result.data is None

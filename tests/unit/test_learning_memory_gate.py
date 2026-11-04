@@ -16,6 +16,7 @@ from app.services.ai.orchestrator import AIOrchestrator
 from app.services.generation.adaptive_engine import AdaptiveDifficultyEngine
 from app.services.memory.memory_service import MemoryService
 from app.services.rag.evidence import Evidence, Passage
+from tests.rag_support import sources_for
 
 CALLBACK_URL = "https://api.build.example/content/ingestion/callbacks"
 SECRETS = {
@@ -200,11 +201,11 @@ class RecordingLLM:
 
 
 class OnePassage:
-    async def evidence(self, query):
+    async def evidence(self, query, denied_assets):
         passage = Passage(
             number=1, text="Osmosis.", chunk_id="c1", document_id="d1", page_start=1, page_end=1
         )
-        return Evidence(query=query, passages=(passage,))
+        return Evidence(query=query, passages=(passage,), sources_used=sources_for(passage))
 
 
 async def test_chat_answers_without_memory_when_the_gate_is_closed(closed):
@@ -213,7 +214,7 @@ async def test_chat_answers_without_memory_when_the_gate_is_closed(closed):
         llm=llm, retriever=OnePassage(), memory=MemoryService(UntouchableSession())
     )
 
-    result = await orchestrator.chat("u1", "What is osmosis?")
+    result = await orchestrator.chat("u1", "What is osmosis?", frozenset())
 
     assert result["grounded"] is True
     assert result["memory_used"] == ""
@@ -228,7 +229,7 @@ async def test_a_real_failure_reading_memory_still_fails_chat():
 
     orchestrator = AIOrchestrator(llm=RecordingLLM(), retriever=OnePassage(), memory=Broken())
     with pytest.raises(RuntimeError):
-        await orchestrator.chat("u1", "What is osmosis?")
+        await orchestrator.chat("u1", "What is osmosis?", frozenset())
 
 
 async def test_adaptive_difficulty_falls_back_to_the_neutral_level(closed):

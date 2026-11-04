@@ -12,12 +12,15 @@ class CBTFusionEngine:
         user_id: str,
         course: str,
         topic: str,
+        *,
+        denied_assets: frozenset[str],
     ):
         difficulty = await self.adaptive_engine.get_difficulty(user_id, topic)
 
         exam = await self.ai_generator.generate_exam_questions(
             course=course,
             topic=topic,
+            denied_assets=denied_assets,
             difficulty=difficulty,
             count=10,
         )

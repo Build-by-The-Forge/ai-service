@@ -35,6 +35,8 @@ class AgentContext:
     permissions: list[str] = field(default_factory=list)
     capabilities: list[str] = field(default_factory=list)
     deadline: float | None = None
+    # The backend's denied documents for this run (M3-D); see ToolContext.
+    denied_assets: frozenset[str] | None = None
     _is_cancelled: bool = False
     _cancellation_reason: str | None = None
 

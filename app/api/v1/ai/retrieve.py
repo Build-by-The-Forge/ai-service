@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 
 from app.core.service_call import signed_user_call_with
+from app.core.signed_response import signed_response
 from app.core.service_signature_v1 import VerifiedCall
-from app.schemas.common import APIResponse
 from app.schemas.ai import RetrieveRequest, RetrieveResponse
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
 
@@ -20,10 +20,14 @@ async def retrieve(
     retriever: TenantAwareRetrievalService = Depends(get_tenant_aware_retriever),
 ):
     # Scoped to the verified tenant only (the request scope).
-    results = await retriever.retrieve(body.query)
+    found = await retriever.retrieve(body.query, frozenset(body.denied_assets))
 
-    return APIResponse(
-        success=True,
-        data=results,
-        message="Retrieval successful",
+    # Validated from the plain items, as the other routes' data is.
+    payload = RetrieveResponse.model_validate(
+        {
+            "data": found.items,
+            "message": "Retrieval successful",
+            "sources_used": [s.as_dict() for s in found.sources_used],
+        }
     )
+    return signed_response(call, body.response_nonce, payload)

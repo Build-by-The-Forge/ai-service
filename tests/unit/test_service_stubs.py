@@ -23,6 +23,7 @@ from app.services.ocr.paddle import PaddleOCRService
 from app.services.ocr.pdf_parser import PDFParser
 from app.services.rag.chunker import Chunker
 from app.services.rag.embedder import Embedder
+from app.services.rag.retrieval import Retrieved
 from app.services.rag.vector_store import VectorStore
 from app.services.tree.generator import TreeGeneratorService
 from app.services.tree.learning_path import LearningPathService
@@ -37,8 +38,8 @@ class DummyLLM:
 
 
 class DummyRetriever:
-    async def retrieve(self, query: str):
-        return [{"text": f"doc for {query}"}]
+    async def retrieve(self, query: str, denied_assets: frozenset[str]):
+        return Retrieved(items=[{"text": f"doc for {query}"}], sources_used=())
 
 
 class DummyDB:
@@ -86,9 +87,9 @@ def test_ai_router_includes_routes():
 async def test_tenant_aware_retriever_delegates_to_inner_retriever():
     service = TenantAwareRetrievalService(retriever=DummyRetriever())
 
-    result = await service.retrieve("query")
+    result = await service.retrieve("query", frozenset())
 
-    assert result == [{"text": "doc for query"}]
+    assert result.items == [{"text": "doc for query"}]
 
 
 @pytest.mark.asyncio
@@ -98,6 +99,7 @@ async def test_cbt_ai_generator_returns_question_payload():
     result = await generator.generate_exam_questions(
         course="math",
         topic="algebra",
+        denied_assets=frozenset(),
         difficulty="hard",
         count=2,
     )

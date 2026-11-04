@@ -9,6 +9,8 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.core.service_signature_v1 import RESPONSE_NONCE_PATTERN
+from app.schemas.ingest import ASSET_ID_PATTERN
 from app.schemas.tree import TreeNode
 
 MAX_MESSAGE_CHARS = 4000
@@ -18,17 +20,39 @@ MAX_TREE_TOPICS = 200
 MAX_MEMORY_TOPIC_CHARS = 255
 MAX_MEMORY_QUERY_TOPICS = 50
 MAX_MEMORY_OBSERVATIONS = 200
+# The backend refuses a tenant's retrieving calls when its list passes the
+# configured size, starting at 1,000 (M3-D), so a longer list never arrives.
+MAX_DENIED_ASSETS = 1000
 
 
 class SignedAIRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
-class ChatRequest(SignedAIRequest):
+DeniedAssetId = Annotated[str, Field(pattern=ASSET_ID_PATTERN)]
+
+
+class RetrievingRequest(SignedAIRequest):
+    """A call that retrieves course material (M3-D immediate denial).
+
+    ``denied_assets`` lists the documents the backend has lowered and the
+    AI service hasn't acknowledged yet; they are excluded before ranking,
+    whatever their stored scope. Absence never means none, so the field
+    is required and an empty list must be sent explicitly.
+
+    ``response_nonce`` is the single-use nonce the backend issued for this
+    request. The response signature covers it, and the backend accepts one
+    response per nonce, once."""
+
+    denied_assets: list[DeniedAssetId] = Field(..., max_length=MAX_DENIED_ASSETS)
+    response_nonce: str = Field(..., pattern=RESPONSE_NONCE_PATTERN)
+
+
+class ChatRequest(RetrievingRequest):
     message: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
 
 
-class ExplainRequest(SignedAIRequest):
+class ExplainRequest(RetrievingRequest):
     subject: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
 
 
@@ -36,14 +60,14 @@ Difficulty = Literal["easy", "medium", "hard"]
 QuestionType = Literal["mcq", "true_false"]
 
 
-class GenerateQuestionsRequest(SignedAIRequest):
+class GenerateQuestionsRequest(RetrievingRequest):
     topic: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
     count: int = Field(default=5, ge=1, le=MAX_QUESTION_COUNT)
     difficulty: Difficulty = "medium"
     question_type: QuestionType = "mcq"
 
 
-class RetrieveRequest(SignedAIRequest):
+class RetrieveRequest(RetrievingRequest):
     query: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
 
 
@@ -163,15 +187,32 @@ class _Envelope(BaseModel):
     message: str = ""
 
 
-class ChatResponse(_Envelope):
+class SourceUsedItem(BaseModel):
+    """One document version retrieval returned for the request (M3-D)."""
+
+    asset_id: str
+    run_number: int
+    attempt: int
+
+
+class _SourcedEnvelope(_Envelope):
+    """A response with generated or retrieved content. ``sources_used`` is
+    every document version retrieval returned for it, cited or not, built
+    by the retrieval recorder and never by the model. Required: the
+    backend treats a response without it as failed."""
+
+    sources_used: list[SourceUsedItem]
+
+
+class ChatResponse(_SourcedEnvelope):
     data: ChatData
 
 
-class ExplainResponse(_Envelope):
+class ExplainResponse(_SourcedEnvelope):
     data: ExplainData
 
 
-class GeneratedQuestionsResponse(_Envelope):
+class GeneratedQuestionsResponse(_SourcedEnvelope):
     data: GeneratedQuestionsData
 
 
@@ -199,7 +240,7 @@ class RetrievedItem(BaseModel):
     provenance: dict | None = None
 
 
-class RetrieveResponse(_Envelope):
+class RetrieveResponse(_SourcedEnvelope):
     data: list[RetrievedItem]
 
 

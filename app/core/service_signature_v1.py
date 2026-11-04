@@ -350,3 +350,64 @@ class ServiceVerifier:
             context=pending.context,
             raw_context=pending.raw_context,
         )
+
+
+# ---- Signed responses (M3-D provenance) ------------------------------------------------
+#
+# A response with generated or retrieved content is signed, so the backend can
+# trust its sources_used: the signature covers the request's signed id, the
+# single-use nonce the backend put in the signed request body, a timestamp and
+# the SHA-256 of the exact response bytes, under the AI-to-backend secret. The
+# backend accepts one response per nonce, once.
+
+RESPONSE_TIMESTAMP_HEADER = "X-BUILD-Response-Timestamp"
+RESPONSE_SIGNATURE_HEADER = "X-BUILD-Response-Signature"
+RESPONSE_NONCE_PATTERN = r"^[A-Za-z0-9_-]{22,128}$"
+
+
+@dataclass(frozen=True)
+class CanonicalResponse:
+    sender: str
+    request_id: str
+    nonce: str
+    timestamp: str
+    body_sha256: str
+
+    def to_bytes(self) -> bytes:
+        lines = [
+            PROTOCOL_VERSION,
+            "response",
+            self.sender,
+            self.request_id,
+            self.nonce,
+            self.timestamp,
+            self.body_sha256,
+        ]
+        return "\n".join(lines).encode("utf-8")
+
+    def signature(self, secret: str) -> str:
+        mac = hmac.new(secret.encode("utf-8"), self.to_bytes(), hashlib.sha256)
+        return f"{PROTOCOL_VERSION}={mac.hexdigest()}"
+
+
+@dataclass(frozen=True)
+class ResponseSigner:
+    """Signs responses with the direction's current secret."""
+
+    sender: str
+    secret: str
+
+    def headers(
+        self, *, request_id: str, nonce: str, body: bytes, timestamp: int
+    ) -> dict[str, str]:
+        canonical = CanonicalResponse(
+            sender=self.sender,
+            request_id=request_id,
+            nonce=nonce,
+            timestamp=str(timestamp),
+            body_sha256=hex_sha256(body),
+        )
+        return {
+            RESPONSE_TIMESTAMP_HEADER: str(timestamp),
+            RESPONSE_SIGNATURE_HEADER: canonical.signature(self.secret),
+        }

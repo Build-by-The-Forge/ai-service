@@ -8,6 +8,7 @@ from app.services.ai.deterministic import DeterministicLLM
 from app.services.ai.llm import LLMProvider
 from app.services.generation.structured_questions import StructuredQuestionGenerator
 from app.services.rag.evidence import Evidence, Passage
+from tests.rag_support import sources_for
 
 PASSAGE = (
     "In cells, the mitochondrion is the organelle that makes ATP; ribosomes "
@@ -18,9 +19,9 @@ PASSAGE = (
 class NoRetrieval:
     """One course passage on the topic."""
 
-    async def evidence(self, query):
+    async def evidence(self, query, denied_assets):
         passage = Passage(1, PASSAGE, "chunk-1", "asset-1", 1, 1)
-        return Evidence(query=query, passages=(passage,))
+        return Evidence(query=query, passages=(passage,), sources_used=sources_for(passage))
 
 
 GOOD = {
@@ -61,7 +62,11 @@ class Scripted(LLMProvider):
 
 async def generate(llm, count=5, difficulty="medium", question_type="mcq"):
     return await StructuredQuestionGenerator(llm, NoRetrieval()).generate(
-        "cells", count=count, difficulty=difficulty, question_type=question_type
+        "cells",
+        denied_assets=frozenset(),
+        count=count,
+        difficulty=difficulty,
+        question_type=question_type,
     )
 
 

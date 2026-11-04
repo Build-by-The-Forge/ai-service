@@ -28,6 +28,9 @@ class ToolContext:
     permissions: list[str] = field(default_factory=list)
     capabilities: list[str] = field(default_factory=list)
     deadline: float | None = None
+    # The backend's denied documents for this run (M3-D). None when the run
+    # didn't come from a signed backend call: content.search then refuses.
+    denied_assets: frozenset[str] | None = None
     _is_cancelled: bool = False
 
     def is_cancelled(self) -> bool:

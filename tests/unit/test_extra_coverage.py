@@ -15,6 +15,7 @@ from app.schemas.ai import ReadStartRequest, RetrieveRequest
 from app.schemas.tree import TreeNode
 from app.services.memory.memory_service import MemoryService
 from app.services.ocr.pdf_parser import PDFParser
+from app.services.rag.retrieval import Retrieved
 
 
 class DummyResult:
@@ -95,15 +96,20 @@ def test_ocr_route_placeholder_returns_success():
 @pytest.mark.asyncio
 async def test_retrieve_route_returns_api_response_with_dummy_retriever():
     class DummyRetriever:
-        async def retrieve(self, query: str):
-            return [{"text": f"dummy {query}"}]
+        async def retrieve(self, query: str, denied_assets: frozenset[str]):
+            return Retrieved(items=[{"text": f"dummy {query}"}], sources_used=())
 
     response = await retrieve_route.retrieve(
-        body=RetrieveRequest(query="test"), call=None, retriever=DummyRetriever()
+        body=RetrieveRequest(
+            query="test", denied_assets=[], response_nonce="Zt3m0VbqO9aX1yR4kLw2pQ8sHn6uJc5d"
+        ),
+        call=types.SimpleNamespace(request_id="4f1c2a7e-4b3d-4c8e-9a1f-2d3e4f5a6b7c"),
+        retriever=DummyRetriever(),
     )
 
-    assert response.success is True
-    assert response.data[0]["text"] == "dummy test"
+    payload = json.loads(response.body)
+    assert payload["success"] is True
+    assert payload["data"][0]["text"] == "dummy test"
 
 
 def test_start_reading_route_generates_path():

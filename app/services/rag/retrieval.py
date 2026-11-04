@@ -1,5 +1,6 @@
 import asyncio
 import time
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from app.core.rag.contracts import (
@@ -14,6 +15,7 @@ from app.core.rag.errors import TenantContextMissingError
 from app.services.rag.chunker import Chunker
 from app.services.rag.embedder import EmbeddingPort
 from app.services.rag.lexical import LexicalIndexPort
+from app.services.rag.recorder import RetrievalRecorder, SourceUsed
 from app.services.rag.vector_store import VectorStorePort
 
 if TYPE_CHECKING:
@@ -90,6 +92,7 @@ class HybridRetrievalEngine:
         query: str,
         filter: RetrievalFilter,
         policy: RetrievalPolicy | None = None,
+        recorder: RetrievalRecorder | None = None,
     ) -> RetrievedContext:
         """
         Execute dense and sparse hybrid retrieval with Reciprocal Rank Fusion.
@@ -119,6 +122,11 @@ class HybridRetrievalEngine:
         )
 
         dense_results, sparse_results = await asyncio.gather(dense_task, sparse_task)
+        # Everything the store returned, before fusion, ranking or truncation
+        # (M3-D provenance): a chunk cut for length below is still a source.
+        if recorder is not None:
+            recorder.record(chunk for chunk, _ in dense_results)
+            recorder.record(chunk for chunk, _ in sparse_results)
 
         # Reciprocal Rank Fusion (RRF)
         # RRF_Score(d) = w_dense / (rrf_k + rank_dense) + w_sparse / (rrf_k + rank_sparse)
@@ -213,29 +221,40 @@ def set_retrieval_engine(engine: HybridRetrievalEngine | None) -> None:
     _default_retrieval_engine = engine
 
 
+@dataclass(frozen=True)
+class Retrieved:
+    """Retrieved passages as the API's items, with every source the
+    store returned for them (M3-D)."""
+
+    items: list[dict[str, Any]]
+    sources_used: tuple[SourceUsed, ...]
+
+
 # Backward-compatible RetrievalService facade
 class RetrievalService:
     def __init__(self, engine: HybridRetrievalEngine | None = None):
         self.engine = engine or get_retrieval_engine()
 
-    async def retrieve(self, query: str) -> list[dict[str, Any]]:
+    async def retrieve(self, query: str, denied_assets: frozenset[str]) -> Retrieved:
         from app.core import tenant
 
         # Scoped to the verified tenant only; no scope means no retrieval.
         tenant_id = tenant.get_tenant_id()
-        filter_obj = RetrievalFilter(tenant_id=tenant_id)
-        ctx = await self.engine.retrieve(query, filter=filter_obj)
+        filter_obj = RetrievalFilter(tenant_id=tenant_id, denied_assets=denied_assets)
+        recorder = RetrievalRecorder()
+        ctx = await self.engine.retrieve(query, filter=filter_obj, recorder=recorder)
         # Every item carries the passage in full as `text` (the contract field
-        # chat and the backend read), with `snippet` for display. Nothing
-        # found means an empty list, never a stand-in passage.
-        return [
-            {**c, "text": retrieved.chunk.content}
+        # chat and the backend read), with `snippet` for display, taken from
+        # the recorder. Nothing found means an empty list, never a stand-in.
+        items = [
+            {**c, "text": recorder.passage(retrieved.chunk.chunk_id).content}
             for retrieved, c in zip(ctx.chunks, ctx.to_citation_summary())
         ]
+        return Retrieved(items=items, sources_used=recorder.sources_used())
 
-    async def evidence(self, query: str) -> "Evidence":
+    async def evidence(self, query: str, denied_assets: frozenset[str]) -> "Evidence":
         """The verified tenant's numbered passages for grounded answers."""
         from app.core import tenant
         from app.services.rag.evidence import gather
 
-        return await gather(query, tenant.get_tenant_id(), engine=self.engine)
+        return await gather(query, tenant.get_tenant_id(), denied_assets, engine=self.engine)

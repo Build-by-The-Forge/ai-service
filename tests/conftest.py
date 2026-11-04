@@ -44,13 +44,26 @@ def in_memory_index_fence():
 
 
 @pytest.fixture(autouse=True)
-def in_memory_retrieval():
-    """Tests retrieve from an in-memory engine (tests/rag_support.py); the
-    app's default is the durable one, which tests that need it build."""
+def in_memory_scopes():
+    """Scope assignments go to an in-memory store, which the in-memory
+    retrieval engine reads; tests of the durable store use PgScopeStore."""
+    from app.services.rag.scopes import InMemoryScopes, set_scope_store
+
+    scopes = InMemoryScopes()
+    set_scope_store(scopes)
+    yield scopes
+    set_scope_store(None)
+
+
+@pytest.fixture(autouse=True)
+def in_memory_retrieval(in_memory_scopes):
+    """Tests retrieve from an in-memory engine (tests/rag_support.py) that
+    reads the in-memory scopes; the app's default is the durable one, which
+    tests that need it build."""
     from app.services.rag.retrieval import set_retrieval_engine
     from tests.rag_support import in_memory_engine
 
-    engine = in_memory_engine()
+    engine = in_memory_engine(in_memory_scopes)
     set_retrieval_engine(engine)
     yield engine
     set_retrieval_engine(None)

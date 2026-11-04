@@ -14,7 +14,7 @@ class AIOrchestrator:
         self.memory = memory
         self.prompts = PromptBuilder()
 
-    async def chat(self, user_id: str, question: str):
+    async def chat(self, user_id: str, question: str, denied_assets: frozenset[str]):
         try:
             user_memory = await self.memory.get_user_memory(user_id)
         except LearningMemoryDisabled:
@@ -32,7 +32,7 @@ class AIOrchestrator:
 
         memory_text = "\n".join(memory_items)
 
-        evidence = await self.retriever.evidence(question)
+        evidence = await self.retriever.evidence(question, denied_assets)
         answer = await self._grounded(
             evidence,
             "chat_tutor",
@@ -47,10 +47,11 @@ class AIOrchestrator:
             "citations": answer.citations,
             "context_used": evidence.context(),
             "memory_used": memory_text,
+            "sources_used": [s.as_dict() for s in evidence.sources_used],
         }
 
-    async def explain(self, subject: str):
-        evidence = await self.retriever.evidence(subject)
+    async def explain(self, subject: str, denied_assets: frozenset[str]):
+        evidence = await self.retriever.evidence(subject, denied_assets)
         answer = await self._grounded(
             evidence, "explain", context=evidence.prompt_block(), subject=subject
         )
@@ -58,6 +59,7 @@ class AIOrchestrator:
             "explanation": answer.text,
             "grounded": answer.grounded,
             "citations": answer.citations,
+            "sources_used": [s.as_dict() for s in evidence.sources_used],
         }
 
     async def _grounded(self, evidence: Evidence, template: str, **fields) -> GroundedAnswer:
@@ -74,16 +76,22 @@ class AIOrchestrator:
     async def generate_questions(
         self,
         topic: str,
+        denied_assets: frozenset[str],
         count: int = 5,
         difficulty: str = "medium",
         question_type: str = "mcq",
     ):
         result = await StructuredQuestionGenerator(self.llm, self.retriever).generate(
-            topic, count=count, difficulty=difficulty, question_type=question_type
+            topic,
+            denied_assets=denied_assets,
+            count=count,
+            difficulty=difficulty,
+            question_type=question_type,
         )
         return {
             "questions": [q.model_dump() for q in result.questions],
             "discarded": result.discarded,
             "grounded": result.grounded,
             "rejected": result.rejected,
+            "sources_used": [s.as_dict() for s in result.sources_used],
         }

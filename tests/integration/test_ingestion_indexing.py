@@ -63,13 +63,13 @@ async def test_an_ingested_document_is_retrievable_by_its_tenant_only(tmp_path):
         assert indexed["embedding_model"] == "sentence-transformers/all-MiniLM-L6-v2"
 
         question = await embedder.embed_text("what are these lecture notes about? limits")
-        mine = RetrievalFilter(tenant_id=TENANT)
+        mine = RetrievalFilter(tenant_id=TENANT, denied_assets=frozenset())
         (dense, score), *_ = await index.query_dense(question, mine, top_k=3)
         (sparse, _), *_ = await index.query_sparse("notes on limits", mine, top_k=3)
         assert dense.document_id == sparse.document_id == ASSET and score > 0.6
         assert "limits" in dense.content and dense.provenance.page_number == 1
 
-        other = RetrievalFilter(tenant_id=str(uuid.uuid4()))
+        other = RetrievalFilter(tenant_id=str(uuid.uuid4()), denied_assets=frozenset())
         assert await index.query_dense(question, other, top_k=3) == []
         assert await index.query_sparse("notes on limits", other, top_k=3) == []
         await index.delete_document(TENANT, ASSET)

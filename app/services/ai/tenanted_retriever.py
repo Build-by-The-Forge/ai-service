@@ -1,16 +1,14 @@
-from typing import Any
-
 from app.services.rag.evidence import Evidence
-from app.services.rag.retrieval import RetrievalService
+from app.services.rag.retrieval import Retrieved, RetrievalService
 
 
 class TenantAwareRetrievalService(RetrievalService):
     def __init__(self, retriever: RetrievalService | None = None):
         self.retriever = retriever or RetrievalService()
 
-    async def retrieve(self, query: str) -> list[dict[str, Any]]:
+    async def retrieve(self, query: str, denied_assets: frozenset[str]) -> Retrieved:
         # Delegate to RetrievalService, which scopes search to the verified request tenant.
-        return await self.retriever.retrieve(query)
+        return await self.retriever.retrieve(query, denied_assets)
 
-    async def evidence(self, query: str) -> Evidence:
-        return await self.retriever.evidence(query)
+    async def evidence(self, query: str, denied_assets: frozenset[str]) -> Evidence:
+        return await self.retriever.evidence(query, denied_assets)

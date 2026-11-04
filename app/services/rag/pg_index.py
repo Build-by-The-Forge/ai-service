@@ -15,6 +15,12 @@ sparse entries are written, replaced and deleted together.
   (STALE_INDEX_WRITE), even when the index holds no newer rows.
 - Every read and delete filters on the verified tenant inside the SQL;
   nothing is read across tenants and filtered afterwards.
+- Every read joins each chunk to its document's scope (M3-D, asset_scopes)
+  and returns only RETRIEVABLE_SCOPES, inside the SQL and before any
+  ranking or limit. A document without a scope row is `unknown` and never
+  returned; its chunks carry no copy of the scope that could go stale.
+  The filter's denied_assets are excluded the same way, whatever their
+  stored scope.
 - Dense queries use the HNSW index with pgvector 0.8's iterative scan, so a
   tenant filter cannot starve the result set; sparse queries OR the query's
   terms (plainto_tsquery would AND them and miss most questions) and rank
@@ -26,17 +32,19 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Float, delete, func, select, text, tuple_
+from sqlalchemy import Float, and_, delete, func, select, text, tuple_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.rag.contracts import ChunkProvenance, DocumentChunk, RetrievalFilter
+from app.core.rag.scope import RETRIEVABLE_SCOPES
 from app.core.rag.errors import (
     StaleIndexWriteError,
     TenantContextMissingError,
     VectorStoreError,
 )
+from app.db.models.asset_scope import AssetScope
 from app.db.models.document_chunk import DocumentChunk as ChunkRow
 from app.db.models.ingestion_fence import IngestionFence
 from app.services.rag.lexical import LexicalIndexPort
@@ -51,19 +59,23 @@ _COLUMNS = (
     ChunkRow.tenant_id,
     ChunkRow.asset_id,
     ChunkRow.run_number,
+    ChunkRow.attempt,
     ChunkRow.chunk_index,
     ChunkRow.page_start,
     ChunkRow.page_end,
     ChunkRow.content,
 )
 _SPARSE = text(
-    "SELECT chunk_id, tenant_id, asset_id, run_number, chunk_index, page_start, page_end,"
-    " content, ts_rank_cd(content_tsv, q.query, 32) AS score"
-    " FROM document_chunks,"
+    "SELECT c.chunk_id, c.tenant_id, c.asset_id, c.run_number, c.attempt, c.chunk_index,"
+    " c.page_start, c.page_end, c.content, ts_rank_cd(c.content_tsv, q.query, 32) AS score"
+    " FROM document_chunks c"
+    " JOIN asset_scopes s ON s.tenant_id = c.tenant_id AND s.asset_id = c.asset_id,"
     " (SELECT replace(plainto_tsquery('english', :query)::text, '&', '|')::tsquery AS query) q"
-    " WHERE tenant_id = :tenant_id AND content_tsv @@ q.query"
-    " AND (CAST(:asset_ids AS text[]) IS NULL OR asset_id = ANY(CAST(:asset_ids AS text[])))"
-    " ORDER BY score DESC, chunk_id LIMIT :top_k"
+    " WHERE c.tenant_id = :tenant_id AND c.content_tsv @@ q.query"
+    " AND s.scope = ANY(CAST(:scopes AS text[]))"
+    " AND NOT (c.asset_id = ANY(CAST(:denied AS text[])))"
+    " AND (CAST(:asset_ids AS text[]) IS NULL OR c.asset_id = ANY(CAST(:asset_ids AS text[])))"
+    " ORDER BY score DESC, c.chunk_id LIMIT :top_k"
 )
 
 
@@ -82,6 +94,7 @@ def _to_contract(row: Any) -> DocumentChunk:
         content=row.content,
         metadata={
             "run_number": row.run_number,
+            "attempt": row.attempt,
             "chunk_index": row.chunk_index,
             "page_start": row.page_start,
             "page_end": row.page_end,
@@ -208,12 +221,21 @@ class PgChunkIndex(VectorStorePort, LexicalIndexPort):
         distance = ChunkRow.embedding.op("<=>", return_type=Float)(vector)
         stmt = (
             select(*_COLUMNS, distance.label("distance"))
-            .where(ChunkRow.tenant_id == tenant_id)
+            .join(
+                AssetScope,
+                and_(
+                    AssetScope.tenant_id == ChunkRow.tenant_id,
+                    AssetScope.asset_id == ChunkRow.asset_id,
+                ),
+            )
+            .where(ChunkRow.tenant_id == tenant_id, AssetScope.scope.in_(RETRIEVABLE_SCOPES))
             .order_by(distance)
             .limit(top_k)
         )
         if filter.document_ids:
             stmt = stmt.where(ChunkRow.asset_id.in_(filter.document_ids))
+        if filter.denied_assets:
+            stmt = stmt.where(ChunkRow.asset_id.not_in(sorted(filter.denied_assets)))
         try:
             async with self._session() as db, db.begin():
                 await db.execute(text("SET LOCAL hnsw.iterative_scan = relaxed_order"))
@@ -235,6 +257,8 @@ class PgChunkIndex(VectorStorePort, LexicalIndexPort):
         params = {
             "query": query,
             "tenant_id": tenant_id,
+            "scopes": list(RETRIEVABLE_SCOPES),
+            "denied": sorted(filter.denied_assets),
             "asset_ids": list(filter.document_ids) if filter.document_ids else None,
             "top_k": top_k,
         }

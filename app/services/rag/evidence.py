@@ -21,6 +21,7 @@ import re
 from dataclasses import dataclass
 
 from app.core.rag.contracts import RetrievalFilter, RetrievalPolicy
+from app.services.rag.recorder import RetrievalRecorder, SourceUsed, UnrecordedPassageError
 from app.services.rag.retrieval import HybridRetrievalEngine, get_retrieval_engine
 
 NOT_COVERED = (
@@ -54,6 +55,16 @@ class Passage:
 class Evidence:
     query: str
     passages: tuple[Passage, ...]
+    # Every document version retrieval returned (M3-D), cited or not and
+    # whether or not it fit in the prompt, from the recorder alone.
+    sources_used: tuple[SourceUsed, ...]
+
+    def __post_init__(self) -> None:
+        # No passage reaches a prompt without its document among the sources.
+        recorded = {source.asset_id for source in self.sources_used}
+        unrecorded = {p.document_id for p in self.passages} - recorded
+        if unrecorded:
+            raise UnrecordedPassageError(sorted(unrecorded))
 
     def prompt_block(self) -> str:
         """Numbered passages for a prompt: '[n] (document, pages) text'."""
@@ -82,18 +93,25 @@ def _pages(passage: Passage) -> str:
 
 
 async def gather(
-    query: str, tenant_id: str, engine: HybridRetrievalEngine | None = None
+    query: str,
+    tenant_id: str,
+    denied_assets: frozenset[str],
+    engine: HybridRetrievalEngine | None = None,
 ) -> Evidence:
-    """The tenant's top passages for a query, in full and numbered."""
+    """The tenant's top passages for a query, in full and numbered, with
+    the backend's denied documents excluded."""
     engine = engine or get_retrieval_engine()
+    recorder = RetrievalRecorder()
     context = await engine.retrieve(
         query,
-        filter=RetrievalFilter(tenant_id=tenant_id),
+        filter=RetrievalFilter(tenant_id=tenant_id, denied_assets=denied_assets),
         policy=RetrievalPolicy(top_k=PASSAGES),
+        recorder=recorder,
     )
     passages = []
     for number, retrieved in enumerate(context.chunks, start=1):
-        chunk = retrieved.chunk
+        # Only what retrieval recorded: anything else is refused.
+        chunk = recorder.passage(retrieved.chunk.chunk_id)
         meta = chunk.metadata or {}
         page = chunk.provenance.page_number if chunk.provenance else None
         passages.append(
@@ -106,7 +124,7 @@ async def gather(
                 page_end=meta.get("page_end", page),
             )
         )
-    return Evidence(query=query, passages=tuple(passages))
+    return Evidence(query=query, passages=tuple(passages), sources_used=recorder.sources_used())
 
 
 def check_grounded(answer: str, evidence: Evidence) -> GroundedAnswer:

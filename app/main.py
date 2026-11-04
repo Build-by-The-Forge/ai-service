@@ -5,6 +5,7 @@ from fastapi import FastAPI
 from app.api.v1.ai.router import ai_router
 from app.api.v1.ingest import router as ingest_router
 from app.api.v1.router import api_router
+from app.api.v1.scopes import router as scopes_router
 from app.core.config import STRICT_ENVIRONMENTS, settings
 from app.core.errors import app_exception_handler, learning_memory_disabled_handler
 from app.core.learning_memory_gate import LearningMemoryDisabled
@@ -81,6 +82,7 @@ def create_app(replay_guard: ReplayGuard | None = None) -> FastAPI:
     # Routes
     app.include_router(api_router, prefix="/api/v1")
     app.include_router(ingest_router, prefix="/v1/ingest")
+    app.include_router(scopes_router, prefix="/v1/ingest")
     app.include_router(ai_router, prefix="/v1/ai")
 
     return app

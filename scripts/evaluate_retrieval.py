@@ -37,6 +37,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.core.rag.contracts import RetrievalFilter, RetrievalPolicy  # noqa: E402
+from app.core.rag.scope import KnowledgeScope  # noqa: E402
 from app.services.ingestion.chunking import chunk_document  # noqa: E402
 from app.services.ingestion.extraction import ExtractedPage  # noqa: E402
 from app.services.ingestion.normalize import normalize_text  # noqa: E402
@@ -46,6 +47,13 @@ MRR_DEPTH = 10
 STRATEGIES = ("dense", "keyword", "hybrid")
 NO_ANSWER = "out_of_corpus"
 EVAL_TENANT = str(uuid.uuid5(uuid.NAMESPACE_URL, "build:retrieval-eval"))
+# The evaluation documents' scope assignment (M3-D): retrieval returns only
+# institutional documents, and an unassigned one is unknown.
+SCOPE_VERSION = 1
+
+
+class EvaluationError(Exception):
+    """The evaluation didn't measure what it claims to."""
 
 
 class DatasetError(Exception):
@@ -147,7 +155,9 @@ def score(questions: list[dict[str, Any]], rankings: dict[str, list[Any]]) -> di
     }
 
 
-async def index_corpus(dataset: Dataset, index: Any, embedder: Any, tenant_id: str) -> int:
+async def index_corpus(
+    dataset: Dataset, index: Any, embedder: Any, scopes: Any, tenant_id: str
+) -> int:
     total = 0
     for doc_id, doc in dataset.documents.items():
         pages = [
@@ -166,13 +176,23 @@ async def index_corpus(dataset: Dataset, index: Any, embedder: Any, tenant_id: s
             embeddings=vectors,
             embedding_model=getattr(embedder, "model_id", type(embedder).__name__),
         )
+        # After its fence, as the backend's dispatcher assigns a document.
+        state = await scopes.assign(
+            tenant_id=tenant_id,
+            asset_id=doc_id,
+            scope=KnowledgeScope.INSTITUTIONAL,
+            version=SCOPE_VERSION,
+        )
+        if state.scope is not KnowledgeScope.INSTITUTIONAL:
+            raise EvaluationError(f"{doc_id} is {state.scope.value}, not institutional")
     return total
 
 
 async def rank_all(dataset: Dataset, index: Any, embedder: Any, tenant_id: str) -> dict:
     from app.services.rag.retrieval import HybridRetrievalEngine
 
-    scope = RetrievalFilter(tenant_id=tenant_id)
+    # Nothing is denied: the evaluation measures ranking, not revocation.
+    scope = RetrievalFilter(tenant_id=tenant_id, denied_assets=frozenset())
     engine = HybridRetrievalEngine(embedder=embedder, vector_store=index, lexical_index=index)
     policy = RetrievalPolicy(top_k=MRR_DEPTH)
     rankings: dict[str, dict[str, list[Any]]] = {s: {} for s in STRATEGIES}
@@ -187,7 +207,25 @@ async def rank_all(dataset: Dataset, index: Any, embedder: Any, tenant_id: str) 
     return rankings
 
 
-async def evaluate(dataset: Dataset, index: Any, embedder: Any) -> dict[str, Any]:
+def expected_documents_missing(dataset: Dataset, rankings: dict) -> set[str]:
+    """Documents an answerable question expects that no strategy retrieved
+    for any question: a scope or index fault, not a ranking result."""
+    expected = {
+        e["document"]
+        for q in dataset.questions
+        if q["category"] != NO_ANSWER
+        for e in q["expected"]
+    }
+    retrieved = {
+        chunk.document_id
+        for strategy in rankings.values()
+        for ranked in strategy.values()
+        for chunk in ranked
+    }
+    return expected - retrieved
+
+
+async def evaluate(dataset: Dataset, index: Any, embedder: Any, scopes: Any) -> dict[str, Any]:
     # A fixed tenant used only by the evaluation: chunk ids derive from the
     # tenant, and ties in ranking break on chunk id, so a fixed tenant makes
     # runs repeatable. Leftovers from an interrupted run are cleared first.
@@ -195,11 +233,14 @@ async def evaluate(dataset: Dataset, index: Any, embedder: Any) -> dict[str, Any
     for doc_id in dataset.documents:
         await index.delete_document(tenant_id, doc_id)
     try:
-        chunks = await index_corpus(dataset, index, embedder, tenant_id)
+        chunks = await index_corpus(dataset, index, embedder, scopes, tenant_id)
         rankings = await rank_all(dataset, index, embedder, tenant_id)
     finally:
         for doc_id in dataset.documents:
             await index.delete_document(tenant_id, doc_id)
+    missing = expected_documents_missing(dataset, rankings)
+    if missing:
+        raise EvaluationError(f"expected documents never retrieved: {sorted(missing)}")
     return {
         "dataset": {"version": dataset.version, "sha256": dataset.sha256},
         "model": getattr(embedder, "model_id", type(embedder).__name__),
@@ -213,12 +254,16 @@ async def _main(args: argparse.Namespace) -> int:
     from app.db.session import get_async_session_local, initialize_database, reset_engine
     from app.services.rag.onnx_embedder import OnnxMiniLMEmbedder
     from app.services.rag.pg_index import PgChunkIndex
+    from app.services.rag.scopes import PgScopeStore
 
     dataset = load_dataset(args.dataset)
     await initialize_database()
     try:
         report = await evaluate(
-            dataset, PgChunkIndex(get_async_session_local()), OnnxMiniLMEmbedder.from_settings()
+            dataset,
+            PgChunkIndex(get_async_session_local()),
+            OnnxMiniLMEmbedder.from_settings(),
+            PgScopeStore(get_async_session_local()),
         )
     finally:
         await reset_engine()

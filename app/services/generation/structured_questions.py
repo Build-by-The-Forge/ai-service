@@ -15,6 +15,7 @@ from app.core.prompt_builder import PromptBuilder
 from app.schemas.ai import GeneratedQuestion
 from app.services.ai.llm import LLMProvider, StructuredOutputError
 from app.services.generation.question_checks import Verdict, check_question, count_reasons
+from app.services.rag.recorder import SourceUsed
 from app.services.rag.retrieval import RetrievalService
 
 logger = logging.getLogger(__name__)
@@ -29,6 +30,8 @@ class GeneratedQuestions:
     grounded: bool = True
     # Of the discarded, those the support checks rejected, by reason.
     rejected: dict[str, int] = field(default_factory=dict)
+    # Every source retrieval returned for the topic (M3-D), used or not.
+    sources_used: tuple[SourceUsed, ...] = field(kw_only=True)
 
 
 class StructuredQuestionGenerator:
@@ -38,11 +41,19 @@ class StructuredQuestionGenerator:
         self.prompts = PromptBuilder()
 
     async def generate(
-        self, topic: str, *, count: int, difficulty: str, question_type: str
+        self,
+        topic: str,
+        *,
+        denied_assets: frozenset[str],
+        count: int,
+        difficulty: str,
+        question_type: str,
     ) -> GeneratedQuestions:
-        evidence = await self.retriever.evidence(topic)
+        evidence = await self.retriever.evidence(topic, denied_assets)
         if not evidence.passages:
-            return GeneratedQuestions(questions=[], discarded=0, grounded=False)
+            return GeneratedQuestions(
+                questions=[], discarded=0, grounded=False, sources_used=evidence.sources_used
+            )
         prompt = self.prompts.build(
             "structured_questions",
             topic=topic,
@@ -61,7 +72,9 @@ class StructuredQuestionGenerator:
             )
         except StructuredOutputError:
             logger.warning("question generation: the model did not answer with JSON")
-            return GeneratedQuestions(questions=[], discarded=count)
+            return GeneratedQuestions(
+                questions=[], discarded=count, sources_used=evidence.sources_used
+            )
 
         raw = answer.get("questions")
         items: list[Any] = raw if isinstance(raw, list) else []
@@ -92,5 +105,8 @@ class StructuredQuestionGenerator:
         if not isinstance(raw, list):
             discarded = count
         return GeneratedQuestions(
-            questions=valid, discarded=discarded, rejected=count_reasons(rejected)
+            questions=valid,
+            discarded=discarded,
+            rejected=count_reasons(rejected),
+            sources_used=evidence.sources_used,
         )

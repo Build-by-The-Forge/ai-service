@@ -11,26 +11,40 @@ from app.api.v1.ai import tree as tree_route
 from app.core import metrics as core_metrics
 from app.schemas import ai as ai_schemas
 from app.schemas.common import APIResponse
+from app.services.rag.recorder import SourceUsed
+from app.services.rag.retrieval import Retrieved
 
 
 class DummyOrchestrator:
-    async def chat(self, user_id: str, question: str):
-        return {"answer": "ok", "context_used": [], "memory_used": ""}
+    async def chat(self, user_id: str, question: str, denied_assets: frozenset[str]):
+        return {
+            "answer": "ok",
+            "context_used": [],
+            "memory_used": "",
+            "sources_used": [{"asset_id": "a1", "run_number": 1, "attempt": 1}],
+        }
 
-    async def explain(self, subject: str):
-        return {"explanation": f"explained {subject}"}
+    async def explain(self, subject: str, denied_assets: frozenset[str]):
+        return {"explanation": f"explained {subject}", "sources_used": []}
 
-    async def generate_questions(self, topic: str, count: int = 5, **_options):
-        return {"questions": [f"question about {topic}"] * count}
+    async def generate_questions(
+        self, topic: str, denied_assets: frozenset[str], count: int = 5, **_options
+    ):
+        return {"questions": [], "discarded": count, "grounded": False, "sources_used": []}
 
 
 # What the signed-route dependency hands a route (a verified user call).
-USER_CALL = types.SimpleNamespace(context=types.SimpleNamespace(user_id="u1"))
+USER_CALL = types.SimpleNamespace(
+    request_id="4f1c2a7e-4b3d-4c8e-9a1f-2d3e4f5a6b7c",
+    context=types.SimpleNamespace(user_id="u1"),
+)
 
 
 class DummyRetriever:
-    async def retrieve(self, query: str):
-        return [{"text": f"document for {query}"}]
+    async def retrieve(self, query: str, denied_assets: frozenset[str]):
+        return Retrieved(
+            items=[{"text": f"document for {query}"}], sources_used=(SourceUsed("a1", 1, 1),)
+        )
 
 
 class DummyAsyncResult:
@@ -75,48 +89,66 @@ class DummyAsyncSession:
 @pytest.mark.asyncio
 async def test_chat_route_returns_api_response():
     response = await chat_route.chat(
-        body=ai_schemas.ChatRequest(message="What is AI?"),
+        body=ai_schemas.ChatRequest(
+            message="What is AI?",
+            denied_assets=[],
+            response_nonce="Zt3m0VbqO9aX1yR4kLw2pQ8sHn6uJc5d",
+        ),
         call=USER_CALL,
         orchestrator=DummyOrchestrator(),
     )
 
-    assert isinstance(response, APIResponse)
-    assert response.data["answer"] == "ok"
+    payload = ai_schemas.ChatResponse.model_validate_json(response.body)
+    assert payload.data.answer == "ok"
+    assert [s.asset_id for s in payload.sources_used] == ["a1"]
 
 
 @pytest.mark.asyncio
 async def test_retrieve_route_returns_api_response():
     response = await retrieve_route.retrieve(
-        body=ai_schemas.RetrieveRequest(query="query"),
+        body=ai_schemas.RetrieveRequest(
+            query="query", denied_assets=[], response_nonce="Zt3m0VbqO9aX1yR4kLw2pQ8sHn6uJc5d"
+        ),
         call=USER_CALL,
         retriever=DummyRetriever(),
     )
 
-    assert isinstance(response, APIResponse)
-    assert response.data[0]["text"] == "document for query"
+    payload = ai_schemas.RetrieveResponse.model_validate_json(response.body)
+    assert payload.data[0].text == "document for query"
+    assert [s.asset_id for s in payload.sources_used] == ["a1"]
 
 
 @pytest.mark.asyncio
 async def test_explain_route_returns_api_response():
     response = await explain_route.explain(
-        body=ai_schemas.ExplainRequest(subject="algebra"),
+        body=ai_schemas.ExplainRequest(
+            subject="algebra", denied_assets=[], response_nonce="Zt3m0VbqO9aX1yR4kLw2pQ8sHn6uJc5d"
+        ),
         call=USER_CALL,
         orchestrator=DummyOrchestrator(),
     )
 
-    assert response.data["explanation"] == "explained algebra"
+    payload = ai_schemas.ExplainResponse.model_validate_json(response.body)
+    assert payload.data.explanation == "explained algebra"
+    assert payload.sources_used == []
 
 
 @pytest.mark.asyncio
 async def test_generate_questions_route_returns_api_response():
     response = await generate_questions_route.generate_questions(
-        body=ai_schemas.GenerateQuestionsRequest(topic="geometry", count=2),
+        body=ai_schemas.GenerateQuestionsRequest(
+            topic="geometry",
+            count=2,
+            denied_assets=[],
+            response_nonce="Zt3m0VbqO9aX1yR4kLw2pQ8sHn6uJc5d",
+        ),
         call=USER_CALL,
         orchestrator=DummyOrchestrator(),
     )
 
-    assert response.data["questions"][0].startswith("question about geometry")
-    assert len(response.data["questions"]) == 2
+    payload = ai_schemas.GeneratedQuestionsResponse.model_validate_json(response.body)
+    assert payload.data.questions == [] and payload.data.discarded == 2
+    assert payload.sources_used == []
 
 
 def test_generate_route_placeholder_returns_success():

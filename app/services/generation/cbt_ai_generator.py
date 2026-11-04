@@ -13,10 +13,12 @@ class CBTAIGenerator:
         self,
         course: str,
         topic: str,
+        *,
+        denied_assets: frozenset[str],
         difficulty: str = "medium",
         count: int = 5,
     ):
-        context_docs = await self.retriever.retrieve(topic)
+        context_docs = (await self.retriever.retrieve(topic, denied_assets)).items
 
         context_text = "\n".join(doc.get("text", "") for doc in context_docs)
 

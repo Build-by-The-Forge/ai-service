@@ -4,12 +4,17 @@ from app.core.rag.contracts import DocumentChunk, RetrievalFilter
 from app.core.rag.errors import TenantContextMissingError
 from app.services.rag.embedder import MockEmbeddingAdapter
 from app.services.rag.lexical import BM25Index
+from app.services.rag.scopes import InMemoryScopes
 from app.services.rag.vector_store import InMemoryVectorStore
+from tests.rag_support import institutional
 
 
 @pytest.mark.asyncio
 async def test_in_memory_vector_store_dense_retrieval_and_tenant_isolation():
-    store = InMemoryVectorStore()
+    scopes = InMemoryScopes()
+    await institutional(scopes, "school_1", "doc_os")
+    await institutional(scopes, "school_2", "doc_os_2")
+    store = InMemoryVectorStore(scopes=scopes)
     embedder = MockEmbeddingAdapter(dimension=64)
 
     vec_t1 = await embedder.embed_text("Operating systems memory management and paging")
@@ -38,7 +43,9 @@ async def test_in_memory_vector_store_dense_retrieval_and_tenant_isolation():
 
     # Search for school_1 only
     query_vec = await embedder.embed_text("memory management paging")
-    filter_t1 = RetrievalFilter(tenant_id="school_1", course_code="CSC301")
+    filter_t1 = RetrievalFilter(
+        tenant_id="school_1", course_code="CSC301", denied_assets=frozenset()
+    )
     results = await store.query_dense(query_vec, filter=filter_t1, top_k=5)
 
     assert len(results) == 1
@@ -53,7 +60,9 @@ async def test_in_memory_vector_store_dense_retrieval_and_tenant_isolation():
 
 @pytest.mark.asyncio
 async def test_bm25_lexical_index_sparse_keyword_matching():
-    index = BM25Index()
+    scopes = InMemoryScopes()
+    await institutional(scopes, "school_1", "doc_bio", "doc_chem")
+    index = BM25Index(scopes=scopes)
 
     chunk1 = DocumentChunk.create(
         tenant_id="school_1",
@@ -72,7 +81,7 @@ async def test_bm25_lexical_index_sparse_keyword_matching():
 
     await index.index_chunks([chunk1, chunk2])
 
-    filter_bio = RetrievalFilter(tenant_id="school_1")
+    filter_bio = RetrievalFilter(tenant_id="school_1", denied_assets=frozenset())
     results = await index.query_sparse("chloroplasts chlorophyll", filter=filter_bio, top_k=5)
 
     assert len(results) == 1
@@ -85,4 +94,6 @@ async def test_bm25_lexical_index_sparse_keyword_matching():
 async def test_vector_store_requires_tenant_id():
     store = InMemoryVectorStore()
     with pytest.raises(TenantContextMissingError):
-        await store.query_dense([0.1, 0.2], filter=RetrievalFilter(tenant_id=""))
+        await store.query_dense(
+            [0.1, 0.2], filter=RetrievalFilter(tenant_id="", denied_assets=frozenset())
+        )
