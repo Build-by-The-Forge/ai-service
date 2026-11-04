@@ -18,6 +18,8 @@ from app.services.ai.deterministic import DeterministicLLM
 from app.services.ai.dependencies import get_ai_orchestrator
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
+from app.services.rag.scopes import get_scope_store
+from tests.rag_support import institutional
 from tests.signing import TENANT_A, TENANT_B, USER_ID, signed_headers, user_context
 
 REDIS_URL = os.getenv("TEST_REDIS_URL")
@@ -107,6 +109,7 @@ async def index_osmosis_notes(engine) -> None:
             document_title="Biology notes",
             text=f"Tenant {tenant_id} notes: osmosis moves water across a membrane.",
         )
+        await institutional(get_scope_store(), tenant_id, f"notes-{tenant_id}")
 
 
 async def test_chat_uses_the_context_tenant_and_user(app, memory, in_memory_retrieval):

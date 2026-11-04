@@ -56,13 +56,14 @@ def in_memory_scopes():
 
 
 @pytest.fixture(autouse=True)
-def in_memory_retrieval():
-    """Tests retrieve from an in-memory engine (tests/rag_support.py); the
-    app's default is the durable one, which tests that need it build."""
+def in_memory_retrieval(in_memory_scopes):
+    """Tests retrieve from an in-memory engine (tests/rag_support.py) that
+    reads the in-memory scopes; the app's default is the durable one, which
+    tests that need it build."""
     from app.services.rag.retrieval import set_retrieval_engine
     from tests.rag_support import in_memory_engine
 
-    engine = in_memory_engine()
+    engine = in_memory_engine(in_memory_scopes)
     set_retrieval_engine(engine)
     yield engine
     set_retrieval_engine(None)

@@ -5,6 +5,7 @@ from collections import Counter
 
 from app.core.rag.contracts import DocumentChunk, RetrievalFilter
 from app.core.rag.errors import TenantContextMissingError
+from app.services.rag.scopes import InMemoryScopes
 
 
 class LexicalIndexPort(ABC):
@@ -33,9 +34,11 @@ class BM25Index(LexicalIndexPort):
     Tokenizes queries and passages, computes BM25 relevance scores, and boosts exact course codes.
     """
 
-    def __init__(self, k1: float = 1.5, b: float = 0.75):
+    def __init__(self, k1: float = 1.5, b: float = 0.75, scopes: InMemoryScopes | None = None):
         self.k1 = k1
         self.b = b
+        # Each document's scope (M3-D), as the durable index reads asset_scopes.
+        self._scopes = scopes
         # tenant_id -> chunk_id -> DocumentChunk
         self._chunks: dict[str, dict[str, DocumentChunk]] = {}
         # tenant_id -> chunk_id -> Counter(term -> count)
@@ -44,6 +47,10 @@ class BM25Index(LexicalIndexPort):
         self._inverted_index: dict[str, dict[str, set[str]]] = {}
         # tenant_id -> total words in all chunks
         self._doc_lengths: dict[str, dict[str, int]] = {}
+
+    def _retrievable(self, tenant_id: str, document_id: str) -> bool:
+        # No scope store means no document has a scope: nothing is returned.
+        return self._scopes is not None and self._scopes.retrievable(tenant_id, document_id)
 
     def _tokenize(self, text: str) -> list[str]:
         # Lowercase and split on non-alphanumeric (preserves acronyms and course codes like CSC201)
@@ -112,7 +119,9 @@ class BM25Index(LexicalIndexPort):
             for cid in matching_chunks:
                 chunk = self._chunks[tid][cid]
 
-                # Filter assertions
+                # Filter assertions: the document's scope first (M3-D).
+                if not self._retrievable(tid, chunk.document_id):
+                    continue
                 if filter.course_code and chunk.course_code != filter.course_code:
                     continue
                 if filter.document_ids and chunk.document_id not in filter.document_ids:

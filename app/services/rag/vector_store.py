@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 from app.core.rag.contracts import DocumentChunk, RetrievalFilter
 from app.core.rag.errors import TenantContextMissingError, VectorStoreError
 from app.services.rag.embedder import cosine_similarity
+from app.services.rag.scopes import InMemoryScopes
 
 
 class VectorStorePort(ABC):
@@ -35,9 +36,15 @@ class InMemoryVectorStore(VectorStorePort):
     Suitable for development, testing, and isolated unit test executions.
     """
 
-    def __init__(self):
+    def __init__(self, scopes: InMemoryScopes | None = None):
         # tenant_id -> chunk_id -> DocumentChunk
         self._store: dict[str, dict[str, DocumentChunk]] = {}
+        # Each document's scope (M3-D), as the durable index reads asset_scopes.
+        self._scopes = scopes
+
+    def _retrievable(self, tenant_id: str, document_id: str) -> bool:
+        # No scope store means no document has a scope: nothing is returned.
+        return self._scopes is not None and self._scopes.retrievable(tenant_id, document_id)
 
     def add(self, embedding: list[float], metadata: dict) -> None:
         """Backward-compatible synchronous stub."""
@@ -79,7 +86,9 @@ class InMemoryVectorStore(VectorStorePort):
             if chunk.embedding is None:
                 continue
 
-            # Filtering
+            # Filtering: the document's scope first (M3-D).
+            if not self._retrievable(tid, chunk.document_id):
+                continue
             if filter.course_code and chunk.course_code != filter.course_code:
                 continue
             if filter.document_ids and chunk.document_id not in filter.document_ids:

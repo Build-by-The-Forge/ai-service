@@ -12,6 +12,7 @@ from app.services.ingestion.chunking import Chunk, chunk_id
 from app.services.rag.embedder import MockEmbeddingAdapter
 from app.services.rag.pg_index import PgChunkIndex
 from app.services.rag.retrieval import HybridRetrievalEngine, RetrievalService
+from tests.rag_support import stored_scope
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("DATABASE_URL", "").startswith("postgresql"), reason="needs PostgreSQL"
@@ -49,6 +50,7 @@ async def test_indexed_chunks_are_retrieved_with_their_page_for_their_tenant_onl
         embeddings=[await embedder.embed_text(TEXT)],
         embedding_model="mock",
     )
+    await stored_scope(owner, "asset-phy102")
 
     [hit] = await retrieve_as(engine, owner, "charge of the electron")
     assert hit["text"].startswith("Millikan's oil drop")

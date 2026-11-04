@@ -4,12 +4,17 @@ from app.core.rag.contracts import DocumentChunk, RetrievalFilter
 from app.core.rag.errors import TenantContextMissingError
 from app.services.rag.embedder import MockEmbeddingAdapter
 from app.services.rag.lexical import BM25Index
+from app.services.rag.scopes import InMemoryScopes
 from app.services.rag.vector_store import InMemoryVectorStore
+from tests.rag_support import institutional
 
 
 @pytest.mark.asyncio
 async def test_in_memory_vector_store_dense_retrieval_and_tenant_isolation():
-    store = InMemoryVectorStore()
+    scopes = InMemoryScopes()
+    await institutional(scopes, "school_1", "doc_os")
+    await institutional(scopes, "school_2", "doc_os_2")
+    store = InMemoryVectorStore(scopes=scopes)
     embedder = MockEmbeddingAdapter(dimension=64)
 
     vec_t1 = await embedder.embed_text("Operating systems memory management and paging")
@@ -53,7 +58,9 @@ async def test_in_memory_vector_store_dense_retrieval_and_tenant_isolation():
 
 @pytest.mark.asyncio
 async def test_bm25_lexical_index_sparse_keyword_matching():
-    index = BM25Index()
+    scopes = InMemoryScopes()
+    await institutional(scopes, "school_1", "doc_bio", "doc_chem")
+    index = BM25Index(scopes=scopes)
 
     chunk1 = DocumentChunk.create(
         tenant_id="school_1",

@@ -7,12 +7,15 @@ from app.core.rag.contracts import (
     RetrievalPolicy,
 )
 from app.core.rag.errors import TenantContextMissingError
-from tests.rag_support import in_memory_engine
+from app.services.rag.scopes import InMemoryScopes
+from tests.rag_support import in_memory_engine, institutional
 
 
 @pytest.mark.asyncio
 async def test_hybrid_retrieval_engine_index_and_retrieve():
-    engine = in_memory_engine()
+    scopes = InMemoryScopes()
+    engine = in_memory_engine(scopes)
+    await institutional(scopes, "school_1", "doc_chem_101")
 
     prov = ChunkProvenance(
         source_uri="s3://school-assets/che101.pdf",

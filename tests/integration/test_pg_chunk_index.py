@@ -14,6 +14,7 @@ from app.core.rag.errors import TenantContextMissingError, VectorStoreError
 from app.db.session import get_async_session_local, initialize_database, reset_engine
 from app.services.ingestion.chunking import Chunk, chunk_id
 from app.services.rag.pg_index import PgChunkIndex
+from tests.rag_support import stored_scope
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("DATABASE_URL", "").startswith("postgresql"), reason="needs PostgreSQL"
@@ -39,9 +40,15 @@ def chunks(tenant: str, asset: str, texts=TEXTS, run: int = 1) -> list[Chunk]:
     ]
 
 
-async def index(store, tenant, asset, texts=TEXTS, run=1, vectors=None, attempt=1):
-    """Index as the asset's current attempt: dispatch raises the fence first."""
+async def index(
+    store, tenant, asset, texts=TEXTS, run=1, vectors=None, attempt=1, scope="institutional"
+):
+    """Index as the asset's current attempt: dispatch raises the fence first.
+    The document is given ``scope`` (M3-D) unless it is None: no row, so
+    ``unknown``."""
     await store.raise_fence(tenant_id=tenant, asset_id=asset, run_number=run, attempt=attempt)
+    if scope is not None:
+        await stored_scope(tenant, asset, scope)
     return await store.replace_asset(
         tenant_id=tenant,
         asset_id=asset,

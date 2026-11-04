@@ -2,6 +2,7 @@
 tenant, and an answer kept only if it cites them."""
 
 from app.services.rag.evidence import NOT_COVERED, Evidence, Passage, check_grounded, gather
+from tests.rag_support import institutional
 
 LONG = (
     "Hess's law states that the total enthalpy change of a reaction is the same "
@@ -15,10 +16,13 @@ def passage(number, page_start=3, page_end=3):
     )
 
 
-async def test_gather_returns_the_tenants_passages_in_full_and_numbered(in_memory_retrieval):
+async def test_gather_returns_the_tenants_passages_in_full_and_numbered(
+    in_memory_retrieval, in_memory_scopes
+):
     await in_memory_retrieval.index_document(
         tenant_id="tenant-a", document_id="asset-chm101", document_title="CHM 101", text=LONG
     )
+    await institutional(in_memory_scopes, "tenant-a", "asset-chm101")
 
     evidence = await gather("Hess's law", "tenant-a")
     other = await gather("Hess's law", "tenant-b")
