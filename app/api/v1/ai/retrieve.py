@@ -22,9 +22,12 @@ async def retrieve(
     # Scoped to the verified tenant only (the request scope).
     found = await retriever.retrieve(body.query, frozenset(body.denied_assets))
 
-    payload = RetrieveResponse(
-        data=found.items,
-        message="Retrieval successful",
-        sources_used=[s.as_dict() for s in found.sources_used],
+    # Validated from the plain items, as the other routes' data is.
+    payload = RetrieveResponse.model_validate(
+        {
+            "data": found.items,
+            "message": "Retrieval successful",
+            "sources_used": [s.as_dict() for s in found.sources_used],
+        }
     )
     return signed_response(call, body.response_nonce, payload)
