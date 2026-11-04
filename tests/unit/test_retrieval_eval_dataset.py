@@ -67,3 +67,26 @@ def test_a_hit_needs_the_expected_span_not_just_the_document():
     right = Chunk("doc", 2, "before. The key sentence, after.".lower())
     assert evaluate.first_full_rank(question, [same_doc_wrong_text, right_text_wrong_page]) is None
     assert evaluate.first_full_rank(question, [same_doc_wrong_text, right]) == 2
+
+
+def test_an_expected_document_never_retrieved_is_reported():
+    # If the evaluation documents weren't institutional (M3-D), nothing would
+    # be retrieved: the run must fail, not report a low score.
+    from types import SimpleNamespace
+
+    dataset = evaluate.load_dataset(DATASET)
+    expected = {
+        e["document"]
+        for q in dataset.questions
+        if q["category"] != evaluate.NO_ANSWER
+        for e in q["expected"]
+    }
+    nothing = {s: {q["id"]: [] for q in dataset.questions} for s in evaluate.STRATEGIES}
+    assert evaluate.expected_documents_missing(dataset, nothing) == expected
+
+    everything = {
+        "hybrid": {"q": [SimpleNamespace(document_id=d) for d in sorted(expected)]},
+        "dense": {},
+        "keyword": {},
+    }
+    assert evaluate.expected_documents_missing(dataset, everything) == set()

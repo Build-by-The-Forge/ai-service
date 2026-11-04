@@ -36,6 +36,7 @@ async def test_retrieval_quality_does_not_regress_below_the_baseline():
     from app.db.session import get_async_session_local, initialize_database, reset_engine
     from app.services.rag.onnx_embedder import OnnxMiniLMEmbedder
     from app.services.rag.pg_index import PgChunkIndex
+    from app.services.rag.scopes import PgScopeStore
 
     baseline = json.loads((DATASET / "baseline.json").read_text(encoding="utf-8"))
     await initialize_database()
@@ -44,6 +45,7 @@ async def test_retrieval_quality_does_not_regress_below_the_baseline():
             evaluate.load_dataset(DATASET),
             PgChunkIndex(get_async_session_local()),
             OnnxMiniLMEmbedder(MODEL_DIR, threads=os.cpu_count() or 1),
+            PgScopeStore(get_async_session_local()),
         )
     finally:
         await reset_engine()
