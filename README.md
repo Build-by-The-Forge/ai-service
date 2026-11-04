@@ -28,11 +28,14 @@ The signed context carries the tenant, the user and the one permission the backe
 - **Signed service requests only**: `/v1/ai/*` and `/v1/ingest/*` refuse anything else with 401. Redis down → 503 (fail closed). Bodies are capped at 1 MiB.
 - **Context narrows only**: each route declares one permission; a context without it gets 403.
 - **Request scope**: tenant and user from the verified context. Memory and retrieval fail closed without it.
+- **Knowledge scope (M3-D)**: each document is `institutional`, `personal` or `unknown`, held once per document in `asset_scopes` and set only by the backend's signed, versioned assignment. Retrieval returns `institutional` documents only, inside the SQL and before the limit. A document never assigned a scope is `unknown`, so every document indexed before M3-D starts out of retrieval.
+- **Immediate denial (M3-D)**: every retrieving call carries `denied_assets`, the documents the backend has lowered and the AI service hasn't acknowledged. They are excluded whatever their stored scope. The field is required: absence never means none.
+- **Provenance (M3-D)**: responses with generated or retrieved content report `sources_used`, every `(asset, run, attempt)` retrieval returned, cited or not, built by a retrieval recorder and never by the model. They are signed for the request's id and the backend's single-use `response_nonce` (`X-BUILD-Response-Timestamp`, `X-BUILD-Response-Signature`, under `AI_TO_BACKEND_SECRET`).
 
 ### Intelligence
 - **Chat**: LLM answer with tenant-scoped retrieval and the signed user's learning memory.
 - **Explain** and **question generation** (1–50 questions).
-- **Retrieval**: tenant-scoped hybrid retrieval (placeholder results until the real index exists).
+- **Retrieval**: tenant-scoped hybrid retrieval over the durable index, limited to `institutional` documents.
 - **Knowledge tree** generation and **reading path**.
 - **Adaptive difficulty** and **personalised generation** (`app/services/generation/`).
 - **Ingestion worker**: consumes dispatched tasks and reports signed callbacks to `BACKEND_CALLBACK_URL`. Phase 1 has no real pipeline, so tasks fail with `INGESTION_PIPELINE_UNAVAILABLE`.
@@ -48,7 +51,7 @@ The signed context carries the tenant, the user and the one permission the backe
 ```bash
 cp .env.example .env            # or set variables in the environment
 pip install -r requirements-dev.txt
-alembic upgrade head            # AI-owned tables only: learning_memory, session_memory
+alembic upgrade head            # AI-owned tables only (app/db/ownership.py)
 uvicorn app.main:app --reload   # API
 python -m app.worker            # task worker (separate process)
 ```
@@ -71,18 +74,21 @@ All routes below except System require a signed backend request.
 ### AI (signed, user context)
 | Route | Permission | Body |
 |---|---|---|
-| `POST /v1/ai/chat` | `ai.use` | `{message}` (≤ 4000) |
-| `POST /v1/ai/explain` | `ai.use` | `{subject}` (≤ 4000) |
-| `POST /v1/ai/generate-questions` | `ai.questions.generate` | `{topic, count}` (count 1–50) |
-| `POST /v1/ai/retrieve` | `ai.use` | `{query}` |
+| `POST /v1/ai/chat` | `ai.use` | `{message, denied_assets, response_nonce}` (message ≤ 4000) |
+| `POST /v1/ai/explain` | `ai.use` | `{subject, denied_assets, response_nonce}` (≤ 4000) |
+| `POST /v1/ai/generate-questions` | `ai.questions.generate` | `{topic, count, denied_assets, response_nonce}` (count 1–50) |
+| `POST /v1/ai/retrieve` | `ai.use` | `{query, denied_assets, response_nonce}` |
 | `POST /v1/ai/tree/generate` | `ai.use` | `{course_title, topics}` |
 | `POST /v1/ai/read/start` | `ai.use` | `{root}` |
 
 Bodies reject unknown fields. Naming `tenant_id`, `user_id`, `membership_id` or `role` is 422.
 
+The four retrieving routes need `denied_assets` (at most 1,000 asset ids, `[]` when none) and `response_nonce` (22–128 URL-safe characters). Their 200 responses carry `sources_used` beside `data`, and are signed.
+
 ### Ingestion (signed)
 - `POST /v1/ingest/dispatch`: user context with `content.job.manage`.
 - `GET /v1/ingest/tasks/{external_task_id}`: system context; answers only for the context's tenant.
+- `POST /v1/ingest/scope-assignments`: system context. `{asset_id, scope, version}` is applied only above the stored version; the stored scope comes back either way. Another tenant's asset is 409.
 
 ## Configuration
 
