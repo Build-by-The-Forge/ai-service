@@ -89,7 +89,8 @@ async def test_e2e_security_cross_tenant_tool_tampering_blocked_in_worker():
     class CrossTenantModelProvider(ModelProviderAdapter):
         @property
         def name(self) -> str:
-            return "cross_tenant"
+            # The built-in agents prefer "openai"; this fake stands in for it.
+            return "openai"
 
         def supports_model(self, model: str) -> bool:
             return True

@@ -28,7 +28,8 @@ class FailingModelProvider(ModelProviderAdapter):
 
     @property
     def name(self) -> str:
-        return "failing_provider"
+        # The built-in agents prefer "openai"; this fake stands in for it.
+        return "openai"
 
     def supports_model(self, model: str) -> bool:
         return True
@@ -118,7 +119,8 @@ async def test_e2e_tool_crash_failure_isolation_in_agent_loop():
 
         @property
         def name(self) -> str:
-            return "tool_crash_handler"
+            # The built-in agents prefer "openai"; this fake stands in for it.
+            return "openai"
 
         def supports_model(self, model: str) -> bool:
             return True

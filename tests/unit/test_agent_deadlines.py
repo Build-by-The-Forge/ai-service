@@ -12,7 +12,8 @@ from app.services.agents.executor import AgentExecutor
 class SlowMockProvider(ModelProviderAdapter):
     @property
     def name(self) -> str:
-        return "slow"
+        # The built-in agents prefer "openai"; this fake stands in for it.
+        return "openai"
 
     def supports_model(self, model: str) -> bool:
         return True

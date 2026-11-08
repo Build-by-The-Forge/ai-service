@@ -30,7 +30,8 @@ class E2EModelProvider(ModelProviderAdapter):
 
     @property
     def name(self) -> str:
-        return "e2e_provider"
+        # The built-in agents prefer "openai"; this fake stands in for it.
+        return "openai"
 
     def supports_model(self, model: str) -> bool:
         return True

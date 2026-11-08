@@ -29,7 +29,8 @@ class RAGScriptedModelProvider(ModelProviderAdapter):
 
     @property
     def name(self) -> str:
-        return "rag_scripted"
+        # The built-in agents prefer "openai"; this fake stands in for it.
+        return "openai"
 
     def supports_model(self, model: str) -> bool:
         return True
