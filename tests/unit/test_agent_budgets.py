@@ -65,7 +65,7 @@ def auth_context():
 
 @pytest.mark.asyncio
 async def test_agent_max_steps_budget_exceeded(auth_context):
-    gateway = ModelGateway(providers=[LoopingToolModelProvider()])
+    gateway = ModelGateway(providers=[LoopingToolModelProvider()], approved_providers={"openai"})
     executor = AgentExecutor(model_gateway=gateway)
 
     policy = AgentExecutionPolicy(max_steps=2, max_model_calls=10, max_tool_calls=10)
@@ -83,7 +83,7 @@ async def test_agent_max_steps_budget_exceeded(auth_context):
 
 @pytest.mark.asyncio
 async def test_agent_max_tool_calls_budget_exceeded(auth_context):
-    gateway = ModelGateway(providers=[LoopingToolModelProvider()])
+    gateway = ModelGateway(providers=[LoopingToolModelProvider()], approved_providers={"openai"})
     executor = AgentExecutor(model_gateway=gateway)
 
     # Tool call budget of 1: will execute 1 tool call then trip budget on step 2
@@ -102,7 +102,7 @@ async def test_agent_max_tool_calls_budget_exceeded(auth_context):
 
 @pytest.mark.asyncio
 async def test_agent_max_tokens_budget_exceeded(auth_context):
-    gateway = ModelGateway(providers=[LoopingToolModelProvider()])
+    gateway = ModelGateway(providers=[LoopingToolModelProvider()], approved_providers={"openai"})
     executor = AgentExecutor(model_gateway=gateway)
 
     # Token budget of 100 tokens: each step adds 70 tokens
@@ -121,7 +121,7 @@ async def test_agent_max_tokens_budget_exceeded(auth_context):
 
 @pytest.mark.asyncio
 async def test_agent_max_cost_budget_exceeded(auth_context):
-    gateway = ModelGateway(providers=[LoopingToolModelProvider()])
+    gateway = ModelGateway(providers=[LoopingToolModelProvider()], approved_providers={"openai"})
     executor = AgentExecutor(model_gateway=gateway)
 
     # Cost budget of $0.015: each step costs $0.01

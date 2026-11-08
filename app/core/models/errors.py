@@ -63,6 +63,14 @@ class InvalidRequestError(ModelGatewayError):
         super().__init__(message, provider=provider, retryable=False)
 
 
+class NoEligibleProviderError(ModelGatewayError):
+    """Raised before any call when none of the policy's providers, preferred or
+    fallback, is both approved (MODEL_PROVIDERS_APPROVED) and registered."""
+
+    def __init__(self, message: str, provider: str | None = None):
+        super().__init__(message, provider=provider, retryable=False)
+
+
 class FallbackExhaustedError(ModelGatewayError):
     """Raised when all primary and fallback providers have failed for an invocation."""
 

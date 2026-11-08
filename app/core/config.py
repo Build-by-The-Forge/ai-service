@@ -67,6 +67,11 @@ class Settings(BaseSettings):
     # offline stand-in (no network, no model) for development and tests, such
     # as the two-service boundary suite; it is refused in staging/production.
     MODEL_PROVIDER: Literal["openai", "deterministic"] = "openai"
+    # Providers ModelGateway may call, comma-separated: only those with a
+    # data-processing record (G-33). A registered provider that isn't listed
+    # is never called, not even as a fallback. Empty, the default, means no
+    # provider is called at all: the gateway fails closed.
+    MODEL_PROVIDERS_APPROVED: str = ""
 
     # Directory of the verified OCR models installed by
     # scripts/fetch_ocr_models.py (the image sets it). Required wherever OCR
@@ -254,6 +259,10 @@ class Settings(BaseSettings):
                 f"gate is closed (APP_ENVIRONMENT={self.APP_ENVIRONMENT})"
             )
         return self
+
+    @property
+    def model_providers_approved(self) -> frozenset[str]:
+        return frozenset(p.strip() for p in self.MODEL_PROVIDERS_APPROVED.split(",") if p.strip())
 
     @property
     def learning_memory_enabled(self) -> bool:

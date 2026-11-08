@@ -26,7 +26,7 @@ def sample_context():
 @pytest.mark.asyncio
 async def test_gateway_streaming_yields_chunks(sample_context):
     mock_provider = MockProviderAdapter(name="mock", default_response="Hello stream world")
-    gateway = ModelGateway(providers=[mock_provider])
+    gateway = ModelGateway(providers=[mock_provider], approved_providers={"mock"})
 
     request = ModelRequest(
         messages=[ModelMessage(role=ModelRole.USER, content="Stream test")],
@@ -50,7 +50,7 @@ async def test_gateway_streaming_cancellation_safety(sample_context):
         default_response="A very long generated stream with many words and continuous output",
         latency_seconds=0.01,
     )
-    gateway = ModelGateway(providers=[mock_provider])
+    gateway = ModelGateway(providers=[mock_provider], approved_providers={"mock"})
 
     request = ModelRequest(
         messages=[ModelMessage(role=ModelRole.USER, content="Stream test")],

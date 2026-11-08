@@ -67,7 +67,7 @@ async def test_agent_pre_start_expired_deadline():
 
 @pytest.mark.asyncio
 async def test_agent_runtime_limit_exceeded():
-    gateway = ModelGateway(providers=[SlowMockProvider()])
+    gateway = ModelGateway(providers=[SlowMockProvider()], approved_providers={"openai"})
     executor = AgentExecutor(model_gateway=gateway)
 
     context = AgentContext(

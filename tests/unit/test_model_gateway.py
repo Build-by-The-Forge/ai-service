@@ -33,7 +33,7 @@ def sample_context():
 @pytest.mark.asyncio
 async def test_gateway_successful_generation(sample_context):
     mock_provider = MockProviderAdapter(name="mock", default_response="Gateway response")
-    gateway = ModelGateway(providers=[mock_provider])
+    gateway = ModelGateway(providers=[mock_provider], approved_providers={"mock"})
 
     request = ModelRequest(
         messages=[ModelMessage(role=ModelRole.USER, content="Hello")],
@@ -54,7 +54,7 @@ async def test_gateway_retries_transient_error(sample_context):
     mock_provider.set_simulated_error(
         ProviderUnavailableError("503 Service Unavailable", provider="mock")
     )
-    gateway = ModelGateway(providers=[mock_provider])
+    gateway = ModelGateway(providers=[mock_provider], approved_providers={"mock"})
 
     request = ModelRequest(
         messages=[ModelMessage(role=ModelRole.USER, content="Hello")],
@@ -75,7 +75,7 @@ async def test_gateway_does_not_retry_non_retryable_error(sample_context):
     mock_provider = MockProviderAdapter(name="mock")
     # 401 is non-retryable
     mock_provider.set_simulated_error(AuthenticationError("Invalid API key", provider="mock"))
-    gateway = ModelGateway(providers=[mock_provider])
+    gateway = ModelGateway(providers=[mock_provider], approved_providers={"mock"})
 
     request = ModelRequest(
         messages=[ModelMessage(role=ModelRole.USER, content="Hello")],
@@ -97,7 +97,9 @@ async def test_gateway_fallbacks_to_secondary_provider(sample_context):
 
     fallback = MockProviderAdapter(name="secondary", default_response="Secondary response")
 
-    gateway = ModelGateway(providers=[primary, fallback])
+    gateway = ModelGateway(
+        providers=[primary, fallback], approved_providers={"primary", "secondary"}
+    )
 
     request = ModelRequest(
         messages=[ModelMessage(role=ModelRole.USER, content="Hello")],
@@ -122,7 +124,7 @@ async def test_gateway_fails_when_all_fallbacks_exhausted(sample_context):
     fallback = MockProviderAdapter(name="p2")
     fallback.set_simulated_error(ProviderUnavailableError("P2 down", provider="p2"))
 
-    gateway = ModelGateway(providers=[primary, fallback])
+    gateway = ModelGateway(providers=[primary, fallback], approved_providers={"p1", "p2"})
 
     request = ModelRequest(
         messages=[ModelMessage(role=ModelRole.USER, content="Hello")],
@@ -145,7 +147,9 @@ async def test_gateway_rejects_when_budget_exceeded(sample_context):
     budget_tracker = BudgetTracker()
     budget_tracker.set_budget(sample_context.execution_id, BudgetLimits(max_model_calls=1))
 
-    gateway = ModelGateway(providers=[mock_provider], budget_tracker=budget_tracker)
+    gateway = ModelGateway(
+        providers=[mock_provider], approved_providers={"mock"}, budget_tracker=budget_tracker
+    )
 
     request = ModelRequest(
         messages=[ModelMessage(role=ModelRole.USER, content="Call 1")],
@@ -166,7 +170,9 @@ async def test_gateway_rejects_when_rate_limited(sample_context):
     mock_provider = MockProviderAdapter(name="mock")
     rate_limiter = TokenBucketRateLimiter(rate_per_second=1.0, burst_capacity=1)
 
-    gateway = ModelGateway(providers=[mock_provider], rate_limiter=rate_limiter)
+    gateway = ModelGateway(
+        providers=[mock_provider], approved_providers={"mock"}, rate_limiter=rate_limiter
+    )
 
     request = ModelRequest(
         messages=[ModelMessage(role=ModelRole.USER, content="Call 1")],

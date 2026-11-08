@@ -115,7 +115,7 @@ async def test_e2e_security_cross_tenant_tool_tampering_blocked_in_worker():
         async def generate_stream(self, request: ModelRequest, decision: ModelDecision):
             raise NotImplementedError()
 
-    gateway = ModelGateway(providers=[CrossTenantModelProvider()])
+    gateway = ModelGateway(providers=[CrossTenantModelProvider()], approved_providers={"openai"})
     agent_executor = AgentExecutor(model_gateway=gateway)
 
     handler_registry = TaskHandlerRegistry()

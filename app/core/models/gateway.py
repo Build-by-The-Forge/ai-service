@@ -1,6 +1,8 @@
 import asyncio
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterable
+
+from app.core.config import settings
 
 from app.core.models.budget import BudgetTracker
 from app.core.models.contracts import (
@@ -14,6 +16,7 @@ from app.core.models.errors import (
     CircuitBreakerOpenError,
     FallbackExhaustedError,
     ModelGatewayError,
+    NoEligibleProviderError,
     RateLimitExceededError,
 )
 from app.core.models.provider import ModelProviderAdapter
@@ -38,7 +41,15 @@ class ModelGateway:
         providers: list[ModelProviderAdapter] | None = None,
         budget_tracker: BudgetTracker | None = None,
         rate_limiter: TokenBucketRateLimiter | None = None,
+        approved_providers: Iterable[str] | None = None,
     ):
+        # Registering a provider never makes it eligible: only approved ones
+        # are called (MODEL_PROVIDERS_APPROVED, G-33). Empty fails closed.
+        self._approved: frozenset[str] = (
+            frozenset(approved_providers)
+            if approved_providers is not None
+            else settings.model_providers_approved
+        )
         self._providers: dict[str, ModelProviderAdapter] = {}
         self._circuit_breakers: dict[str, CircuitBreaker] = {}
         self.budget_tracker = budget_tracker or BudgetTracker()
@@ -80,9 +91,8 @@ class ModelGateway:
         else:  # balanced
             model_name = "gpt-4o-mini"
 
+        # The policy's provider, never a substitute for it.
         provider_name = policy.preferred_provider
-        if provider_name not in self._providers and self._providers:
-            provider_name = next(iter(self._providers.keys()))
 
         max_tokens = request.max_tokens or policy.max_tokens
         timeout_seconds = policy.timeout_seconds
@@ -100,8 +110,24 @@ class ModelGateway:
             temperature=temperature,
         )
 
+    def eligible_providers(self, decision: ModelDecision) -> list[str]:
+        """The preferred provider, then its named fallbacks: each only if it is
+        approved and registered. Nothing else, however many are registered."""
+        named = [decision.provider, *decision.fallback_providers]
+        return [p for p in dict.fromkeys(named) if p in self._approved and p in self._providers]
+
+    def _eligible_or_refuse(self, decision: ModelDecision) -> list[str]:
+        eligible = self.eligible_providers(decision)
+        if not eligible:
+            raise NoEligibleProviderError(
+                "No approved, registered provider among the policy's providers",
+                provider=decision.provider,
+            )
+        return eligible
+
     async def generate(self, request: ModelRequest) -> ModelResponse:
         decision = self.resolve_policy(request)
+        candidate_providers = self._eligible_or_refuse(decision)
         scope_key = request.context.execution_id or request.context.tenant_id
 
         # 1. Budget Governance Check
@@ -114,15 +140,8 @@ class ModelGateway:
                 provider=decision.provider,
             )
 
-        # 3. Provider Routing & Fallback Loop
+        # 3. Provider Routing & Fallback Loop, over eligible providers only
         attempted_providers: list[str] = []
-        candidate_providers = [decision.provider] + [
-            p for p in decision.fallback_providers if p != decision.provider
-        ]
-        for p in self._providers.keys():
-            if p not in candidate_providers:
-                candidate_providers.append(p)
-
         last_error: Exception | None = None
 
         for provider_name in candidate_providers:
@@ -181,6 +200,11 @@ class ModelGateway:
 
     async def generate_stream(self, request: ModelRequest) -> AsyncIterator[ModelStreamChunk]:
         decision = self.resolve_policy(request)
+        # Streaming has no fallback: only the preferred provider, if eligible.
+        if decision.provider not in self.eligible_providers(decision):
+            raise NoEligibleProviderError(
+                "The policy's provider is not approved and registered", provider=decision.provider
+            )
         scope_key = request.context.execution_id or request.context.tenant_id
 
         # 1. Budget Governance Check
