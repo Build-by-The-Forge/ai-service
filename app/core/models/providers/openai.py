@@ -83,6 +83,9 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
             payload["response_format"] = request.response_format
         return payload
 
+    def estimate_cost(self, model: str, prompt_tokens: int, completion_tokens: int) -> float:
+        return calculate_openai_cost(model, prompt_tokens, completion_tokens)
+
     def _require_key(self) -> str:
         if not self._api_key:
             raise AuthenticationError("OpenAI API key is not configured", provider="openai")

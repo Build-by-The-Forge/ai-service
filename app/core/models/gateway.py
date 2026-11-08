@@ -11,6 +11,7 @@ from app.core.models.contracts import (
     ModelRequest,
     ModelResponse,
     ModelStreamChunk,
+    ModelUsage,
 )
 from app.core.models.errors import (
     CircuitBreakerOpenError,
@@ -130,10 +131,7 @@ class ModelGateway:
         candidate_providers = self._eligible_or_refuse(decision)
         scope_key = request.context.execution_id or request.context.tenant_id
 
-        # 1. Budget Governance Check
-        self.budget_tracker.check_pre_invocation(scope_key, requested_tokens=decision.max_tokens)
-
-        # 2. Rate Limiting Check
+        # 1. Rate Limiting Check (budgets are reserved per attempt, below)
         if not self.rate_limiter.acquire(request.context.tenant_id):
             raise RateLimitExceededError(
                 f"Rate limit exceeded for tenant {request.context.tenant_id}",
@@ -161,13 +159,16 @@ class ModelGateway:
 
             # Retry loop per provider
             for attempt in range(1, decision.max_retries + 1):
+                # Reserve before calling, so concurrent calls in this scope
+                # can't each pass a check the other is about to exhaust.
+                tokens, cost = _estimate(request, decision, adapter)
+                reservation = self.budget_tracker.reserve(scope_key, tokens, cost)
                 try:
                     response = await adapter.generate(request, decision)
-                    cb.record_success()
-                    self.budget_tracker.record_usage(scope_key, response.usage)
-                    return response
-
-                except Exception as raw:
+                except BaseException as raw:
+                    self.budget_tracker.release(reservation)
+                    if not isinstance(raw, Exception):
+                        raise  # cancellation: released, then propagated
                     exc = _sanitized(raw, provider_name)
                     last_error = exc
                     is_retryable = ModelRetryPolicy.is_retryable(exc)
@@ -186,9 +187,13 @@ class ModelGateway:
                     if attempt < decision.max_retries and is_retryable:
                         backoff = ModelRetryPolicy.compute_backoff(attempt)
                         await asyncio.sleep(backoff)
-                    else:
-                        cb.record_failure()
-                        break  # Fall through to next provider in fallback list
+                        continue
+                    cb.record_failure()
+                    break  # Fall through to next provider in fallback list
+
+                self.budget_tracker.reconcile(reservation, response.usage)
+                cb.record_success()
+                return response
 
         # If we got here, all providers failed
         if len(attempted_providers) > 1:
@@ -211,10 +216,7 @@ class ModelGateway:
             )
         scope_key = request.context.execution_id or request.context.tenant_id
 
-        # 1. Budget Governance Check
-        self.budget_tracker.check_pre_invocation(scope_key, requested_tokens=decision.max_tokens)
-
-        # 2. Rate Limiting Check
+        # 1. Rate Limiting Check
         if not self.rate_limiter.acquire(request.context.tenant_id):
             raise RateLimitExceededError(
                 f"Rate limit exceeded for tenant {request.context.tenant_id}",
@@ -231,6 +233,12 @@ class ModelGateway:
                 f"Circuit breaker is OPEN for {decision.provider}", provider=decision.provider
             )
 
+        # 2. Budget: reserved before the stream opens. A stream reports no
+        # usage, so a stream that ran (fully or until closed) is charged its
+        # estimate; one that failed is released.
+        tokens, cost = _estimate(request, decision, adapter)
+        reservation = self.budget_tracker.reserve(scope_key, tokens, cost)
+        failed = False
         try:
             async for chunk in adapter.generate_stream(request, decision):
                 yield chunk
@@ -243,6 +251,8 @@ class ModelGateway:
             )
             raise
         except Exception as raw:
+            failed = True
+            self.budget_tracker.release(reservation)
             cb.record_failure()
             exc = _sanitized(raw, decision.provider)
             logger.error(
@@ -254,6 +264,21 @@ class ModelGateway:
             if exc is raw:
                 raise
             raise exc from None
+        finally:
+            if not failed:
+                self.budget_tracker.reconcile(
+                    reservation, ModelUsage(total_tokens=tokens, estimated_cost_usd=cost)
+                )
+
+
+def _estimate(
+    request: ModelRequest, decision: ModelDecision, adapter: ModelProviderAdapter
+) -> tuple[int, float]:
+    """The most one call could use: its prompt (about four characters a
+    token) plus the completion it is allowed, and what that would cost."""
+    prompt_tokens = sum(len(m.content or "") for m in request.messages) // 4 + 1
+    tokens = prompt_tokens + decision.max_tokens
+    return tokens, adapter.estimate_cost(decision.model, prompt_tokens, decision.max_tokens)
 
 
 def _sanitized(exc: Exception, provider: str) -> ModelGatewayError:
