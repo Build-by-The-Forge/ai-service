@@ -46,7 +46,8 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
     """
 
     def __init__(self, api_key: str | None = None, base_url: str | None = None):
-        self._api_key = api_key or settings.OPENAI_API_KEY or "sk-mock-key"
+        # No placeholder: without a key, nothing is sent (_require_key).
+        self._api_key = api_key or settings.OPENAI_API_KEY
         self._base_url = (base_url or "https://api.openai.com/v1").rstrip("/")
 
     @property
@@ -82,6 +83,11 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
             payload["response_format"] = request.response_format
         return payload
 
+    def _require_key(self) -> str:
+        if not self._api_key:
+            raise AuthenticationError("OpenAI API key is not configured", provider="openai")
+        return self._api_key
+
     def _map_http_error(self, status_code: int) -> NoReturn:
         """The provider's status, never its body. The body isn't ours to log,
         and an invalid-request error can quote the request it refused."""
@@ -103,10 +109,11 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
 
     async def generate(self, request: ModelRequest, decision: ModelDecision) -> ModelResponse:
         start_time = time.time()
+        api_key = self._require_key()
         payload = self._prepare_payload(request, decision, stream=False)
 
         headers = {
-            "Authorization": f"Bearer {self._api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
 
@@ -178,9 +185,10 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
     async def generate_stream(
         self, request: ModelRequest, decision: ModelDecision
     ) -> AsyncIterator[ModelStreamChunk]:
+        api_key = self._require_key()
         payload = self._prepare_payload(request, decision, stream=True)
         headers = {
-            "Authorization": f"Bearer {self._api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
 
