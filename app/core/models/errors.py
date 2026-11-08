@@ -6,6 +6,9 @@ class ModelGatewayError(Exception):
         self.message = message
         self.provider = provider
         self.retryable = retryable
+        # The provider's HTTP status, when it answered with one. Messages hold
+        # only fixed text and that status: never a provider body or a prompt.
+        self.status_code: int | None = None
 
 
 class ProviderUnavailableError(ModelGatewayError):

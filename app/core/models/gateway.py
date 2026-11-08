@@ -167,16 +167,19 @@ class ModelGateway:
                     self.budget_tracker.record_usage(scope_key, response.usage)
                     return response
 
-                except Exception as exc:
+                except Exception as raw:
+                    exc = _sanitized(raw, provider_name)
                     last_error = exc
                     is_retryable = ModelRetryPolicy.is_retryable(exc)
 
+                    # Types and statuses only: no exception text reaches the logs.
                     logger.warning(
-                        "Model invocation error on %s attempt %d/%d: %s (retryable=%s)",
+                        "Model invocation error on %s attempt %d/%d: %s status=%s (retryable=%s)",
                         provider_name,
                         attempt,
                         decision.max_retries,
-                        str(exc),
+                        type(exc).__name__,
+                        exc.status_code,
                         is_retryable,
                     )
 
@@ -190,11 +193,12 @@ class ModelGateway:
         # If we got here, all providers failed
         if len(attempted_providers) > 1:
             raise FallbackExhaustedError(
-                f"All candidate providers ({attempted_providers}) failed. Last error: {last_error!s}",
+                f"All candidate providers ({attempted_providers}) failed. "
+                f"Last error: {type(last_error).__name__}",
                 attempted_providers=attempted_providers,
             )
         elif last_error:
-            raise last_error
+            raise last_error from None
         else:
             raise ModelGatewayError(f"Failed to execute model request on {decision.provider}")
 
@@ -238,10 +242,31 @@ class ModelGateway:
                 request.context.execution_id,
             )
             raise
-        except Exception as exc:
+        except Exception as raw:
             cb.record_failure()
-            logger.error("Streaming error on %s: %s", decision.provider, str(exc))
-            raise
+            exc = _sanitized(raw, decision.provider)
+            logger.error(
+                "Streaming error on %s: %s status=%s",
+                decision.provider,
+                type(exc).__name__,
+                exc.status_code,
+            )
+            if exc is raw:
+                raise
+            raise exc from None
+
+
+def _sanitized(exc: Exception, provider: str) -> ModelGatewayError:
+    """A gateway error as the adapter built it, or, for anything else (an
+    adapter bug), a fixed message naming only its type: the original text
+    may hold provider output or the prompt, so it isn't carried."""
+    if isinstance(exc, ModelGatewayError):
+        return exc
+    return ModelGatewayError(
+        f"Provider {provider} failed unexpectedly ({type(exc).__name__})",
+        provider=provider,
+        retryable=False,
+    )
 
 
 _default_gateway: ModelGateway | None = None
