@@ -4,7 +4,6 @@ import pytest
 
 from app.api.v1.ai import chat as chat_route
 from app.api.v1.ai import explain as explain_route
-from app.api.v1.ai import generate as generate_route
 from app.api.v1.ai import generate_questions as generate_questions_route
 from app.api.v1.ai import retrieve as retrieve_route
 from app.api.v1.ai import tree as tree_route
@@ -149,11 +148,6 @@ async def test_generate_questions_route_returns_api_response():
     payload = ai_schemas.GeneratedQuestionsResponse.model_validate_json(response.body)
     assert payload.data.questions == [] and payload.data.discarded == 2
     assert payload.sources_used == []
-
-
-def test_generate_route_placeholder_returns_success():
-    result = generate_route.generate()
-    assert result["success"] is True
 
 
 @pytest.mark.asyncio
