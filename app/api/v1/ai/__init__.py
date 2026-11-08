@@ -1,3 +1,3 @@
-from app.api.v1.ai import chat, generate, ocr, read, retrieve, tree
+from app.api.v1.ai import chat, read, retrieve, tree
 
-__all__ = ["chat", "generate", "ocr", "read", "retrieve", "tree"]
+__all__ = ["chat", "read", "retrieve", "tree"]

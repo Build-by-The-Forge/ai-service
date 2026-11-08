@@ -7,7 +7,6 @@ import pytest
 
 from app.core.documents.errors import OCRDependencyUnavailableError
 
-from app.api.v1.ai import ocr as ocr_route
 from app.api.v1.ai import read as read_route
 from app.api.v1.ai import retrieve as retrieve_route
 from app.core import metrics as core_metrics
@@ -85,12 +84,6 @@ class DummyPubSubHandler:
             "data": json.dumps({"hello": "world"}).encode("utf-8"),
         }
         yield {"type": "message", "data": json.dumps({"foo": "bar"})}
-
-
-def test_ocr_route_placeholder_returns_success():
-    result = ocr_route.ocr()
-    assert result["success"] is True
-    assert "placeholder" in result["message"].lower()
 
 
 @pytest.mark.asyncio

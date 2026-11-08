@@ -10,7 +10,6 @@ from app.core.prompts import SYSTEM_PROMPT as CORE_PROMPT
 from app.services.ai.dependencies import get_ai_orchestrator
 from app.services.ai.llm import LLMProvider
 from app.services.ai.prompts import SYSTEM_PROMPT
-from app.services.ai.router import ai_router
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
 from app.services.generation.cbt_ai_generator import CBTAIGenerator
 from app.services.generation.explain import Explainer
@@ -77,10 +76,6 @@ async def test_llm_provider_subclass_implements_generate():
     output = await provider.generate("hello")
 
     assert output == "HELLO"
-
-
-def test_ai_router_includes_routes():
-    assert len(ai_router.routes) > 0
 
 
 @pytest.mark.asyncio
