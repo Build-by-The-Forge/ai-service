@@ -63,7 +63,12 @@ class ModelPolicy:
     max_tokens: int = 2048
     max_cost_usd: float | None = None
     timeout_seconds: float = 30.0
-    max_retries: int = 3
+    # Retries after the first attempt, for timeouts, 429 and 5xx only, and only
+    # while the deadline allows. One by default: retries cost money and time.
+    max_retries: int = 1
+    # The whole request, across retries and fallbacks, below the backend's
+    # 60 s call deadline (ai_service_timeout_seconds) so its answer still counts.
+    deadline_seconds: float = 45.0
     temperature: float = 0.7
 
 
@@ -116,6 +121,9 @@ class ModelRequest:
     tools: list[dict[str, Any]] | None = None
     tool_choice: Any | None = None
     response_format: dict[str, Any] | None = None
+    # An earlier deadline from the caller, on the time.monotonic() clock. The
+    # gateway uses whichever of this and the policy's deadline comes first.
+    deadline_at: float | None = None
 
 
 @dataclass(frozen=True)

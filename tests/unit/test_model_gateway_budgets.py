@@ -31,7 +31,7 @@ def request(execution_id: str = SCOPE, max_tokens: int = 50) -> ModelRequest:
         context=ModelInvocationContext(
             tenant_id="school_1", execution_id=execution_id, task_id="t", correlation_id="c"
         ),
-        policy=ModelPolicy(preferred_provider="mock", max_retries=1),
+        policy=ModelPolicy(preferred_provider="mock", max_retries=0),
         max_tokens=max_tokens,
     )
 

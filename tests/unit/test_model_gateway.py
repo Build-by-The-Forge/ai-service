@@ -59,14 +59,14 @@ async def test_gateway_retries_transient_error(sample_context):
     request = ModelRequest(
         messages=[ModelMessage(role=ModelRole.USER, content="Hello")],
         context=sample_context,
-        policy=ModelPolicy(preferred_provider="mock", max_retries=2),
+        policy=ModelPolicy(preferred_provider="mock", max_retries=1),
     )
 
-    # In a real retry loop, it tries max_retries times and then raises
+    # The first attempt plus max_retries retries, then it raises
     with pytest.raises(ProviderUnavailableError):
         await gateway.generate(request)
 
-    # Provider should have been called max_retries times
+    # One attempt and one retry
     assert len(mock_provider.call_history) == 2
 
 
@@ -107,7 +107,7 @@ async def test_gateway_fallbacks_to_secondary_provider(sample_context):
         policy=ModelPolicy(
             preferred_provider="primary",
             fallback_providers=["secondary"],
-            max_retries=1,
+            max_retries=0,
         ),
     )
 
@@ -132,7 +132,7 @@ async def test_gateway_fails_when_all_fallbacks_exhausted(sample_context):
         policy=ModelPolicy(
             preferred_provider="p1",
             fallback_providers=["p2"],
-            max_retries=1,
+            max_retries=0,
         ),
     )
 

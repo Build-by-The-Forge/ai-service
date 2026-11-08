@@ -29,7 +29,7 @@ def request(preferred: str, fallbacks: list[str] | None = None) -> ModelRequest:
         messages=[ModelMessage(role=ModelRole.USER, content="a student passage")],
         context=CONTEXT,
         policy=ModelPolicy(
-            preferred_provider=preferred, fallback_providers=fallbacks or [], max_retries=1
+            preferred_provider=preferred, fallback_providers=fallbacks or [], max_retries=0
         ),
     )
 

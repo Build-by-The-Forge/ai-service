@@ -48,7 +48,7 @@ DECISION = ModelDecision(
     fallback_providers=[],
     max_tokens=100,
     timeout_seconds=10.0,
-    max_retries=1,
+    max_retries=0,
     max_cost_usd=None,
     temperature=0.0,
 )
@@ -156,7 +156,7 @@ def policy_request(*providers: str) -> ModelRequest:
         messages=REQUEST.messages,
         context=CONTEXT,
         policy=ModelPolicy(
-            preferred_provider=providers[0], fallback_providers=list(providers[1:]), max_retries=1
+            preferred_provider=providers[0], fallback_providers=list(providers[1:]), max_retries=0
         ),
     )
 
