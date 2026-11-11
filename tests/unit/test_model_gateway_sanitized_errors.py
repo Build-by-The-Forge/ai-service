@@ -202,3 +202,104 @@ async def test_a_streaming_adapter_bug_is_replaced_by_a_fixed_message(caplog):
 
     assert carries_no_marker(caught.value)
     assert MARKER not in logged_text(caplog)
+
+
+class LeakyGatewayErrorAdapter(ModelProviderAdapter):
+    """Raises gateway errors an adapter built carelessly: the passage in the
+    message, the provider field and the chained cause."""
+
+    def __init__(self, error: ModelGatewayError):
+        self.error = error
+
+    @property
+    def name(self) -> str:
+        return "leaky"
+
+    def supports_model(self, model: str) -> bool:
+        return True
+
+    def _raise(self) -> None:
+        try:
+            raise ValueError(MARKER)
+        except ValueError as cause:
+            raise self.error from cause
+
+    async def generate(self, request: ModelRequest, decision: ModelDecision) -> ModelResponse:
+        self._raise()
+        raise AssertionError("unreachable")
+
+    async def generate_stream(
+        self, request: ModelRequest, decision: ModelDecision
+    ) -> AsyncIterator[ModelStreamChunk]:
+        self._raise()
+        yield  # pragma: no cover - makes this an async generator
+
+
+class AdapterOwnError(ProviderUnavailableError):
+    """An adapter's own subclass, carrying extra state of its own."""
+
+    def __init__(self) -> None:
+        super().__init__(f"upstream said: {MARKER}", provider=MARKER)
+        self.upstream_body = MARKER
+
+
+def leaky_errors() -> list[ModelGatewayError]:
+    unavailable = ProviderUnavailableError(f"Failed processing: {MARKER}", provider=MARKER)
+    unavailable.status_code = 503
+    limited = RateLimitExceededError(f"slow down: {MARKER}", provider=MARKER, retry_after=2.0)
+    limited.status_code = 429
+    return [unavailable, limited, InvalidRequestError(MARKER), AdapterOwnError()]
+
+
+def carries_nothing_of_the_adapters(exc: ModelGatewayError) -> bool:
+    texts = [str(exc), repr(exc), exc.message, str(exc.provider), repr(vars(exc))]
+    return all(MARKER not in t for t in texts) and exc.__cause__ is None and exc.__context__ is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("error", leaky_errors(), ids=lambda e: type(e).__name__)
+async def test_a_single_providers_own_gateway_error_is_rebuilt(error, caplog):
+    gateway = ModelGateway(
+        providers=[LeakyGatewayErrorAdapter(error)], approved_providers={"leaky"}
+    )
+
+    with caplog.at_level(logging.DEBUG), pytest.raises(ModelGatewayError) as caught:
+        await gateway.generate(policy_request("leaky"))
+
+    assert carries_nothing_of_the_adapters(caught.value)
+    assert MARKER not in logged_text(caplog)
+    # Safe metadata survives: the class, the gateway's provider name, the
+    # status and the retry classification.
+    expected_class = ProviderUnavailableError if isinstance(error, AdapterOwnError) else type(error)
+    assert type(caught.value) is expected_class
+    assert caught.value.provider == "leaky"
+    assert caught.value.status_code == error.status_code
+    assert caught.value.retryable == error.retryable
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("error", leaky_errors(), ids=lambda e: type(e).__name__)
+async def test_a_single_providers_own_streaming_gateway_error_is_rebuilt(error, caplog):
+    gateway = ModelGateway(
+        providers=[LeakyGatewayErrorAdapter(error)], approved_providers={"leaky"}
+    )
+
+    with caplog.at_level(logging.DEBUG), pytest.raises(ModelGatewayError) as caught:
+        async for _ in gateway.generate_stream(policy_request("leaky")):
+            pass
+
+    assert carries_nothing_of_the_adapters(caught.value)
+    assert MARKER not in logged_text(caplog)
+
+
+@pytest.mark.asyncio
+async def test_a_rate_limits_numeric_retry_after_survives():
+    limited = RateLimitExceededError(MARKER, provider=MARKER, retry_after=2.0)
+    gateway = ModelGateway(
+        providers=[LeakyGatewayErrorAdapter(limited)], approved_providers={"leaky"}
+    )
+
+    with pytest.raises(RateLimitExceededError) as caught:
+        await gateway.generate(policy_request("leaky"))
+
+    assert caught.value.retry_after == 2.0

@@ -3,6 +3,7 @@ import dataclasses
 import logging
 import time
 from collections.abc import AsyncIterator, Iterable
+from typing import cast
 
 from app.core.config import settings
 
@@ -16,11 +17,14 @@ from app.core.models.contracts import (
     ModelUsage,
 )
 from app.core.models.errors import (
+    AuthenticationError,
     CircuitBreakerOpenError,
     FallbackExhaustedError,
+    InvalidRequestError,
     ModelGatewayError,
     ModelTimeoutError,
     NoEligibleProviderError,
+    ProviderUnavailableError,
     RateLimitExceededError,
 )
 from app.core.models.provider import ModelProviderAdapter
@@ -275,6 +279,7 @@ class ModelGateway:
         tokens, cost = _estimate(request, decision, adapter)
         reservation = self.budget_tracker.reserve(scope_key, tokens, cost)
         failed = False
+        error: ModelGatewayError | None = None
         try:
             # The deadline is checked between chunks: a stream that outlasts it
             # is closed (which cancels the provider's response) and fails.
@@ -303,21 +308,22 @@ class ModelGateway:
             failed = True
             self.budget_tracker.release(reservation)
             cb.record_failure()
-            exc = _sanitized(raw, decision.provider)
+            error = _sanitized(raw, decision.provider)
             logger.error(
                 "Streaming error on %s: %s status=%s",
                 decision.provider,
-                type(exc).__name__,
-                exc.status_code,
+                type(error).__name__,
+                error.status_code,
             )
-            if exc is raw:
-                raise
-            raise exc from None
         finally:
             if not failed:
                 self.budget_tracker.reconcile(
                     reservation, ModelUsage(total_tokens=tokens, estimated_cost_usd=cost)
                 )
+        if error is not None:
+            # Raised outside the handler, so the adapter's exception isn't
+            # attached as its context either.
+            raise error
 
 
 def _deadline(request: ModelRequest) -> float:
@@ -349,17 +355,60 @@ def _estimate(
     return tokens, adapter.estimate_cost(decision.model, prompt_tokens, decision.max_tokens)
 
 
-def _sanitized(exc: Exception, provider: str) -> ModelGatewayError:
-    """A gateway error as the adapter built it, or, for anything else (an
-    adapter bug), a fixed message naming only its type: the original text
-    may hold provider output or the prompt, so it isn't carried."""
-    if isinstance(exc, ModelGatewayError):
-        return exc
-    return ModelGatewayError(
-        f"Provider {provider} failed unexpectedly ({type(exc).__name__})",
-        provider=provider,
-        retryable=False,
+# The error types an adapter may raise. An adapter's own subclass becomes the
+# nearest of these, so no extra state it carries survives.
+_ADAPTER_ERROR_TYPES: tuple[type[ModelGatewayError], ...] = (
+    ProviderUnavailableError,
+    ModelTimeoutError,
+    RateLimitExceededError,
+    AuthenticationError,
+    InvalidRequestError,
+    CircuitBreakerOpenError,
+    ModelGatewayError,
+)
+
+
+def _int_or_none(value: object) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _sanitized(exc: BaseException, provider: str) -> ModelGatewayError:
+    """Every adapter error is rebuilt here, at the boundary. Nothing it says
+    is trusted, not even from a ModelGatewayError: an adapter may have put a
+    passage or a provider body in its message, its provider field or its
+    cause. The rebuilt error keeps its class (the nearest adapter error type),
+    so retry classification and callers' handling don't change, and carries
+    only safe metadata: the gateway's own name for the provider, an integer
+    HTTP status, the retry flag and a numeric retry-after. Its message is
+    fixed text, and it has no cause."""
+    if not isinstance(exc, ModelGatewayError):
+        return ModelGatewayError(
+            f"Provider {provider} failed unexpectedly ({type(exc).__name__})",
+            provider=provider,
+            retryable=False,
+        )
+    cls = cast(
+        type[ModelGatewayError],
+        next(c for c in type(exc).__mro__ if c in _ADAPTER_ERROR_TYPES),
     )
+    status = _int_or_none(exc.status_code)
+    detail = f"{cls.__name__}, HTTP {status}" if status is not None else cls.__name__
+    safe = cls.__new__(cls)
+    ModelGatewayError.__init__(
+        safe,
+        f"Provider {provider} failed ({detail})",
+        provider=provider,
+        retryable=bool(exc.retryable),
+    )
+    safe.status_code = status
+    if isinstance(safe, RateLimitExceededError):
+        retry_after = getattr(exc, "retry_after", None)
+        safe.retry_after = (
+            float(retry_after)
+            if isinstance(retry_after, int | float) and not isinstance(retry_after, bool)
+            else None
+        )
+    return safe
 
 
 _default_gateway: ModelGateway | None = None
