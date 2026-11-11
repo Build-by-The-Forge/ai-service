@@ -3,12 +3,23 @@
 Deterministic mode answers chat, explain and question generation without a
 model, and CI and the two-service boundary suite depend on exactly what it
 says (a cited passage, questions in passage [1]'s words). These are its
-answers today, so moving it behind the gateway (AI-01 decision 6) can be
-shown to change nothing.
+answers as they were before it moved behind the gateway (AI-01 decision 6):
+DeterministicLLM and the gateway's adapter both give exactly these.
 """
 
 import pytest
 
+import app.core.models.providers.deterministic as deterministic_module
+from app.core.models.contracts import (
+    ModelInvocationContext,
+    ModelMessage,
+    ModelPolicy,
+    ModelRequest,
+    ModelRole,
+    StructuredOutput,
+)
+from app.core.models.gateway import ModelGateway
+from app.core.models.providers.deterministic import DeterministicProviderAdapter
 from app.services.ai.deterministic import DeterministicLLM
 
 PASSAGES = (
@@ -119,3 +130,62 @@ async def test_the_text_answer(prompt, expected):
 @pytest.mark.parametrize(("prompt", "kind", "hints", "expected"), STRUCTURED_ANSWERS)
 async def test_the_structured_answer(prompt, kind, hints, expected):
     assert await DeterministicLLM().generate_json(prompt, kind=kind, **hints) == expected
+
+
+# --- The same answers from the gateway's deterministic adapter (AI-01 decision 6)
+
+
+def through_gateway(prompt: str, structured: StructuredOutput | None = None) -> ModelRequest:
+    return ModelRequest(
+        # A system message is the caller's framing: the prompt is the user's.
+        messages=[
+            ModelMessage(role=ModelRole.SYSTEM, content="You are an expert AI tutor."),
+            ModelMessage(role=ModelRole.USER, content=prompt),
+        ],
+        context=ModelInvocationContext(
+            tenant_id="school_1", execution_id="e", task_id="t", correlation_id="c"
+        ),
+        policy=ModelPolicy(preferred_provider="deterministic"),
+        structured=structured,
+    )
+
+
+def gateway() -> ModelGateway:
+    return ModelGateway(
+        providers=[DeterministicProviderAdapter()], approved_providers={"deterministic"}
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("prompt", "expected"), TEXT_ANSWERS)
+async def test_the_adapter_gives_the_same_text_answer(prompt, expected):
+    response = await gateway().generate(through_gateway(prompt))
+
+    assert response.content == expected
+    assert response.provider == "deterministic" and response.structured is None
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("prompt", "expected"), TEXT_ANSWERS)
+async def test_the_adapter_streams_the_same_text_answer(prompt, expected):
+    chunks = [c.delta_content async for c in gateway().generate_stream(through_gateway(prompt))]
+
+    assert "".join(chunks) == expected
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(("prompt", "kind", "hints", "expected"), STRUCTURED_ANSWERS)
+async def test_the_adapter_gives_the_same_structured_answer(prompt, kind, hints, expected):
+    response = await gateway().generate(
+        through_gateway(prompt, StructuredOutput(kind=kind, hints=hints))
+    )
+
+    assert response.structured == expected
+
+
+@pytest.mark.parametrize("environment", ["staging", "production"])
+def test_the_adapter_cannot_be_built_in_a_strict_environment(monkeypatch, environment):
+    monkeypatch.setattr(deterministic_module.settings, "APP_ENVIRONMENT", environment)
+
+    with pytest.raises(RuntimeError, match="development and tests only"):
+        DeterministicProviderAdapter()
