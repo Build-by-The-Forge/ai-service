@@ -117,7 +117,8 @@ class DeterministicProviderAdapter(ModelProviderAdapter):
         prompt = _prompt(request)
         if request.structured is not None:
             value = structured_answer(prompt, request.structured.kind, request.structured.hints)
-            return prompt, json.dumps(value)
+            # Strict JSON only: a non-finite number would be refused by the gateway.
+            return prompt, json.dumps(value, allow_nan=False)
         return prompt, text_answer(prompt)
 
     async def generate(self, request: ModelRequest, decision: ModelDecision) -> ModelResponse:

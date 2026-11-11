@@ -7,6 +7,8 @@ answers as they were before it moved behind the gateway (AI-01 decision 6):
 DeterministicLLM and the gateway's adapter both give exactly these.
 """
 
+import json
+
 import pytest
 
 import app.core.models.providers.deterministic as deterministic_module
@@ -181,6 +183,12 @@ async def test_the_adapter_gives_the_same_structured_answer(prompt, kind, hints,
     )
 
     assert response.structured == expected
+    # The adapter writes strict JSON: no NaN or Infinity can enter through it.
+    assert json.loads(response.content, parse_constant=_refuse) == expected
+
+
+def _refuse(constant: str):
+    raise AssertionError(f"{constant} is not JSON")
 
 
 @pytest.mark.parametrize("environment", ["staging", "production"])

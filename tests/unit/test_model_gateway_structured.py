@@ -5,6 +5,8 @@ gateway parses and checks it, so no caller trusts a provider's JSON on its
 own, and an answer that isn't one object fails the same way everywhere.
 """
 
+import json
+
 import pytest
 
 from app.core.models.budget import BudgetLimits, BudgetTracker
@@ -173,3 +175,5 @@ async def test_ordinary_numbers_are_kept_as_json_gives_them():
         "exp": 2000.0,
         "neg": -0.25,
     }
+    # Written back out, it is strict JSON again.
+    assert json.loads(json.dumps(response.structured, allow_nan=False)) == response.structured
