@@ -200,3 +200,81 @@ def test_the_default_policy_retries_once_inside_the_backends_deadline():
     policy = ModelPolicy()
     assert policy.max_retries == 1
     assert policy.deadline_seconds < 60
+
+
+class Stalled(ModelProviderAdapter):
+    """Streams `before_stall` chunks, then waits far past any deadline for
+    the next one, recording whether that wait was cancelled and whether the
+    stream was closed."""
+
+    def __init__(self, before_stall: int):
+        self.before_stall = before_stall
+        self.cancelled = False
+        self.closed = False
+
+    @property
+    def name(self) -> str:
+        return "stalled"
+
+    def supports_model(self, model: str) -> bool:
+        return True
+
+    async def generate(self, request: ModelRequest, decision: ModelDecision) -> ModelResponse:
+        raise NotImplementedError
+
+    async def generate_stream(
+        self, request: ModelRequest, decision: ModelDecision
+    ) -> AsyncIterator[ModelStreamChunk]:
+        try:
+            for i in range(self.before_stall):
+                yield ModelStreamChunk(
+                    delta_content=str(i), model=decision.model, provider="stalled"
+                )
+            try:
+                await asyncio.sleep(60)
+            except asyncio.CancelledError:
+                self.cancelled = True
+                raise
+            yield ModelStreamChunk(delta_content="late", model=decision.model, provider="stalled")
+        finally:
+            self.closed = True
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("before_stall", [0, 1])
+async def test_a_stalled_stream_is_cancelled_at_the_deadline(before_stall):
+    stalled = Stalled(before_stall)
+    tracker = BudgetTracker()
+    tracker.set_budget("exec_1", BudgetLimits(max_model_calls=5))
+    received = []
+    started = time.monotonic()
+
+    with pytest.raises(ModelTimeoutError) as caught:
+        async for chunk in gateway(stalled, tracker=tracker).generate_stream(
+            request("stalled", deadline=0.2)
+        ):
+            received.append(chunk)
+
+    # Cancelled at the deadline: no next chunk was needed to notice it.
+    assert time.monotonic() - started < 0.6
+    assert len(received) == before_stall
+    assert stalled.cancelled and stalled.closed
+    assert caught.value.__cause__ is None and caught.value.__context__ is None
+    # Settled: nothing left reserved; charged only if the provider delivered.
+    assert tracker.get_reserved("exec_1").model_calls == 0
+    assert tracker.get_usage("exec_1").model_calls == before_stall
+
+
+@pytest.mark.asyncio
+async def test_an_adapters_own_timeout_error_is_an_adapter_failure_not_the_deadline():
+    class RaisesTimeout(Stalled):
+        async def generate_stream(self, request, decision):
+            raise TimeoutError("adapter internals")
+            yield  # pragma: no cover - makes this an async generator
+
+    with pytest.raises(Exception) as caught:
+        async for _ in gateway(RaisesTimeout(0)).generate_stream(request("stalled", deadline=30.0)):
+            pass
+
+    assert not isinstance(caught.value, ModelTimeoutError)
+    assert "adapter internals" not in str(caught.value)

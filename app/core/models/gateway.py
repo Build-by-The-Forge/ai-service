@@ -274,30 +274,34 @@ class ModelGateway:
             )
 
         # 2. Budget: reserved before the stream opens. A stream reports no
-        # usage, so a stream that ran (fully or until closed) is charged its
-        # estimate; one that failed is released.
+        # usage. Once it has delivered a chunk the provider has done work, so
+        # it is charged its estimate however it ends; a stream that delivered
+        # nothing is released.
         tokens, cost = _estimate(request, decision, adapter)
         reservation = self.budget_tracker.reserve(scope_key, tokens, cost)
-        failed = False
+        delivered = False
         error: ModelGatewayError | None = None
+        chunks = adapter.generate_stream(request, decision)
         try:
-            # The deadline is checked between chunks: a stream that outlasts it
-            # is closed (which cancels the provider's response) and fails.
-            chunks = adapter.generate_stream(request, decision)
-            try:
-                async for chunk in chunks:
-                    if _remaining(deadline) <= 0:
-                        raise ModelTimeoutError(
-                            "Model request deadline exceeded", provider=decision.provider
-                        )
-                    yield chunk
-            finally:
-                # Close the provider's stream now, not when it's collected.
-                aclose = getattr(chunks, "aclose", None)
-                if aclose is not None:
-                    await aclose()
-            cb.record_success()
-
+            while True:
+                # The request's absolute deadline covers every wait for the
+                # next chunk: a stalled provider is cancelled at the deadline,
+                # not when (or if) its next chunk arrives.
+                window = asyncio.timeout_at(_loop_time(deadline))
+                try:
+                    async with window:
+                        chunk = await anext(chunks)
+                except StopAsyncIteration:
+                    break
+                except TimeoutError:
+                    if not window.expired():
+                        raise  # the adapter's own TimeoutError: an adapter failure
+                    error = ModelTimeoutError(
+                        "Model request deadline exceeded", provider=decision.provider
+                    )
+                    break
+                delivered = True
+                yield chunk
         except asyncio.CancelledError:
             logger.info(
                 "Streaming generation cancelled by client for execution %s",
@@ -305,25 +309,40 @@ class ModelGateway:
             )
             raise
         except Exception as raw:
-            failed = True
-            self.budget_tracker.release(reservation)
-            cb.record_failure()
             error = _sanitized(raw, decision.provider)
+        finally:
+            # Close the provider's stream now, ending any work it still has,
+            # then settle the reservation, however the stream ended.
+            await _close_stream(chunks)
+            if delivered:
+                self.budget_tracker.reconcile(
+                    reservation, ModelUsage(total_tokens=tokens, estimated_cost_usd=cost)
+                )
+            else:
+                self.budget_tracker.release(reservation)
+
+        if error is not None:
+            cb.record_failure()
             logger.error(
                 "Streaming error on %s: %s status=%s",
                 decision.provider,
                 type(error).__name__,
                 error.status_code,
             )
-        finally:
-            if not failed:
-                self.budget_tracker.reconcile(
-                    reservation, ModelUsage(total_tokens=tokens, estimated_cost_usd=cost)
-                )
-        if error is not None:
-            # Raised outside the handler, so the adapter's exception isn't
-            # attached as its context either.
+            # Raised outside any handler, so no adapter exception is attached
+            # as its cause or context.
             raise error
+        cb.record_success()
+
+
+async def _close_stream(chunks: AsyncIterator[ModelStreamChunk]) -> None:
+    aclose = getattr(chunks, "aclose", None)
+    if aclose is None:
+        return
+    try:
+        await aclose()
+    except Exception as exc:  # closing must not replace the stream's outcome
+        logger.warning("Closing a provider stream failed: %s", type(exc).__name__)
 
 
 def _deadline(request: ModelRequest) -> float:
