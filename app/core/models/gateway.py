@@ -30,6 +30,8 @@ from app.core.models.errors import (
     RateLimitExceededError,
 )
 from app.core.models.provider import ModelProviderAdapter
+from app.core.models.providers.deterministic import NAME as DETERMINISTIC
+from app.core.models.providers.deterministic import DeterministicProviderAdapter
 from app.core.models.providers.openai import OpenAIProviderAdapter
 from app.core.models.resilience import (
     CircuitBreaker,
@@ -53,13 +55,19 @@ class ModelGateway:
         rate_limiter: TokenBucketRateLimiter | None = None,
         approved_providers: Iterable[str] | None = None,
     ):
+        # Deterministic mode (development and tests only: refused in strict
+        # environments) is offline. Its adapter is the only one registered or
+        # approved, whatever MODEL_PROVIDERS_APPROVED says, so no request in
+        # that mode can reach a network provider.
+        offline = not providers and settings.MODEL_PROVIDER == DETERMINISTIC
         # Registering a provider never makes it eligible: only approved ones
         # are called (MODEL_PROVIDERS_APPROVED, G-33). Empty fails closed.
-        self._approved: frozenset[str] = (
-            frozenset(approved_providers)
-            if approved_providers is not None
-            else settings.model_providers_approved
-        )
+        if approved_providers is not None:
+            self._approved: frozenset[str] = frozenset(approved_providers)
+        elif offline:
+            self._approved = frozenset({DETERMINISTIC})
+        else:
+            self._approved = settings.model_providers_approved
         self._providers: dict[str, ModelProviderAdapter] = {}
         self._circuit_breakers: dict[str, CircuitBreaker] = {}
         self.budget_tracker = budget_tracker or BudgetTracker()
@@ -69,6 +77,8 @@ class ModelGateway:
         if providers:
             for p in providers:
                 self.register_provider(p)
+        elif offline:
+            self.register_provider(DeterministicProviderAdapter())
         else:
             self.register_provider(OpenAIProviderAdapter())
 
