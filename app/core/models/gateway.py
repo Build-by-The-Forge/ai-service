@@ -3,7 +3,7 @@ import dataclasses
 import logging
 import time
 from collections.abc import AsyncIterator, Iterable
-from typing import cast
+from typing import Any, cast
 
 from app.core.config import settings
 
@@ -149,15 +149,21 @@ class ModelGateway:
         # call in flight is cancelled (its reservation released) and the
         # request ends with ModelTimeoutError.
         deadline = _deadline(request)
+        # The provider work runs as a task, so the request ends at its deadline
+        # even if a provider is slow to stop: a provider's cleanup on
+        # cancellation gets PROVIDER_CLEANUP_SECONDS, then is left behind.
+        routed = asyncio.ensure_future(
+            self._route(request, decision, candidate_providers, scope_key, deadline)
+        )
         try:
-            async with asyncio.timeout_at(_loop_time(deadline)):
-                return await self._route(
-                    request, decision, candidate_providers, scope_key, deadline
-                )
-        except TimeoutError:
-            raise ModelTimeoutError(
-                "Model request deadline exceeded", provider=decision.provider
-            ) from None
+            await asyncio.wait({routed}, timeout=max(0.0, _remaining(deadline)))
+        except asyncio.CancelledError:
+            await _end_within_bound(routed, cancel=True)
+            raise
+        if routed.done():
+            return routed.result()
+        await _end_within_bound(routed, cancel=True)
+        raise ModelTimeoutError("Model request deadline exceeded", provider=decision.provider)
 
     async def _route(
         self,
@@ -280,25 +286,31 @@ class ModelGateway:
         tokens, cost = _estimate(request, decision, adapter)
         reservation = self.budget_tracker.reserve(scope_key, tokens, cost)
         delivered = False
+        # Set when the provider's stream is still running after its bounded
+        # cancellation: it can't be closed, only left behind.
+        left_running = False
         error: ModelGatewayError | None = None
         chunks = adapter.generate_stream(request, decision)
         try:
             while True:
                 # The request's absolute deadline covers every wait for the
                 # next chunk: a stalled provider is cancelled at the deadline,
-                # not when (or if) its next chunk arrives.
-                window = asyncio.timeout_at(_loop_time(deadline))
+                # not when (or if) its next chunk arrives. The wait runs as a
+                # task, so a provider slow to stop can't hold the request.
+                pending = asyncio.ensure_future(_next_chunk(chunks))
                 try:
-                    async with window:
-                        chunk = await anext(chunks)
-                except StopAsyncIteration:
-                    break
-                except TimeoutError:
-                    if not window.expired():
-                        raise  # the adapter's own TimeoutError: an adapter failure
+                    await asyncio.wait({pending}, timeout=max(0.0, _remaining(deadline)))
+                except asyncio.CancelledError:
+                    left_running = not await _end_within_bound(pending, cancel=True)
+                    raise
+                if not pending.done():
+                    left_running = not await _end_within_bound(pending, cancel=True)
                     error = ModelTimeoutError(
                         "Model request deadline exceeded", provider=decision.provider
                     )
+                    break
+                chunk = pending.result()
+                if chunk is None:
                     break
                 delivered = True
                 yield chunk
@@ -313,7 +325,8 @@ class ModelGateway:
         finally:
             # Close the provider's stream now, ending any work it still has,
             # then settle the reservation, however the stream ended.
-            await _close_stream(chunks)
+            if not left_running:
+                await _close_stream(chunks)
             if delivered:
                 self.budget_tracker.reconcile(
                     reservation, ModelUsage(total_tokens=tokens, estimated_cost_usd=cost)
@@ -335,14 +348,63 @@ class ModelGateway:
         cb.record_success()
 
 
-async def _close_stream(chunks: AsyncIterator[ModelStreamChunk]) -> None:
-    aclose = getattr(chunks, "aclose", None)
-    if aclose is None:
-        return
+# How long a provider's work may take to stop once the gateway is done with
+# it: cancelled at the deadline, or its stream closed. Its cleanup must not
+# hold a request that has already finished or timed out.
+PROVIDER_CLEANUP_SECONDS = 2.0
+
+
+async def _next_chunk(chunks: AsyncIterator[ModelStreamChunk]) -> ModelStreamChunk | None:
+    """The stream's next chunk, or None at its end."""
     try:
+        return await anext(chunks)
+    except StopAsyncIteration:
+        return None
+
+
+async def _aclose(chunks: AsyncIterator[ModelStreamChunk]) -> None:
+    aclose = getattr(chunks, "aclose", None)
+    if aclose is not None:
         await aclose()
-    except Exception as exc:  # closing must not replace the stream's outcome
-        logger.warning("Closing a provider stream failed: %s", type(exc).__name__)
+
+
+async def _close_stream(chunks: AsyncIterator[ModelStreamChunk]) -> None:
+    """Close a provider's stream, waiting at most PROVIDER_CLEANUP_SECONDS.
+    A failure to close is logged, never raised: it mustn't replace the
+    stream's outcome."""
+    await _end_within_bound(asyncio.ensure_future(_aclose(chunks)), cancel=False)
+
+
+async def _end_within_bound(work: "asyncio.Future[Any]", *, cancel: bool) -> bool:
+    """Wait at most PROVIDER_CLEANUP_SECONDS for provider work to end,
+    cancelling it first if `cancel`. True if it ended. Work still running after
+    that is cancelled (again) and left to finish on its own, its outcome
+    consumed then, so the request that started it isn't held."""
+    if cancel:
+        work.cancel()
+    try:
+        await asyncio.wait({work}, timeout=PROVIDER_CLEANUP_SECONDS)
+    finally:
+        if work.done():
+            _consume(work)
+        else:
+            work.cancel()
+            work.add_done_callback(_consume)
+            logger.warning(
+                "Provider work still running %.1f s after the gateway ended it; left behind",
+                PROVIDER_CLEANUP_SECONDS,
+            )
+    return work.done()
+
+
+def _consume(work: "asyncio.Future[Any]") -> None:
+    """Retrieve finished provider work's outcome, so asyncio never reports it
+    as unhandled. Only the error's type is logged, never its text."""
+    if work.cancelled():
+        return
+    exc = work.exception()
+    if exc is not None:
+        logger.warning("Provider cleanup failed: %s", type(exc).__name__)
 
 
 def _deadline(request: ModelRequest) -> float:
@@ -357,11 +419,6 @@ def _deadline(request: ModelRequest) -> float:
 
 def _remaining(deadline: float) -> float:
     return deadline - time.monotonic()
-
-
-def _loop_time(deadline: float) -> float:
-    """The same instant on the running loop's clock, for asyncio.timeout_at."""
-    return asyncio.get_running_loop().time() + _remaining(deadline)
 
 
 def _estimate(

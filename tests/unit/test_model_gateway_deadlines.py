@@ -278,3 +278,136 @@ async def test_an_adapters_own_timeout_error_is_an_adapter_failure_not_the_deadl
 
     assert not isinstance(caught.value, ModelTimeoutError)
     assert "adapter internals" not in str(caught.value)
+
+
+# --- A provider slow to stop doesn't hold the request ------------------------------
+# Cancellation is cooperative: a provider can catch it and keep working (a slow
+# cleanup). The request still ends on time; the provider's cleanup gets
+# PROVIDER_CLEANUP_SECONDS, then is cancelled again and left behind.
+
+
+@pytest.fixture
+def quick_cleanup(monkeypatch):
+    import app.core.models.gateway as gateway_module
+
+    monkeypatch.setattr(gateway_module, "PROVIDER_CLEANUP_SECONDS", 0.1)
+
+
+class SlowToStop(Stalled):
+    """Stalls, and when cancelled or closed spends a minute cleaning up,
+    recording whether that cleanup was itself cancelled."""
+
+    def __init__(self, before_stall: int = 0):
+        super().__init__(before_stall)
+        self.cleanup_cancelled = False
+
+    async def _slow_cleanup(self) -> None:
+        try:
+            await asyncio.sleep(60)
+        except asyncio.CancelledError:
+            self.cleanup_cancelled = True
+            raise
+
+    async def generate(self, request, decision):
+        try:
+            await asyncio.sleep(60)
+        finally:
+            await self._slow_cleanup()
+        raise AssertionError("unreachable")  # pragma: no cover
+
+    async def generate_stream(self, request, decision):
+        try:
+            for i in range(self.before_stall):
+                yield ModelStreamChunk(
+                    delta_content=str(i), model=decision.model, provider="stalled"
+                )
+            await asyncio.sleep(60)
+        finally:
+            await self._slow_cleanup()
+
+
+def budgeted() -> BudgetTracker:
+    tracker = BudgetTracker()
+    tracker.set_budget("exec_1", BudgetLimits(max_model_calls=5))
+    return tracker
+
+
+async def eventually(check) -> bool:
+    """`check` holds within half a second: work left behind gets its second
+    cancel on a later turn of the event loop."""
+    for _ in range(50):
+        if check():
+            return True
+        await asyncio.sleep(0.01)
+    return False
+
+
+async def settled(tracker: BudgetTracker) -> bool:
+    return await eventually(lambda: tracker.get_reserved("exec_1").model_calls == 0)
+
+
+@pytest.mark.asyncio
+async def test_a_call_slow_to_stop_does_not_hold_a_timed_out_request(quick_cleanup):
+    slow, tracker = SlowToStop(), budgeted()
+    started = time.monotonic()
+
+    with pytest.raises(ModelTimeoutError) as caught:
+        await gateway(slow, tracker=tracker).generate(request("stalled", deadline=0.2))
+
+    # The deadline (0.2 s) plus the cleanup bound (0.1 s), not the minute.
+    assert time.monotonic() - started < 0.8
+    assert caught.value.__cause__ is None and caught.value.__context__ is None
+    assert await settled(tracker)
+    assert await eventually(lambda: slow.cleanup_cancelled)
+
+
+@pytest.mark.asyncio
+async def test_a_call_slow_to_stop_does_not_hold_a_cancelled_caller(quick_cleanup):
+    slow, tracker = SlowToStop(), budgeted()
+    call = asyncio.ensure_future(
+        gateway(slow, tracker=tracker).generate(request("stalled", deadline=30.0))
+    )
+    await asyncio.sleep(0.05)
+    started = time.monotonic()
+
+    call.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await call
+
+    assert time.monotonic() - started < 0.6
+    assert await settled(tracker)
+    assert await eventually(lambda: slow.cleanup_cancelled)
+
+
+@pytest.mark.asyncio
+async def test_a_stream_slow_to_stop_does_not_hold_a_timed_out_request(quick_cleanup):
+    slow, tracker = SlowToStop(before_stall=0), budgeted()
+    started = time.monotonic()
+
+    with pytest.raises(ModelTimeoutError):
+        async for _ in gateway(slow, tracker=tracker).generate_stream(
+            request("stalled", deadline=0.2)
+        ):
+            pass
+
+    assert time.monotonic() - started < 0.8
+    assert await settled(tracker)
+    assert await eventually(lambda: slow.cleanup_cancelled)
+
+
+@pytest.mark.asyncio
+async def test_a_stream_slow_to_close_does_not_hold_a_caller_that_stopped_reading(
+    quick_cleanup,
+):
+    slow, tracker = SlowToStop(before_stall=1), budgeted()
+    stream = gateway(slow, tracker=tracker).generate_stream(request("stalled", deadline=30.0))
+    await anext(stream)
+    started = time.monotonic()
+
+    await stream.aclose()
+
+    assert time.monotonic() - started < 0.6
+    assert await settled(tracker)
+    # It delivered a chunk, so it is charged its estimate.
+    assert tracker.get_usage("exec_1").model_calls == 1
+    assert await eventually(lambda: slow.cleanup_cancelled)
