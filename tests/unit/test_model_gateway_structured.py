@@ -136,3 +136,40 @@ async def test_a_structured_request_is_refused_for_streaming_before_any_call():
     assert adapter.call_history == []
     assert tracker.get_reserved("exec_1").model_calls == 0
     assert tracker.get_usage("exec_1").model_calls == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "answer",
+    [
+        '{"score": NaN}',
+        '{"score": Infinity}',
+        '{"score": -Infinity}',
+        '{"scores": [1, {"deep": NaN}]}',
+        '{"score": 1e400}',  # overflows to infinity
+        '{"score": -1e400}',
+    ],
+)
+async def test_values_python_accepts_but_json_does_not_are_refused(answer):
+    adapter = MockProviderAdapter(name="a", default_response=answer)
+
+    with pytest.raises(InvalidStructuredOutputError):
+        await gateway(adapter).generate(request("a", structured=QUESTIONS))
+
+
+@pytest.mark.asyncio
+async def test_ordinary_numbers_are_kept_as_json_gives_them():
+    answer = (
+        '{"int": 10, "big": 123456789012345678901234567890, "float": 1.5, "exp": 2e3, "neg": -0.25}'
+    )
+    adapter = MockProviderAdapter(name="a", default_response=answer)
+
+    response = await gateway(adapter).generate(request("a", structured=QUESTIONS))
+
+    assert response.structured == {
+        "int": 10,
+        "big": 123456789012345678901234567890,
+        "float": 1.5,
+        "exp": 2000.0,
+        "neg": -0.25,
+    }

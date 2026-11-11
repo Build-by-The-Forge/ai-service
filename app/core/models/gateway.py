@@ -2,9 +2,10 @@ import asyncio
 import dataclasses
 import json
 import logging
+import math
 import time
 from collections.abc import AsyncIterator, Iterable
-from typing import cast
+from typing import NoReturn, cast
 
 from app.core.config import settings
 
@@ -381,11 +382,25 @@ async def _close_stream(chunks: AsyncIterator[ModelStreamChunk]) -> None:
         logger.warning("Closing a provider stream failed: %s", type(exc).__name__)
 
 
+def _not_json(constant: str) -> NoReturn:
+    raise ValueError("NaN and Infinity are not JSON")
+
+
+def _finite(number: str) -> float:
+    value = float(number)
+    if not math.isfinite(value):  # such as 1e400, which overflows to infinity
+        raise ValueError("a number too large for a float")
+    return value
+
+
 def _parse_structured(response: ModelResponse) -> ModelResponse | None:
     """The response with its JSON object parsed into `structured`, or None if
-    its content isn't one JSON object (including nesting too deep to parse)."""
+    its content isn't one standard JSON object. Python's parser also accepts
+    NaN, Infinity and -Infinity, and turns 1e400 into infinity: none of them
+    is JSON, and each would be written back out as invalid JSON, so each is
+    refused, as is nesting too deep to parse."""
     try:
-        value = json.loads(response.content)
+        value = json.loads(response.content, parse_constant=_not_json, parse_float=_finite)
     except (ValueError, RecursionError):
         return None
     if not isinstance(value, dict):
