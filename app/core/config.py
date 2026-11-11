@@ -10,6 +10,9 @@ from app.core.learning_memory_gate import memory_allowed
 
 # Where a missing, short or known service secret must stop startup (design A.1).
 STRICT_ENVIRONMENTS = frozenset({"staging", "production"})
+# Providers ModelGateway has a production adapter for. A name outside this set
+# can't be approved in a strict environment: approving it would do nothing.
+GATEWAY_PROVIDERS = frozenset({"openai"})
 MIN_SERVICE_SECRET_BYTES = 32
 # The one backend path AI-service ever reports to (design B.3).
 BACKEND_CALLBACK_PATH = "/content/ingestion/callbacks"
@@ -67,6 +70,11 @@ class Settings(BaseSettings):
     # offline stand-in (no network, no model) for development and tests, such
     # as the two-service boundary suite; it is refused in staging/production.
     MODEL_PROVIDER: Literal["openai", "deterministic"] = "openai"
+    # Providers ModelGateway may call, comma-separated: only those with a
+    # data-processing record (G-33). A registered provider that isn't listed
+    # is never called, not even as a fallback. Empty, the default, means no
+    # provider is called at all: the gateway fails closed.
+    MODEL_PROVIDERS_APPROVED: str = ""
 
     # Directory of the verified OCR models installed by
     # scripts/fetch_ocr_models.py (the image sets it). Required wherever OCR
@@ -247,6 +255,25 @@ class Settings(BaseSettings):
         return self
 
     @model_validator(mode="after")
+    def _validate_model_providers_approved(self) -> "Settings":
+        """A strict start refuses an approval that can't be honoured: a provider
+        with no production adapter, or one with no key. There is no
+        placeholder key; an empty list is valid and calls no provider."""
+        if self.APP_ENVIRONMENT not in STRICT_ENVIRONMENTS:
+            return self
+        unknown = self.model_providers_approved - GATEWAY_PROVIDERS
+        if unknown:
+            raise ValueError(
+                "MODEL_PROVIDERS_APPROVED names providers with no production adapter: "
+                + ", ".join(sorted(unknown))
+            )
+        if "openai" in self.model_providers_approved and not self.OPENAI_API_KEY:
+            raise ValueError(
+                "MODEL_PROVIDERS_APPROVED includes openai, but OPENAI_API_KEY is not set"
+            )
+        return self
+
+    @model_validator(mode="after")
     def _validate_learning_memory(self) -> "Settings":
         if self.LEARNING_MEMORY_ENABLED and not self.learning_memory_enabled:
             raise ValueError(
@@ -254,6 +281,10 @@ class Settings(BaseSettings):
                 f"gate is closed (APP_ENVIRONMENT={self.APP_ENVIRONMENT})"
             )
         return self
+
+    @property
+    def model_providers_approved(self) -> frozenset[str]:
+        return frozenset(p.strip() for p in self.MODEL_PROVIDERS_APPROVED.split(",") if p.strip())
 
     @property
     def learning_memory_enabled(self) -> bool:

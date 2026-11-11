@@ -29,7 +29,8 @@ class RAGScriptedModelProvider(ModelProviderAdapter):
 
     @property
     def name(self) -> str:
-        return "rag_scripted"
+        # The built-in agents prefer "openai"; this fake stands in for it.
+        return "openai"
 
     def supports_model(self, model: str) -> bool:
         return True
@@ -95,7 +96,7 @@ async def test_agent_to_tool_to_rag_hybrid_retrieval():
 
     # 3. Setup Model Gateway & Agent Registry
     provider = RAGScriptedModelProvider()
-    gateway = ModelGateway(providers=[provider])
+    gateway = ModelGateway(providers=[provider], approved_providers={"openai"})
     agent_reg = AgentRegistry()
 
     executor = AgentExecutor(

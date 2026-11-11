@@ -15,7 +15,8 @@ from app.services.agents.executor import AgentExecutor
 class TenantSpoofingModelProvider(ModelProviderAdapter):
     @property
     def name(self) -> str:
-        return "spoofing"
+        # The built-in agents prefer "openai"; this fake stands in for it.
+        return "openai"
 
     def supports_model(self, model: str) -> bool:
         return True
@@ -140,7 +141,7 @@ async def test_security_rejects_unknown_agent():
 @pytest.mark.asyncio
 async def test_security_blocks_tenant_spoofing_via_tool_calls():
     # LLM requests a tool call targeting another tenant
-    gateway = ModelGateway(providers=[TenantSpoofingModelProvider()])
+    gateway = ModelGateway(providers=[TenantSpoofingModelProvider()], approved_providers={"openai"})
     executor = AgentExecutor(model_gateway=gateway)
 
     context = AgentContext(

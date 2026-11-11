@@ -30,7 +30,8 @@ class E2EModelProvider(ModelProviderAdapter):
 
     @property
     def name(self) -> str:
-        return "e2e_provider"
+        # The built-in agents prefer "openai"; this fake stands in for it.
+        return "openai"
 
     def supports_model(self, model: str) -> bool:
         return True
@@ -110,7 +111,7 @@ async def test_e2e_happy_path_agent_pipeline_execution():
     transport = InMemoryTaskTransport()
     callback_dispatcher = InMemoryCallbackDispatcher()
     model_provider = E2EModelProvider()
-    gateway = ModelGateway(providers=[model_provider])
+    gateway = ModelGateway(providers=[model_provider], approved_providers={"openai"})
     tool_registry = ToolRegistry()
     tool_executor = ToolExecutor(registry=tool_registry, register_builtins=False)
     agent_executor = AgentExecutor(
@@ -180,7 +181,7 @@ async def test_e2e_cross_service_correlation_and_tracing():
     transport = InMemoryTaskTransport()
     callback_dispatcher = InMemoryCallbackDispatcher()
     model_provider = E2EModelProvider()
-    gateway = ModelGateway(providers=[model_provider])
+    gateway = ModelGateway(providers=[model_provider], approved_providers={"openai"})
     agent_executor = AgentExecutor(model_gateway=gateway)
 
     handler_registry = TaskHandlerRegistry()

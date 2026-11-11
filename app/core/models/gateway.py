@@ -1,6 +1,11 @@
 import asyncio
+import dataclasses
 import logging
-from collections.abc import AsyncIterator
+import time
+from collections.abc import AsyncIterator, Iterable
+from typing import cast
+
+from app.core.config import settings
 
 from app.core.models.budget import BudgetTracker
 from app.core.models.contracts import (
@@ -9,11 +14,17 @@ from app.core.models.contracts import (
     ModelRequest,
     ModelResponse,
     ModelStreamChunk,
+    ModelUsage,
 )
 from app.core.models.errors import (
+    AuthenticationError,
     CircuitBreakerOpenError,
     FallbackExhaustedError,
+    InvalidRequestError,
     ModelGatewayError,
+    ModelTimeoutError,
+    NoEligibleProviderError,
+    ProviderUnavailableError,
     RateLimitExceededError,
 )
 from app.core.models.provider import ModelProviderAdapter
@@ -38,7 +49,15 @@ class ModelGateway:
         providers: list[ModelProviderAdapter] | None = None,
         budget_tracker: BudgetTracker | None = None,
         rate_limiter: TokenBucketRateLimiter | None = None,
+        approved_providers: Iterable[str] | None = None,
     ):
+        # Registering a provider never makes it eligible: only approved ones
+        # are called (MODEL_PROVIDERS_APPROVED, G-33). Empty fails closed.
+        self._approved: frozenset[str] = (
+            frozenset(approved_providers)
+            if approved_providers is not None
+            else settings.model_providers_approved
+        )
         self._providers: dict[str, ModelProviderAdapter] = {}
         self._circuit_breakers: dict[str, CircuitBreaker] = {}
         self.budget_tracker = budget_tracker or BudgetTracker()
@@ -80,9 +99,8 @@ class ModelGateway:
         else:  # balanced
             model_name = "gpt-4o-mini"
 
+        # The policy's provider, never a substitute for it.
         provider_name = policy.preferred_provider
-        if provider_name not in self._providers and self._providers:
-            provider_name = next(iter(self._providers.keys()))
 
         max_tokens = request.max_tokens or policy.max_tokens
         timeout_seconds = policy.timeout_seconds
@@ -100,30 +118,59 @@ class ModelGateway:
             temperature=temperature,
         )
 
+    def eligible_providers(self, decision: ModelDecision) -> list[str]:
+        """The preferred provider, then its named fallbacks: each only if it is
+        approved and registered. Nothing else, however many are registered."""
+        named = [decision.provider, *decision.fallback_providers]
+        return [p for p in dict.fromkeys(named) if p in self._approved and p in self._providers]
+
+    def _eligible_or_refuse(self, decision: ModelDecision) -> list[str]:
+        eligible = self.eligible_providers(decision)
+        if not eligible:
+            raise NoEligibleProviderError(
+                "No approved, registered provider among the policy's providers",
+                provider=decision.provider,
+            )
+        return eligible
+
     async def generate(self, request: ModelRequest) -> ModelResponse:
         decision = self.resolve_policy(request)
+        candidate_providers = self._eligible_or_refuse(decision)
         scope_key = request.context.execution_id or request.context.tenant_id
 
-        # 1. Budget Governance Check
-        self.budget_tracker.check_pre_invocation(scope_key, requested_tokens=decision.max_tokens)
-
-        # 2. Rate Limiting Check
+        # 1. Rate Limiting Check (budgets are reserved per attempt, below)
         if not self.rate_limiter.acquire(request.context.tenant_id):
             raise RateLimitExceededError(
                 f"Rate limit exceeded for tenant {request.context.tenant_id}",
                 provider=decision.provider,
             )
 
-        # 3. Provider Routing & Fallback Loop
-        attempted_providers: list[str] = []
-        candidate_providers = [decision.provider] + [
-            p for p in decision.fallback_providers if p != decision.provider
-        ]
-        for p in self._providers.keys():
-            if p not in candidate_providers:
-                candidate_providers.append(p)
+        # 2. One deadline for every attempt and fallback. When it passes, the
+        # call in flight is cancelled (its reservation released) and the
+        # request ends with ModelTimeoutError.
+        deadline = _deadline(request)
+        try:
+            async with asyncio.timeout_at(_loop_time(deadline)):
+                return await self._route(
+                    request, decision, candidate_providers, scope_key, deadline
+                )
+        except TimeoutError:
+            raise ModelTimeoutError(
+                "Model request deadline exceeded", provider=decision.provider
+            ) from None
 
+    async def _route(
+        self,
+        request: ModelRequest,
+        decision: ModelDecision,
+        candidate_providers: list[str],
+        scope_key: str,
+        deadline: float,
+    ) -> ModelResponse:
+        # 3. Provider Routing & Fallback Loop, over eligible providers only
+        attempted_providers: list[str] = []
         last_error: Exception | None = None
+        attempts = decision.max_retries + 1
 
         for provider_name in candidate_providers:
             attempted_providers.append(provider_name)
@@ -141,52 +188,70 @@ class ModelGateway:
                 continue
 
             # Retry loop per provider
-            for attempt in range(1, decision.max_retries + 1):
+            for attempt in range(1, attempts + 1):
+                # Reserve before calling, so concurrent calls in this scope
+                # can't each pass a check the other is about to exhaust.
+                tokens, cost = _estimate(request, decision, adapter)
+                reservation = self.budget_tracker.reserve(scope_key, tokens, cost)
+                # No attempt may outlast the request's deadline.
+                attempt_decision = dataclasses.replace(
+                    decision,
+                    timeout_seconds=max(0.001, min(decision.timeout_seconds, _remaining(deadline))),
+                )
                 try:
-                    response = await adapter.generate(request, decision)
-                    cb.record_success()
-                    self.budget_tracker.record_usage(scope_key, response.usage)
-                    return response
-
-                except Exception as exc:
+                    response = await adapter.generate(request, attempt_decision)
+                except BaseException as raw:
+                    self.budget_tracker.release(reservation)
+                    if not isinstance(raw, Exception):
+                        raise  # cancellation: released, then propagated
+                    exc = _sanitized(raw, provider_name)
                     last_error = exc
                     is_retryable = ModelRetryPolicy.is_retryable(exc)
 
+                    # Types and statuses only: no exception text reaches the logs.
                     logger.warning(
-                        "Model invocation error on %s attempt %d/%d: %s (retryable=%s)",
+                        "Model invocation error on %s attempt %d/%d: %s status=%s (retryable=%s)",
                         provider_name,
                         attempt,
-                        decision.max_retries,
-                        str(exc),
+                        attempts,
+                        type(exc).__name__,
+                        exc.status_code,
                         is_retryable,
                     )
 
-                    if attempt < decision.max_retries and is_retryable:
-                        backoff = ModelRetryPolicy.compute_backoff(attempt)
+                    backoff = ModelRetryPolicy.compute_backoff(attempt)
+                    if attempt < attempts and is_retryable and backoff < _remaining(deadline):
                         await asyncio.sleep(backoff)
-                    else:
-                        cb.record_failure()
-                        break  # Fall through to next provider in fallback list
+                        continue
+                    cb.record_failure()
+                    break  # Fall through to next provider in fallback list
+
+                self.budget_tracker.reconcile(reservation, response.usage)
+                cb.record_success()
+                return response
 
         # If we got here, all providers failed
         if len(attempted_providers) > 1:
             raise FallbackExhaustedError(
-                f"All candidate providers ({attempted_providers}) failed. Last error: {last_error!s}",
+                f"All candidate providers ({attempted_providers}) failed. "
+                f"Last error: {type(last_error).__name__}",
                 attempted_providers=attempted_providers,
             )
         elif last_error:
-            raise last_error
+            raise last_error from None
         else:
             raise ModelGatewayError(f"Failed to execute model request on {decision.provider}")
 
     async def generate_stream(self, request: ModelRequest) -> AsyncIterator[ModelStreamChunk]:
         decision = self.resolve_policy(request)
+        # Streaming has no fallback: only the preferred provider, if eligible.
+        if decision.provider not in self.eligible_providers(decision):
+            raise NoEligibleProviderError(
+                "The policy's provider is not approved and registered", provider=decision.provider
+            )
         scope_key = request.context.execution_id or request.context.tenant_id
 
-        # 1. Budget Governance Check
-        self.budget_tracker.check_pre_invocation(scope_key, requested_tokens=decision.max_tokens)
-
-        # 2. Rate Limiting Check
+        # 1. Rate Limiting Check
         if not self.rate_limiter.acquire(request.context.tenant_id):
             raise RateLimitExceededError(
                 f"Rate limit exceeded for tenant {request.context.tenant_id}",
@@ -196,6 +261,11 @@ class ModelGateway:
         adapter = self.get_provider(decision.provider)
         if not adapter:
             raise ModelGatewayError(f"Provider {decision.provider} not registered")
+        deadline = _deadline(request)
+        decision = dataclasses.replace(
+            decision,
+            timeout_seconds=max(0.001, min(decision.timeout_seconds, _remaining(deadline))),
+        )
 
         cb = self.get_circuit_breaker(decision.provider)
         if not cb.can_execute():
@@ -203,21 +273,161 @@ class ModelGateway:
                 f"Circuit breaker is OPEN for {decision.provider}", provider=decision.provider
             )
 
+        # 2. Budget: reserved before the stream opens. A stream reports no
+        # usage. Once it has delivered a chunk the provider has done work, so
+        # it is charged its estimate however it ends; a stream that delivered
+        # nothing is released.
+        tokens, cost = _estimate(request, decision, adapter)
+        reservation = self.budget_tracker.reserve(scope_key, tokens, cost)
+        delivered = False
+        error: ModelGatewayError | None = None
+        chunks = adapter.generate_stream(request, decision)
         try:
-            async for chunk in adapter.generate_stream(request, decision):
+            while True:
+                # The request's absolute deadline covers every wait for the
+                # next chunk: a stalled provider is cancelled at the deadline,
+                # not when (or if) its next chunk arrives.
+                window = asyncio.timeout_at(_loop_time(deadline))
+                try:
+                    async with window:
+                        chunk = await anext(chunks)
+                except StopAsyncIteration:
+                    break
+                except TimeoutError:
+                    if not window.expired():
+                        raise  # the adapter's own TimeoutError: an adapter failure
+                    error = ModelTimeoutError(
+                        "Model request deadline exceeded", provider=decision.provider
+                    )
+                    break
+                delivered = True
                 yield chunk
-            cb.record_success()
-
         except asyncio.CancelledError:
             logger.info(
                 "Streaming generation cancelled by client for execution %s",
                 request.context.execution_id,
             )
             raise
-        except Exception as exc:
+        except Exception as raw:
+            error = _sanitized(raw, decision.provider)
+        finally:
+            # Close the provider's stream now, ending any work it still has,
+            # then settle the reservation, however the stream ended.
+            await _close_stream(chunks)
+            if delivered:
+                self.budget_tracker.reconcile(
+                    reservation, ModelUsage(total_tokens=tokens, estimated_cost_usd=cost)
+                )
+            else:
+                self.budget_tracker.release(reservation)
+
+        if error is not None:
             cb.record_failure()
-            logger.error("Streaming error on %s: %s", decision.provider, str(exc))
-            raise
+            logger.error(
+                "Streaming error on %s: %s status=%s",
+                decision.provider,
+                type(error).__name__,
+                error.status_code,
+            )
+            # Raised outside any handler, so no adapter exception is attached
+            # as its cause or context.
+            raise error
+        cb.record_success()
+
+
+async def _close_stream(chunks: AsyncIterator[ModelStreamChunk]) -> None:
+    aclose = getattr(chunks, "aclose", None)
+    if aclose is None:
+        return
+    try:
+        await aclose()
+    except Exception as exc:  # closing must not replace the stream's outcome
+        logger.warning("Closing a provider stream failed: %s", type(exc).__name__)
+
+
+def _deadline(request: ModelRequest) -> float:
+    """The request's deadline on the time.monotonic() clock: the policy's,
+    or the caller's if that comes first."""
+    policy = request.policy or ModelPolicy()
+    deadline = time.monotonic() + policy.deadline_seconds
+    if request.deadline_at is not None:
+        deadline = min(deadline, request.deadline_at)
+    return deadline
+
+
+def _remaining(deadline: float) -> float:
+    return deadline - time.monotonic()
+
+
+def _loop_time(deadline: float) -> float:
+    """The same instant on the running loop's clock, for asyncio.timeout_at."""
+    return asyncio.get_running_loop().time() + _remaining(deadline)
+
+
+def _estimate(
+    request: ModelRequest, decision: ModelDecision, adapter: ModelProviderAdapter
+) -> tuple[int, float]:
+    """The most one call could use: its prompt (about four characters a
+    token) plus the completion it is allowed, and what that would cost."""
+    prompt_tokens = sum(len(m.content or "") for m in request.messages) // 4 + 1
+    tokens = prompt_tokens + decision.max_tokens
+    return tokens, adapter.estimate_cost(decision.model, prompt_tokens, decision.max_tokens)
+
+
+# The error types an adapter may raise. An adapter's own subclass becomes the
+# nearest of these, so no extra state it carries survives.
+_ADAPTER_ERROR_TYPES: tuple[type[ModelGatewayError], ...] = (
+    ProviderUnavailableError,
+    ModelTimeoutError,
+    RateLimitExceededError,
+    AuthenticationError,
+    InvalidRequestError,
+    CircuitBreakerOpenError,
+    ModelGatewayError,
+)
+
+
+def _int_or_none(value: object) -> int | None:
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _sanitized(exc: BaseException, provider: str) -> ModelGatewayError:
+    """Every adapter error is rebuilt here, at the boundary. Nothing it says
+    is trusted, not even from a ModelGatewayError: an adapter may have put a
+    passage or a provider body in its message, its provider field or its
+    cause. The rebuilt error keeps its class (the nearest adapter error type),
+    so retry classification and callers' handling don't change, and carries
+    only safe metadata: the gateway's own name for the provider, an integer
+    HTTP status, the retry flag and a numeric retry-after. Its message is
+    fixed text, and it has no cause."""
+    if not isinstance(exc, ModelGatewayError):
+        return ModelGatewayError(
+            f"Provider {provider} failed unexpectedly ({type(exc).__name__})",
+            provider=provider,
+            retryable=False,
+        )
+    cls = cast(
+        type[ModelGatewayError],
+        next(c for c in type(exc).__mro__ if c in _ADAPTER_ERROR_TYPES),
+    )
+    status = _int_or_none(exc.status_code)
+    detail = f"{cls.__name__}, HTTP {status}" if status is not None else cls.__name__
+    safe = cls.__new__(cls)
+    ModelGatewayError.__init__(
+        safe,
+        f"Provider {provider} failed ({detail})",
+        provider=provider,
+        retryable=bool(exc.retryable),
+    )
+    safe.status_code = status
+    if isinstance(safe, RateLimitExceededError):
+        retry_after = getattr(exc, "retry_after", None)
+        safe.retry_after = (
+            float(retry_after)
+            if isinstance(retry_after, int | float) and not isinstance(retry_after, bool)
+            else None
+        )
+    return safe
 
 
 _default_gateway: ModelGateway | None = None

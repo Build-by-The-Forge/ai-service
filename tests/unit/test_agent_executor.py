@@ -23,7 +23,8 @@ class ScriptedModelProvider(ModelProviderAdapter):
 
     @property
     def name(self) -> str:
-        return "scripted"
+        # The built-in agents prefer "openai"; this fake stands in for it.
+        return "openai"
 
     def supports_model(self, model: str) -> bool:
         return True
@@ -63,7 +64,7 @@ async def test_agent_single_step_final_answer(auth_context):
         ),
     )
     provider = ScriptedModelProvider([mock_resp])
-    gateway = ModelGateway(providers=[provider])
+    gateway = ModelGateway(providers=[provider], approved_providers={"openai"})
     executor = AgentExecutor(model_gateway=gateway)
 
     result = await executor.run(
@@ -114,7 +115,7 @@ async def test_agent_multi_step_tool_orchestration(auth_context):
     )
 
     provider = ScriptedModelProvider([step1_resp, step2_resp])
-    gateway = ModelGateway(providers=[provider])
+    gateway = ModelGateway(providers=[provider], approved_providers={"openai"})
     executor = AgentExecutor(model_gateway=gateway)
 
     result = await executor.run(

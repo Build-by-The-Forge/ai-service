@@ -1,6 +1,7 @@
+import json
 import time
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, NoReturn
 
 import httpx
 
@@ -16,6 +17,7 @@ from app.core.models.contracts import (
 from app.core.models.errors import (
     AuthenticationError,
     InvalidRequestError,
+    ModelGatewayError,
     ModelTimeoutError,
     ProviderUnavailableError,
     RateLimitExceededError,
@@ -44,7 +46,8 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
     """
 
     def __init__(self, api_key: str | None = None, base_url: str | None = None):
-        self._api_key = api_key or settings.OPENAI_API_KEY or "sk-mock-key"
+        # No placeholder: without a key, nothing is sent (_require_key).
+        self._api_key = api_key or settings.OPENAI_API_KEY
         self._base_url = (base_url or "https://api.openai.com/v1").rstrip("/")
 
     @property
@@ -80,32 +83,40 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
             payload["response_format"] = request.response_format
         return payload
 
-    def _map_http_error(self, status_code: int, response_text: str) -> None:
+    def estimate_cost(self, model: str, prompt_tokens: int, completion_tokens: int) -> float:
+        return calculate_openai_cost(model, prompt_tokens, completion_tokens)
+
+    def _require_key(self) -> str:
+        if not self._api_key:
+            raise AuthenticationError("OpenAI API key is not configured", provider="openai")
+        return self._api_key
+
+    def _map_http_error(self, status_code: int) -> NoReturn:
+        """The provider's status, never its body. The body isn't ours to log,
+        and an invalid-request error can quote the request it refused."""
+        message = f"OpenAI returned HTTP {status_code}"
+        exc: ModelGatewayError
         if status_code in (401, 403):
-            raise AuthenticationError(
-                f"OpenAI authentication failed: {response_text}", provider="openai"
-            )
+            exc = AuthenticationError(message, provider="openai")
         elif status_code == 429:
-            raise RateLimitExceededError(
-                f"OpenAI rate limit exceeded: {response_text}", provider="openai"
-            )
+            exc = RateLimitExceededError(message, provider="openai")
         elif status_code in (400, 422):
-            raise InvalidRequestError(f"OpenAI invalid request: {response_text}", provider="openai")
+            exc = InvalidRequestError(message, provider="openai")
         elif status_code >= 500:
-            raise ProviderUnavailableError(
-                f"OpenAI provider error ({status_code}): {response_text}", provider="openai"
-            )
+            exc = ProviderUnavailableError(message, provider="openai")
         else:
-            raise ProviderUnavailableError(
-                f"OpenAI request failed ({status_code}): {response_text}", provider="openai"
-            )
+            # Not a transient failure: retrying a 404 or a redirect won't help.
+            exc = ModelGatewayError(message, provider="openai", retryable=False)
+        exc.status_code = status_code
+        raise exc
 
     async def generate(self, request: ModelRequest, decision: ModelDecision) -> ModelResponse:
         start_time = time.time()
+        api_key = self._require_key()
         payload = self._prepare_payload(request, decision, stream=False)
 
         headers = {
-            "Authorization": f"Bearer {self._api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
 
@@ -117,13 +128,18 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
                     headers=headers,
                 )
                 if resp.status_code != 200:
-                    self._map_http_error(resp.status_code, resp.text)
+                    self._map_http_error(resp.status_code)
 
-                data = resp.json()
+                try:
+                    data = resp.json()
+                    choice = data["choices"][0]
+                    message = choice.get("message", {})
+                except (ValueError, LookupError, TypeError, AttributeError):
+                    raise ModelGatewayError(
+                        "OpenAI returned a malformed response", provider="openai"
+                    ) from None
                 latency_ms = (time.time() - start_time) * 1000.0
 
-                choice = data["choices"][0]
-                message = choice.get("message", {})
                 content = message.get("content") or ""
                 role_str = message.get("role", "assistant")
                 tool_calls = message.get("tool_calls")
@@ -160,20 +176,22 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
                     context=request.context,
                 )
 
-        except httpx.TimeoutException as te:
+        except httpx.TimeoutException:
             raise ModelTimeoutError(
-                f"OpenAI request timed out after {decision.timeout_seconds}s: {te!s}",
-                provider="openai",
-            )
+                f"OpenAI request timed out after {decision.timeout_seconds}s", provider="openai"
+            ) from None
         except httpx.NetworkError as ne:
-            raise ProviderUnavailableError(f"OpenAI network error: {ne!s}", provider="openai")
+            raise ProviderUnavailableError(
+                f"OpenAI network error ({type(ne).__name__})", provider="openai"
+            ) from None
 
     async def generate_stream(
         self, request: ModelRequest, decision: ModelDecision
     ) -> AsyncIterator[ModelStreamChunk]:
+        api_key = self._require_key()
         payload = self._prepare_payload(request, decision, stream=True)
         headers = {
-            "Authorization": f"Bearer {self._api_key}",
+            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
 
@@ -186,8 +204,7 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
                     headers=headers,
                 ) as response:
                     if response.status_code != 200:
-                        error_text = await response.aread()
-                        self._map_http_error(response.status_code, error_text.decode("utf-8"))
+                        self._map_http_error(response.status_code)
 
                     async for line in response.aiter_lines():
                         if not line or line.startswith(":"):
@@ -196,11 +213,14 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
                             data_str = line[6:].strip()
                             if data_str == "[DONE]":
                                 break
-                            import json
-
-                            chunk_data = json.loads(data_str)
-                            choice = chunk_data["choices"][0]
-                            delta = choice.get("delta", {})
+                            try:
+                                chunk_data = json.loads(data_str)
+                                choice = chunk_data["choices"][0]
+                                delta = choice.get("delta", {})
+                            except (ValueError, LookupError, TypeError, AttributeError):
+                                raise ModelGatewayError(
+                                    "OpenAI returned a malformed stream chunk", provider="openai"
+                                ) from None
                             delta_content = delta.get("content") or ""
                             finish_reason = choice.get("finish_reason")
                             tool_calls = delta.get("tool_calls")
@@ -213,9 +233,9 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
                                 tool_calls=tool_calls,
                             )
 
-        except httpx.TimeoutException as te:
-            raise ModelTimeoutError(f"OpenAI streaming timed out: {te!s}", provider="openai")
+        except httpx.TimeoutException:
+            raise ModelTimeoutError("OpenAI streaming timed out", provider="openai") from None
         except httpx.NetworkError as ne:
             raise ProviderUnavailableError(
-                f"OpenAI streaming network error: {ne!s}", provider="openai"
-            )
+                f"OpenAI streaming network error ({type(ne).__name__})", provider="openai"
+            ) from None

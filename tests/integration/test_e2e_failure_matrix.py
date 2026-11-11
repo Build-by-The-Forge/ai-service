@@ -28,7 +28,8 @@ class FailingModelProvider(ModelProviderAdapter):
 
     @property
     def name(self) -> str:
-        return "failing_provider"
+        # The built-in agents prefer "openai"; this fake stands in for it.
+        return "openai"
 
     def supports_model(self, model: str) -> bool:
         return True
@@ -49,7 +50,9 @@ class FailingModelProvider(ModelProviderAdapter):
 async def test_e2e_fatal_model_failure_emits_failed_callback():
     transport = InMemoryTaskTransport()
     callback_dispatcher = InMemoryCallbackDispatcher()
-    gateway = ModelGateway(providers=[FailingModelProvider(failure_count=10)])
+    gateway = ModelGateway(
+        providers=[FailingModelProvider(failure_count=10)], approved_providers={"openai"}
+    )
     agent_executor = AgentExecutor(model_gateway=gateway)
 
     handler_registry = TaskHandlerRegistry()
@@ -118,7 +121,8 @@ async def test_e2e_tool_crash_failure_isolation_in_agent_loop():
 
         @property
         def name(self) -> str:
-            return "tool_crash_handler"
+            # The built-in agents prefer "openai"; this fake stands in for it.
+            return "openai"
 
         def supports_model(self, model: str) -> bool:
             return True
@@ -148,7 +152,7 @@ async def test_e2e_tool_crash_failure_isolation_in_agent_loop():
         async def generate_stream(self, request: ModelRequest, decision: ModelDecision):
             raise NotImplementedError()
 
-    gateway = ModelGateway(providers=[ToolCrashHandlingProvider()])
+    gateway = ModelGateway(providers=[ToolCrashHandlingProvider()], approved_providers={"openai"})
     agent_executor = AgentExecutor(
         model_gateway=gateway,
         tool_registry=tool_registry,

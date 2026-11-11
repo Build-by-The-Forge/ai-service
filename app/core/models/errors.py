@@ -6,6 +6,9 @@ class ModelGatewayError(Exception):
         self.message = message
         self.provider = provider
         self.retryable = retryable
+        # The provider's HTTP status, when it answered with one. Messages hold
+        # only fixed text and that status: never a provider body or a prompt.
+        self.status_code: int | None = None
 
 
 class ProviderUnavailableError(ModelGatewayError):
@@ -58,6 +61,14 @@ class AuthenticationError(ModelGatewayError):
 
 class InvalidRequestError(ModelGatewayError):
     """Raised when the model request is malformed (HTTP 400/422)."""
+
+    def __init__(self, message: str, provider: str | None = None):
+        super().__init__(message, provider=provider, retryable=False)
+
+
+class NoEligibleProviderError(ModelGatewayError):
+    """Raised before any call when none of the policy's providers, preferred or
+    fallback, is both approved (MODEL_PROVIDERS_APPROVED) and registered."""
 
     def __init__(self, message: str, provider: str | None = None):
         super().__init__(message, provider=provider, retryable=False)
