@@ -1,5 +1,6 @@
 import asyncio
 import dataclasses
+import json
 import logging
 import time
 from collections.abc import AsyncIterator, Iterable
@@ -21,6 +22,7 @@ from app.core.models.errors import (
     CircuitBreakerOpenError,
     FallbackExhaustedError,
     InvalidRequestError,
+    InvalidStructuredOutputError,
     ModelGatewayError,
     ModelTimeoutError,
     NoEligibleProviderError,
@@ -226,7 +228,26 @@ class ModelGateway:
                     cb.record_failure()
                     break  # Fall through to next provider in fallback list
 
+                # The provider answered, so it is charged, whether or not
+                # the answer is usable.
                 self.budget_tracker.reconcile(reservation, response.usage)
+                if request.structured is not None:
+                    parsed = _parse_structured(response)
+                    if parsed is None:
+                        last_error = InvalidStructuredOutputError(
+                            f"Provider {provider_name} did not answer with a JSON object",
+                            provider=provider_name,
+                        )
+                        logger.warning(
+                            "Model invocation error on %s attempt %d/%d: %s",
+                            provider_name,
+                            attempt,
+                            attempts,
+                            type(last_error).__name__,
+                        )
+                        cb.record_failure()
+                        break  # Not retried: try the next named fallback
+                    response = parsed
                 cb.record_success()
                 return response
 
@@ -244,6 +265,11 @@ class ModelGateway:
 
     async def generate_stream(self, request: ModelRequest) -> AsyncIterator[ModelStreamChunk]:
         decision = self.resolve_policy(request)
+        # A structured answer is checked whole, so it can't be streamed.
+        if request.structured is not None:
+            raise InvalidRequestError(
+                "A structured request can't be streamed", provider=decision.provider
+            )
         # Streaming has no fallback: only the preferred provider, if eligible.
         if decision.provider not in self.eligible_providers(decision):
             raise NoEligibleProviderError(
@@ -343,6 +369,18 @@ async def _close_stream(chunks: AsyncIterator[ModelStreamChunk]) -> None:
         await aclose()
     except Exception as exc:  # closing must not replace the stream's outcome
         logger.warning("Closing a provider stream failed: %s", type(exc).__name__)
+
+
+def _parse_structured(response: ModelResponse) -> ModelResponse | None:
+    """The response with its JSON object parsed into `structured`, or None if
+    its content isn't one JSON object (including nesting too deep to parse)."""
+    try:
+        value = json.loads(response.content)
+    except (ValueError, RecursionError):
+        return None
+    if not isinstance(value, dict):
+        return None
+    return dataclasses.replace(response, structured=value)
 
 
 def _deadline(request: ModelRequest) -> float:

@@ -105,6 +105,18 @@ class ModelUsage:
 
 
 @dataclass(frozen=True)
+class StructuredOutput:
+    """A request for one JSON object as the answer. `kind` names what is asked
+    for (such as "questions") and `hints` carry its parameters (such as
+    count), so the offline adapter can answer without a model. Real adapters
+    send JSON mode and ignore both: the prompt says what the object holds.
+    The gateway checks the answer is one JSON object, whichever adapter gave it."""
+
+    kind: str
+    hints: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
 class ModelRequest:
     """
     Provider-independent request contract for all model invocations.
@@ -121,6 +133,8 @@ class ModelRequest:
     tools: list[dict[str, Any]] | None = None
     tool_choice: Any | None = None
     response_format: dict[str, Any] | None = None
+    # Set when the answer must be one JSON object (see StructuredOutput).
+    structured: StructuredOutput | None = None
     # An earlier deadline from the caller, on the time.monotonic() clock. The
     # gateway uses whichever of this and the policy's deadline comes first.
     deadline_at: float | None = None
@@ -141,6 +155,9 @@ class ModelResponse:
     usage: ModelUsage = field(default_factory=ModelUsage)
     latency_ms: float = 0.0
     context: ModelInvocationContext | None = None
+    # For a structured request, the JSON object the gateway parsed from
+    # `content` and checked; None otherwise.
+    structured: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
