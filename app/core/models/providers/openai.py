@@ -81,6 +81,10 @@ class OpenAIProviderAdapter(ModelProviderAdapter):
             payload["tool_choice"] = request.tool_choice
         if request.response_format:
             payload["response_format"] = request.response_format
+        elif request.structured is not None:
+            # JSON mode. The kind and hints are for the offline adapter: the
+            # prompt says what the object holds, and they aren't sent.
+            payload["response_format"] = {"type": "json_object"}
         return payload
 
     def estimate_cost(self, model: str, prompt_tokens: int, completion_tokens: int) -> float:

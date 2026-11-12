@@ -140,3 +140,37 @@ async def test_streaming_refuses_an_unapproved_provider_before_calling_it():
             pass
 
     assert provider.call_history == []
+
+
+@pytest.mark.asyncio
+async def test_the_default_gateway_in_deterministic_mode_reaches_no_network_provider(
+    monkeypatch,
+):
+    import app.core.models.gateway as gateway_module
+
+    # Even with OpenAI approved and keyed, deterministic mode is offline.
+    monkeypatch.setattr(
+        gateway_module,
+        "settings",
+        Settings(
+            MODEL_PROVIDER="deterministic",
+            MODEL_PROVIDERS_APPROVED="openai",
+            OPENAI_API_KEY="sk-test-not-used",
+        ),
+    )
+    gateway = ModelGateway()
+
+    assert gateway.get_provider("openai") is None
+    assert (await gateway.generate(request("deterministic"))).provider == "deterministic"
+    with pytest.raises(NoEligibleProviderError):
+        await gateway.generate(request("openai"))
+
+
+def test_the_default_gateway_outside_deterministic_mode_has_no_offline_adapter(monkeypatch):
+    import app.core.models.gateway as gateway_module
+
+    monkeypatch.setattr(
+        gateway_module, "settings", Settings(MODEL_PROVIDER="openai", MODEL_PROVIDERS_APPROVED="")
+    )
+
+    assert ModelGateway().get_provider("deterministic") is None

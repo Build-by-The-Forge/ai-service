@@ -66,6 +66,15 @@ class InvalidRequestError(ModelGatewayError):
         super().__init__(message, provider=provider, retryable=False)
 
 
+class InvalidStructuredOutputError(ModelGatewayError):
+    """Raised by the gateway when a structured request's answer is not one JSON
+    object. The provider was paid for the answer, so it isn't retried, but a
+    named fallback may be tried. The message never quotes the answer."""
+
+    def __init__(self, message: str, provider: str | None = None):
+        super().__init__(message, provider=provider, retryable=False)
+
+
 class NoEligibleProviderError(ModelGatewayError):
     """Raised before any call when none of the policy's providers, preferred or
     fallback, is both approved (MODEL_PROVIDERS_APPROVED) and registered."""

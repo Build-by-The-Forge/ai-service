@@ -53,3 +53,9 @@ async def test_the_deterministic_answer_identifies_its_prompt():
     assert first == await llm.generate("explain photosynthesis")
     assert first != await llm.generate("explain osmosis")
     assert first.startswith("[deterministic model] prompt sha256:")
+
+
+@pytest.mark.parametrize("environment", ["staging", "production"])
+def test_a_strict_environment_cannot_approve_the_deterministic_adapter(environment):
+    with pytest.raises(ValidationError, match="no production adapter"):
+        make(environment, MODEL_PROVIDERS_APPROVED="deterministic")

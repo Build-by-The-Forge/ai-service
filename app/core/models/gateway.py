@@ -1,9 +1,11 @@
 import asyncio
 import dataclasses
+import json
 import logging
+import math
 import time
 from collections.abc import AsyncIterator, Iterable
-from typing import Any, cast
+from typing import Any, NoReturn, cast
 
 from app.core.config import settings
 
@@ -21,6 +23,7 @@ from app.core.models.errors import (
     CircuitBreakerOpenError,
     FallbackExhaustedError,
     InvalidRequestError,
+    InvalidStructuredOutputError,
     ModelGatewayError,
     ModelTimeoutError,
     NoEligibleProviderError,
@@ -28,6 +31,8 @@ from app.core.models.errors import (
     RateLimitExceededError,
 )
 from app.core.models.provider import ModelProviderAdapter
+from app.core.models.providers.deterministic import NAME as DETERMINISTIC
+from app.core.models.providers.deterministic import DeterministicProviderAdapter
 from app.core.models.providers.openai import OpenAIProviderAdapter
 from app.core.models.resilience import (
     CircuitBreaker,
@@ -51,13 +56,19 @@ class ModelGateway:
         rate_limiter: TokenBucketRateLimiter | None = None,
         approved_providers: Iterable[str] | None = None,
     ):
+        # Deterministic mode (development and tests only: refused in strict
+        # environments) is offline. Its adapter is the only one registered or
+        # approved, whatever MODEL_PROVIDERS_APPROVED says, so no request in
+        # that mode can reach a network provider.
+        offline = not providers and settings.MODEL_PROVIDER == DETERMINISTIC
         # Registering a provider never makes it eligible: only approved ones
         # are called (MODEL_PROVIDERS_APPROVED, G-33). Empty fails closed.
-        self._approved: frozenset[str] = (
-            frozenset(approved_providers)
-            if approved_providers is not None
-            else settings.model_providers_approved
-        )
+        if approved_providers is not None:
+            self._approved: frozenset[str] = frozenset(approved_providers)
+        elif offline:
+            self._approved = frozenset({DETERMINISTIC})
+        else:
+            self._approved = settings.model_providers_approved
         self._providers: dict[str, ModelProviderAdapter] = {}
         self._circuit_breakers: dict[str, CircuitBreaker] = {}
         self.budget_tracker = budget_tracker or BudgetTracker()
@@ -67,6 +78,8 @@ class ModelGateway:
         if providers:
             for p in providers:
                 self.register_provider(p)
+        elif offline:
+            self.register_provider(DeterministicProviderAdapter())
         else:
             self.register_provider(OpenAIProviderAdapter())
 
@@ -232,7 +245,26 @@ class ModelGateway:
                     cb.record_failure()
                     break  # Fall through to next provider in fallback list
 
+                # The provider answered, so it is charged, whether or not
+                # the answer is usable.
                 self.budget_tracker.reconcile(reservation, response.usage)
+                if request.structured is not None:
+                    parsed = _parse_structured(response)
+                    if parsed is None:
+                        last_error = InvalidStructuredOutputError(
+                            f"Provider {provider_name} did not answer with a JSON object",
+                            provider=provider_name,
+                        )
+                        logger.warning(
+                            "Model invocation error on %s attempt %d/%d: %s",
+                            provider_name,
+                            attempt,
+                            attempts,
+                            type(last_error).__name__,
+                        )
+                        cb.record_failure()
+                        break  # Not retried: try the next named fallback
+                    response = parsed
                 cb.record_success()
                 return response
 
@@ -250,6 +282,11 @@ class ModelGateway:
 
     async def generate_stream(self, request: ModelRequest) -> AsyncIterator[ModelStreamChunk]:
         decision = self.resolve_policy(request)
+        # A structured answer is checked whole, so it can't be streamed.
+        if request.structured is not None:
+            raise InvalidRequestError(
+                "A structured request can't be streamed", provider=decision.provider
+            )
         # Streaming has no fallback: only the preferred provider, if eligible.
         if decision.provider not in self.eligible_providers(decision):
             raise NoEligibleProviderError(
@@ -405,6 +442,32 @@ def _consume(work: "asyncio.Future[Any]") -> None:
     exc = work.exception()
     if exc is not None:
         logger.warning("Provider cleanup failed: %s", type(exc).__name__)
+
+
+def _not_json(constant: str) -> NoReturn:
+    raise ValueError("NaN and Infinity are not JSON")
+
+
+def _finite(number: str) -> float:
+    value = float(number)
+    if not math.isfinite(value):  # such as 1e400, which overflows to infinity
+        raise ValueError("a number too large for a float")
+    return value
+
+
+def _parse_structured(response: ModelResponse) -> ModelResponse | None:
+    """The response with its JSON object parsed into `structured`, or None if
+    its content isn't one standard JSON object. Python's parser also accepts
+    NaN, Infinity and -Infinity, and turns 1e400 into infinity: none of them
+    is JSON, and each would be written back out as invalid JSON, so each is
+    refused, as is nesting too deep to parse."""
+    try:
+        value = json.loads(response.content, parse_constant=_not_json, parse_float=_finite)
+    except (ValueError, RecursionError):
+        return None
+    if not isinstance(value, dict):
+        return None
+    return dataclasses.replace(response, structured=value)
 
 
 def _deadline(request: ModelRequest) -> float:
