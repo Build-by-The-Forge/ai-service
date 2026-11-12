@@ -26,6 +26,7 @@ import httpx
 
 from app.core.callbacks.events import CallbackDeliveryResult, CallbackEvent, CallbackEventType
 from app.core.config import settings
+from app.core.safe_log import describe
 from app.core.service_context import ServiceContext, ServiceContextError
 from app.core.service_signature_v1 import AI_SERVICE_ID, ServiceSigner
 from app.schemas.ingest import IngestCallbackPayload
@@ -291,9 +292,10 @@ class HTTPCallbackDispatcher(CallbackPort):
 
             except Exception as unhandled:
                 last_error_code = "UNHANDLED_ERROR"
-                last_error_message = str(unhandled)
+                # Its type only: this message is logged again below.
+                last_error_message = type(unhandled).__name__
                 is_retryable = False
-                logger.error("Unhandled error delivering callback: %s", unhandled, exc_info=True)
+                logger.error("Unhandled error delivering callback: %s", describe(unhandled))
                 break
 
             if attempt < self._max_attempts and is_retryable:

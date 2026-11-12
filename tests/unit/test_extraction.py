@@ -319,6 +319,9 @@ async def test_a_cleanup_failure_never_replaces_the_timeout(tmp_path, monkeypatc
         )
     assert caught.value.code == "EXTRACTION_TIMEOUT"
     assert "Page directory not removed after cancellation" in caplog.text  # reported, not hidden
+    # By type and place only: the OSError's text (errno, path) isn't logged (#52).
+    assert "OSError at " in caplog.text
+    assert "not empty" not in caplog.text and "pages-" not in caplog.text
 
 
 async def test_a_cleanup_failure_without_cancellation_is_not_suppressed(tmp_path, monkeypatch):
