@@ -42,6 +42,7 @@ from typing import Any, Protocol
 import fitz
 
 from app.core.documents.errors import OCRDependencyUnavailableError, OCRExtractionError
+from app.core.safe_log import describe
 from app.services.tasks.ingestion_outcomes import (
     IngestionFailure,
     PermanentIngestionError,
@@ -220,7 +221,7 @@ class DocumentExtractor:
                 # an unclassified OSError. Any other OSError still propagates.
                 if not isinstance(exc.__context__, asyncio.CancelledError):
                     raise
-                logger.warning("Page directory not removed after cancellation: %s", exc)
+                logger.warning("Page directory not removed after cancellation: %s", describe(exc))
                 raise exc.__context__ from None
             return pages
 

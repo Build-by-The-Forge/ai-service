@@ -2,6 +2,7 @@ import asyncio
 import logging
 import time
 
+from app.core.safe_log import describe
 from app.core.tools.budget import ToolBudgetTracker
 from app.core.tools.contracts import (
     ToolExecutionPolicy,
@@ -215,9 +216,9 @@ class ToolExecutor:
                 latency_ms=(time.time() - start_time) * 1000.0,
             )
         except Exception as exc:
-            logger.error(
-                "Tool '%s' unhandled runtime exception: %s", tool_name, str(exc), exc_info=True
-            )
+            # Type and place only: a tool handles passages, and its
+            # exception's text may quote one.
+            logger.error("Tool '%s' unhandled runtime exception: %s", tool_name, describe(exc))
             return ToolResult(
                 invocation_id=invocation.invocation_id,
                 tool_name=tool_name,
