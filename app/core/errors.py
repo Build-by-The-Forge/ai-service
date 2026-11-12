@@ -1,10 +1,9 @@
 """Central exception handling."""
 
-import traceback
-
 from fastapi.responses import JSONResponse
 
 from app.core.logging import logger
+from app.core.safe_log import describe
 
 
 async def learning_memory_disabled_handler(request, exc):
@@ -28,14 +27,8 @@ async def app_exception_handler(request, exc):
     those is ours to log. No traceback is attached, since its last line is
     the message again."""
     request_id = getattr(request.state, "request_id", "unknown")
-    frames = traceback.extract_tb(exc.__traceback__)  # empty when it has none
-    where = (
-        f"{frames[-1].filename}:{frames[-1].lineno} in {frames[-1].name}" if frames else "unknown"
-    )
 
-    logger.error(
-        "Unhandled exception: %s at %s [request_id=%s]", type(exc).__name__, where, request_id
-    )
+    logger.error("Unhandled exception: %s [request_id=%s]", describe(exc), request_id)
 
     return JSONResponse(
         status_code=500,
