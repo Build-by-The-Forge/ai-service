@@ -121,7 +121,7 @@ async def test_failed_event_is_a_job_failed_callback():
     await dispatcher(recorder).dispatch(
         event(
             CallbackEventType.FAILED,
-            error_code="OCR_TIMEOUT",
+            error_code="EXTRACTION_TIMEOUT",
             error_message="took too long",
             retryable=True,
         )
@@ -130,7 +130,7 @@ async def test_failed_event_is_a_job_failed_callback():
     assert body["event_type"] == "job_failed"
     # A fixed message (#54): the event's own text is never sent.
     assert (body["error_code"], body["error_message"], body["is_retryable"]) == (
-        "OCR_TIMEOUT",
+        "EXTRACTION_TIMEOUT",
         FAILURE_CALLBACK_MESSAGE,
         True,
     )

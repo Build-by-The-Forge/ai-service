@@ -146,18 +146,18 @@ async def test_stages_out_of_order_stop_the_pipeline():
 
 async def test_permanent_failures_are_not_retried():
     worker, transport, dispatcher = worker_with(
-        Raises(PermanentIngestionError("UNSUPPORTED_FORMAT", "no"))
+        Raises(PermanentIngestionError("ASSET_TYPE_MISMATCH", "no"))
     )
     _, status = await run(worker, transport, task(max_attempts=3))
     assert status == TaskStatus.FAILED
     failed = dispatcher.delivered_events[-1]
-    assert (failed.error_code, failed.retryable) == ("UNSUPPORTED_FORMAT", False)
+    assert (failed.error_code, failed.retryable) == ("ASSET_TYPE_MISMATCH", False)
     assert transport._queue.empty()
 
 
 async def test_transient_failures_retry_the_same_backend_attempt():
     worker, transport, dispatcher = worker_with(
-        Raises(TransientIngestionError("STORAGE_TIMEOUT", "slow"))
+        Raises(TransientIngestionError("ASSET_FETCH_TIMEOUT", "slow"))
     )
     _, status = await run(worker, transport, task(max_attempts=2))
     assert status == TaskStatus.FAILED
@@ -170,7 +170,7 @@ async def test_transient_failures_retry_the_same_backend_attempt():
     assert status == TaskStatus.DEAD_LETTER
     failed = dispatcher.delivered_events[-1]
     assert (failed.error_code, failed.retryable, failed.attempt_count) == (
-        "STORAGE_TIMEOUT",
+        "ASSET_FETCH_TIMEOUT",
         True,
         3,
     )

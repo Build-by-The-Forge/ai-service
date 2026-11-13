@@ -39,10 +39,19 @@ def test_completed_event_produces_a_valid_job_completed_body():
 
 def test_failed_event_produces_a_valid_job_failed_body():
     body = backend_callback_body(
-        _event(CallbackEventType.FAILED, error_code="X", error_message="y", retryable=True)
+        _event(
+            CallbackEventType.FAILED,
+            error_code="EXTRACTION_TIMEOUT",
+            error_message="y",
+            retryable=True,
+        )
     )
     parsed = IngestCallbackPayload.model_validate(body)
-    assert (parsed.event_type, parsed.error_code, parsed.is_retryable) == ("job_failed", "X", True)
+    assert (parsed.event_type, parsed.error_code, parsed.is_retryable) == (
+        "job_failed",
+        "EXTRACTION_TIMEOUT",
+        True,
+    )
 
 
 def test_lifecycle_events_without_a_backend_transition_produce_no_body():
