@@ -1,4 +1,4 @@
-"""#53: a tool failure is a structured failure, never text.
+"""#53: a tool failure reaches the agent as a structured failure, never as text.
 
 An exception from a tool can carry student text, a retrieved passage, a
 provider's response or an internal detail. The agent gets a stable code, a
@@ -14,9 +14,15 @@ from dataclasses import asdict
 
 import pytest
 
+from app.core.agents.contracts import AgentContext
+from app.core.models.contracts import ModelDecision, ModelRequest, ModelResponse, ModelUsage
+from app.core.models.gateway import ModelGateway
+from app.core.models.provider import ModelProviderAdapter
 from app.core.tools.contracts import ToolContext, ToolDefinition, ToolInvocation
 from app.core.tools.errors import ToolError, ToolTenantMismatchError
 from app.core.tools.registry import ToolRegistry
+from app.services.agents.executor import AgentExecutor
+from app.services.tools.builtins.curriculum import CURRICULUM_LOOKUP_DEFINITION
 from app.services.tools.executor import FAILURE_MESSAGES, ToolExecutor
 
 SENTINEL = "student-passage-7e91"
@@ -132,3 +138,82 @@ async def test_a_timeout_is_retryable_by_its_category():
         "retryable": True,
         "message": FAILURE_MESSAGES["TOOL_TIMEOUT"],
     }
+
+
+class Scripted(ModelProviderAdapter):
+    """Asks for one tool call, then answers; records what it was sent."""
+
+    def __init__(self) -> None:
+        self.requests: list[ModelRequest] = []
+
+    @property
+    def name(self) -> str:
+        return "openai"  # the built-in agents prefer it
+
+    def supports_model(self, model: str) -> bool:
+        return True
+
+    async def generate(self, request: ModelRequest, decision: ModelDecision) -> ModelResponse:
+        self.requests.append(request)
+        calls = (
+            [
+                {
+                    "id": "tc_1",
+                    "type": "function",
+                    "function": {
+                        "name": "curriculum.lookup",
+                        "arguments": '{"course_code": "CSC201"}',
+                    },
+                }
+            ]
+            if len(self.requests) == 1
+            else None
+        )
+        return ModelResponse(
+            content="done",
+            model=decision.model,
+            provider="openai",
+            tool_calls=calls,
+            usage=ModelUsage(),
+        )
+
+    async def generate_stream(self, request, decision):  # pragma: no cover - not used
+        raise NotImplementedError
+        yield
+
+
+@pytest.mark.asyncio
+async def test_the_agent_reads_the_structured_failure_and_nothing_the_exception_said():
+    async def crashes(ctx, args):
+        raise RuntimeError(f"provider body: {SENTINEL}")
+
+    registry = ToolRegistry()
+    registry.register(CURRICULUM_LOOKUP_DEFINITION, crashes)
+    model = Scripted()
+    agent = AgentExecutor(
+        model_gateway=ModelGateway(providers=[model], approved_providers={"openai"}),
+        tool_executor=ToolExecutor(registry=registry, register_builtins=False),
+    )
+    context = AgentContext(
+        tenant_id="school_futa",
+        execution_id="exec_agent",
+        task_id="task_agent",
+        correlation_id="corr_agent",
+        permissions=list(CONTEXT.permissions),
+        capabilities=list(CONTEXT.capabilities),
+    )
+
+    await agent.run(agent_id="study.assistant", prompt="What is in CSC201?", context=context)
+
+    # The model's second turn holds the tool's observation.
+    second = model.requests[1].messages
+    [observation] = [m for m in second if m.name == "curriculum.lookup"]
+    assert json.loads(observation.content) == {
+        "ok": False,
+        "error": {
+            "code": "TOOL_EXECUTION_FAILED",
+            "retryable": False,
+            "message": FAILURE_MESSAGES["TOOL_EXECUTION_FAILED"],
+        },
+    }
+    assert all(SENTINEL not in (m.content or "") for m in second)
