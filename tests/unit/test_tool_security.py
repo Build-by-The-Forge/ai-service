@@ -38,7 +38,8 @@ async def test_security_rejects_spoofed_tenant_id(test_executor):
     result = await test_executor.execute(invocation)
     assert result.success is False
     assert result.error_code == "TENANT_MISMATCH"
-    assert "school_unauthorized_unilag" in result.error_message
+    # A fixed message (#53): the attempted tenant, an argument, isn't echoed.
+    assert "school_unauthorized_unilag" not in result.error_message
 
 
 @pytest.mark.asyncio

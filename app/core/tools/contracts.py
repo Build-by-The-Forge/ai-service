@@ -112,6 +112,21 @@ class ToolResult:
     success: bool
     data: Any | None = None
     error_code: str | None = None
+    # A fixed message for the error code, never an exception's text (#53).
     error_message: str | None = None
+    # From the failure's category: worth trying again later, or not.
+    retryable: bool = False
     latency_ms: float = 0.0
     output_bytes: int = 0
+
+    def failure(self) -> dict[str, Any]:
+        """The structured failure the agent reads: code, retry flag and the
+        fixed message. Nothing an exception said crosses into its context."""
+        return {
+            "ok": False,
+            "error": {
+                "code": self.error_code,
+                "retryable": self.retryable,
+                "message": self.error_message,
+            },
+        }

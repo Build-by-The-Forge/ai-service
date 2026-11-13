@@ -133,8 +133,11 @@ async def test_executor_failure_isolation_on_runtime_crash(auth_context):
 
     result = await executor.execute(invocation)
     assert result.success is False
-    assert result.error_code == "EXECUTION_FAILED"
-    assert "Simulated unexpected database crash" in result.error_message
+    # The structured failure only (#53): the crash's text stays out of it.
+    assert result.error_code == "TOOL_EXECUTION_FAILED"
+    assert result.error_message == "The tool could not complete this operation."
+    assert result.retryable is False
+    assert "Simulated unexpected database crash" not in result.error_message
 
 
 @pytest.mark.asyncio
