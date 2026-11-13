@@ -31,8 +31,8 @@ PIPELINE_UNAVAILABLE = "INGESTION_PIPELINE_UNAVAILABLE"
 # Every code an ingestion failure can report to the backend (#54): a closed set,
 # each taken from the failure's category (its class or the ingestion outcome),
 # never from its text, so the backend can map each to a user-safe message.
-# tests/unit/test_ingestion_failure_callbacks.py checks that every code raised
-# in app/ is listed here.
+# tests/unit/test_failure_code_set.py reads app/'s syntax tree, aliases and
+# constants included, and checks that every code raised there is listed here.
 FAILURE_CODES = frozenset(
     {
         # Fetching the asset from object storage.
@@ -60,6 +60,7 @@ FAILURE_CODES = frozenset(
         "INDEX_WRITE_FAILED",
         "STALE_INDEX_WRITE",
         # The pipeline and the worker.
+        "CALLBACK_DELIVERY_FAILED",  # a stage callback the backend didn't accept
         "INGESTION_INCOMPLETE",
         "INGESTION_PIPELINE_UNAVAILABLE",
         "INVALID_INGESTION_PAYLOAD",

@@ -8,8 +8,6 @@ reaches neither the callback body nor the dead-letter record nor the logs.
 
 import json
 import logging
-import re
-from pathlib import Path
 
 import pytest
 
@@ -22,7 +20,6 @@ from app.core.callbacks.events import CallbackEvent, CallbackEventType
 from app.core.execution_context import AITask
 from app.services.tasks.handlers import TaskHandler, TaskHandlerRegistry
 from app.services.tasks.ingestion_outcomes import (
-    FAILURE_CODES,
     PermanentIngestionError,
     PipelineUnavailableError,
     TransientIngestionError,
@@ -32,7 +29,6 @@ from app.services.tasks.transport import InMemoryTaskTransport
 from app.services.tasks.worker import TaskWorker
 
 SENTINEL = "student-passage-c4f8"
-APP = Path(__file__).resolve().parents[2] / "app"
 
 
 class Raises(TaskHandler):
@@ -138,28 +134,3 @@ def test_the_callback_sends_only_the_fixed_message_whatever_the_event_holds():
 
     assert body is not None and body["error_message"] == FAILURE_CALLBACK_MESSAGE
     assert SENTINEL not in json.dumps(body)
-
-
-def _codes_raised_in_app() -> set[str]:
-    codes: set[str] = set()
-    for path in APP.rglob("*.py"):
-        source = path.read_text(encoding="utf-8")
-        # A failure built with a literal code, on the same line or the next.
-        codes.update(re.findall(r'IngestionError\(\s*"([A-Z][A-Z_]+)"', source))
-        # A code the worker reports itself.
-        if path.name == "worker.py":
-            codes.update(re.findall(r'error_code="([A-Z][A-Z_]+)"', source))
-            codes.update(re.findall(r'"(AI_[A-Z_]+|UNREGISTERED_HANDLER)"', source))
-        # A module constant naming a code (PIPELINE_UNAVAILABLE, REFERENCE_REJECTED).
-        if path.parent.name in ("tasks", "ingestion"):
-            codes.update(re.findall(r'^[A-Z_]+ = "([A-Z][A-Z_]+)"$', source, flags=re.M))
-    return codes
-
-
-def test_every_failure_code_raised_in_app_is_in_the_closed_set():
-    raised = _codes_raised_in_app()
-
-    assert raised, "the scan found no codes"
-    assert (
-        raised <= FAILURE_CODES
-    ), f"codes missing from FAILURE_CODES: {sorted(raised - FAILURE_CODES)}"
