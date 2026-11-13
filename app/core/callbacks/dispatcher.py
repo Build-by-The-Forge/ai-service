@@ -25,6 +25,7 @@ from typing import Any
 import httpx
 
 from app.core.callbacks.events import CallbackDeliveryResult, CallbackEvent, CallbackEventType
+from app.core.callbacks.failure_codes import FAILURE_CODES, UNLISTED_FAILURE_CODE
 from app.core.config import settings
 from app.core.safe_log import describe
 from app.core.service_context import ServiceContext, ServiceContextError
@@ -37,6 +38,7 @@ logger = logging.getLogger(__name__)
 # error code says what failed and is_retryable whether a new attempt may help;
 # no exception's text crosses to the backend, whatever the event holds.
 FAILURE_CALLBACK_MESSAGE = "The AI service could not process the document."
+_CODE_SHAPE = re.compile(r"[A-Z][A-Z0-9_]{0,63}")
 
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 NON_RETRYABLE_STATUS_CODES = {400, 401, 403, 404, 409, 413, 422}
@@ -66,11 +68,22 @@ def backend_callback_body(event: CallbackEvent) -> dict[str, Any] | None:
             metrics["chunk_summary"] = event.chunk_summary
         body = {"event_type": "job_completed", "metrics": metrics}
     elif event.event_type == CallbackEventType.FAILED:
+        code = event.error_code or "AI_PROCESSING_FAILED"
+        retryable = bool(event.retryable)
+        if code not in FAILURE_CODES:
+            # Only a listed code crosses (#54): anything else is a defect,
+            # reported as unclassified and never retried. Its name is logged
+            # only if it has a code's shape, since its content is unknown.
+            logger.warning(
+                "Unlisted failure code replaced: %s",
+                code if _CODE_SHAPE.fullmatch(code) else "<malformed>",
+            )
+            code, retryable = UNLISTED_FAILURE_CODE, False
         body = {
             "event_type": "job_failed",
-            "error_code": event.error_code or "AI_PROCESSING_FAILED",
+            "error_code": code,
             "error_message": FAILURE_CALLBACK_MESSAGE,
-            "is_retryable": bool(event.retryable),
+            "is_retryable": retryable,
         }
         if event.details:
             body["details"] = dict(event.details)
