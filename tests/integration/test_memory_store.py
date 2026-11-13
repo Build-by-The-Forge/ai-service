@@ -15,6 +15,7 @@ from app.core import tenant
 from app.core.config import settings
 from app.core.learning_memory_gate import LearningMemoryDisabled
 from app.db.session import get_async_session_local, initialize_database, reset_engine
+from app.services.ai.llm import LLMProvider
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.memory.memory_service import MemoryService
 from app.services.rag.evidence import Evidence, Passage
@@ -81,7 +82,7 @@ async def test_concurrent_upserts_keep_one_row_and_every_attempt(scope):
     assert rows[0].mastery_score == pytest.approx(1.0)
 
 
-class RecordingLLM:
+class RecordingLLM(LLMProvider):
     def __init__(self):
         self.prompts = []
 

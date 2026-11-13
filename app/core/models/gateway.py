@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import time
+import uuid
 from collections.abc import AsyncIterator, Iterable
 from typing import Any, NoReturn, cast
 
@@ -208,6 +209,10 @@ class ModelGateway:
 
             # Retry loop per provider
             for attempt in range(1, attempts + 1):
+                # Each attempt is traceable on its own, under the request's
+                # execution (its budget scope) and correlation IDs.
+                attempt_id = _attempt_id()
+                _log_attempt(request, attempt_id, provider_name, attempt, attempts)
                 # Reserve before calling, so concurrent calls in this scope
                 # can't each pass a check the other is about to exhaust.
                 tokens, cost = _estimate(request, decision, adapter)
@@ -229,10 +234,12 @@ class ModelGateway:
 
                     # Types and statuses only: no exception text reaches the logs.
                     logger.warning(
-                        "Model invocation error on %s attempt %d/%d: %s status=%s (retryable=%s)",
+                        "Model invocation error on %s attempt %d/%d (attempt_id=%s): %s"
+                        " status=%s (retryable=%s)",
                         provider_name,
                         attempt,
                         attempts,
+                        attempt_id,
                         type(exc).__name__,
                         exc.status_code,
                         is_retryable,
@@ -256,10 +263,11 @@ class ModelGateway:
                             provider=provider_name,
                         )
                         logger.warning(
-                            "Model invocation error on %s attempt %d/%d: %s",
+                            "Model invocation error on %s attempt %d/%d (attempt_id=%s): %s",
                             provider_name,
                             attempt,
                             attempts,
+                            attempt_id,
                             type(last_error).__name__,
                         )
                         cb.record_failure()
@@ -327,6 +335,7 @@ class ModelGateway:
         # cancellation: it can't be closed, only left behind.
         left_running = False
         error: ModelGatewayError | None = None
+        _log_attempt(request, _attempt_id(), decision.provider, 1, 1)  # streams aren't retried
         chunks = adapter.generate_stream(request, decision)
         try:
             while True:
@@ -468,6 +477,27 @@ def _parse_structured(response: ModelResponse) -> ModelResponse | None:
     if not isinstance(value, dict):
         return None
     return dataclasses.replace(response, structured=value)
+
+
+def _attempt_id() -> str:
+    return f"att_{uuid.uuid4().hex[:16]}"
+
+
+def _log_attempt(
+    request: ModelRequest, attempt_id: str, provider: str, attempt: int, attempts: int
+) -> None:
+    """One line per attempt: IDs and counts only, never the request's content."""
+    context = request.context
+    logger.info(
+        "Model attempt %s: execution=%s correlation=%s task=%s provider=%s attempt=%d/%d",
+        attempt_id,
+        context.execution_id,
+        context.correlation_id,
+        context.task_id,
+        provider,
+        attempt,
+        attempts,
+    )
 
 
 def _deadline(request: ModelRequest) -> float:

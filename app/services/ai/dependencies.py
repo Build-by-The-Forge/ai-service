@@ -1,11 +1,9 @@
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.config import settings
+from app.core.models.gateway import get_model_gateway
 from app.db.session import get_async_session_local
-from app.services.ai.deterministic import DeterministicLLM
-from app.services.ai.llm import LLMProvider
-from app.services.ai.openai import OpenAILLM
+from app.services.ai.gateway_llm import GatewayLLM
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
 from app.services.memory.memory_service import MemoryService
@@ -17,15 +15,12 @@ async def get_db_session():
         yield session
 
 
-def get_llm() -> LLMProvider:
-    if settings.MODEL_PROVIDER == "deterministic":
-        return DeterministicLLM()
-    return OpenAILLM()
-
-
 async def get_ai_orchestrator(db: AsyncSession = Depends(get_db_session)) -> AIOrchestrator:
+    # Chat, explain and question generation run through the one model
+    # execution boundary (AI-01 PR 3). In deterministic mode the default
+    # gateway is offline: its adapter is the only one registered or approved.
     return AIOrchestrator(
-        llm=get_llm(),
+        llm=GatewayLLM(get_model_gateway()),
         retriever=TenantAwareRetrievalService(),
         memory=MemoryService(db),
     )

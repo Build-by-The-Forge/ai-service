@@ -2,8 +2,8 @@
 
 **Status:** the design was approved in #48.
 - **Merged:** PR 1, gateway safety (#49), and its cleanup-bound follow-up (#51).
-- **In review:** PR 2, the deterministic adapter and structured output (#50).
-- **Decided, not started:** PR 3, recorded below. It is implemented only after #50 merges.
+- **Merged:** PR 2, the deterministic adapter and structured output (#50).
+- **In review:** PR 3, the route migration, implementing the decisions below.
 
 Originally written against ai-service `2506dfd`. It carries out decision 3 of the master execution blueprint (backend #107): move chat, explanations and question generation off `LLMProvider` onto `ModelGateway` before Gemini is added, so the provider adapter inherits the gateway's resilience, budget and fallback controls.
 

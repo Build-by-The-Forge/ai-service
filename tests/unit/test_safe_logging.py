@@ -96,7 +96,7 @@ async def test_a_crashing_tool_is_logged_without_its_text(caplog):
             ToolInvocation(tool_name="crash.tool", arguments={}, context=context)
         )
 
-    assert result.error_code == "EXECUTION_FAILED"
+    assert result.error_code == "TOOL_EXECUTION_FAILED"
     assert_logged_without_text(caplog)
 
 
