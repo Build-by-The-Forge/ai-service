@@ -7,6 +7,7 @@ import httpx
 import pytest
 
 from app.core.callbacks.dispatcher import (
+    FAILURE_CALLBACK_MESSAGE,
     HTTPCallbackDispatcher,
     InMemoryCallbackDispatcher,
     backend_callback_body,
@@ -127,9 +128,10 @@ async def test_failed_event_is_a_job_failed_callback():
     )
     body = json.loads(recorder.requests[0].content)
     assert body["event_type"] == "job_failed"
+    # A fixed message (#54): the event's own text is never sent.
     assert (body["error_code"], body["error_message"], body["is_retryable"]) == (
         "OCR_TIMEOUT",
-        "took too long",
+        FAILURE_CALLBACK_MESSAGE,
         True,
     )
 

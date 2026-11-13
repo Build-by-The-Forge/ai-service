@@ -184,7 +184,8 @@ async def test_unclassified_errors_end_non_retryable():
     assert status == TaskStatus.DEAD_LETTER
     failed = dispatcher.delivered_events[-1]
     assert (failed.error_code, failed.retryable) == ("AI_UNCLASSIFIED_ERROR", False)
-    assert "Fatal OCR engine crash" in failed.error_message
+    # The code and the retry flag only (#54): the crash's text never crosses.
+    assert failed.error_message is None
 
 
 # --- stage delivery --------------------------------------------------------------------------

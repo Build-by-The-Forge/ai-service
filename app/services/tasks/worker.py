@@ -18,6 +18,7 @@ from app.core.config import settings
 from app.core.execution_context import AIExecutionContext, AITask, TaskStatus
 from app.core.metrics import callback_delivery_failures_total, task_transitions_total
 from app.core.redis import get_redis_client
+from app.core.safe_log import describe
 from app.services.tasks.handlers import TaskHandlerRegistry, get_task_handler_registry
 from app.services.tasks.heartbeat import HeartbeatManager, get_heartbeat_manager
 from app.services.tasks.ingestion_outcomes import (
@@ -395,10 +396,11 @@ class TaskWorker:
         task: AITask,
         ctx: AIExecutionContext,
         code: str,
-        message: str,
         retryable: bool,
         details: dict[str, Any] | None = None,
     ) -> None:
+        # The code and the retry flag only (#54): the failure's text stays in
+        # this service, and the callback's message is fixed.
         self._transition(task, "failed", error_code=code, retryable=retryable)
         await self.transport.ack(msg_id, group=self.group_name)
         self._finish(msg_id, ctx)
@@ -407,7 +409,6 @@ class TaskWorker:
                 task,
                 CallbackEventType.FAILED,
                 error_code=code,
-                error_message=message,
                 retryable=retryable,
                 details=details or None,
             )
@@ -473,9 +474,7 @@ class TaskWorker:
                 },
             )
             await self.transport.send_to_dlq(task, error_reason=error_msg)
-            await self._fail_terminally(
-                msg_id, task, ctx, "UNREGISTERED_HANDLER", error_msg, retryable=False
-            )
+            await self._fail_terminally(msg_id, task, ctx, "UNREGISTERED_HANDLER", retryable=False)
             return TaskStatus.DEAD_LETTER
 
         # 6. Execute Handler, renewing the lease while it runs
@@ -510,13 +509,7 @@ class TaskWorker:
                 },
             )
             await self._fail_terminally(
-                msg_id,
-                task,
-                ctx,
-                failure.code,
-                failure.message,
-                retryable=False,
-                details=failure.details,
+                msg_id, task, ctx, failure.code, retryable=False, details=failure.details
             )
             return TaskStatus.FAILED
         except Exception as exc:
@@ -558,9 +551,10 @@ class TaskWorker:
                 )
                 return TaskStatus.FAILED
 
+            # Type and place only, under the safe-logging rule (#52, #54).
             await self.transport.send_to_dlq(
                 task,
-                error_reason=f"Failed after {task.max_attempts} deliveries: {exc}",
+                error_reason=f"Failed after {task.max_attempts} deliveries: {describe(exc)}",
             )
             # A transient failure may succeed on a new backend attempt; an
             # unclassified one is a defect to investigate, not to repeat.
@@ -569,7 +563,6 @@ class TaskWorker:
                 task,
                 ctx,
                 code,
-                f"Failed after {task.max_attempts} deliveries: {exc}",
                 retryable=transient,
                 details=exc.details if isinstance(exc, TransientIngestionError) else None,
             )
@@ -592,7 +585,6 @@ class TaskWorker:
                     task,
                     CallbackEventType.FAILED,
                     error_code="INGESTION_INCOMPLETE",
-                    error_message="the handler finished without reporting the indexed stage",
                     retryable=False,
                 )
             )

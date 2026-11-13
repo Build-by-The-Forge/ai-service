@@ -33,6 +33,11 @@ from app.schemas.ingest import IngestCallbackPayload
 
 logger = logging.getLogger(__name__)
 
+# What a job_failed callback says, for every failure (#54): fixed text. The
+# error code says what failed and is_retryable whether a new attempt may help;
+# no exception's text crosses to the backend, whatever the event holds.
+FAILURE_CALLBACK_MESSAGE = "The AI service could not process the document."
+
 RETRYABLE_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 NON_RETRYABLE_STATUS_CODES = {400, 401, 403, 404, 409, 413, 422}
 
@@ -64,7 +69,7 @@ def backend_callback_body(event: CallbackEvent) -> dict[str, Any] | None:
         body = {
             "event_type": "job_failed",
             "error_code": event.error_code or "AI_PROCESSING_FAILED",
-            "error_message": event.error_message or "AI-service reported job failure",
+            "error_message": FAILURE_CALLBACK_MESSAGE,
             "is_retryable": bool(event.retryable),
         }
         if event.details:
