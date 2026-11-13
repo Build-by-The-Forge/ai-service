@@ -7,10 +7,15 @@ from app.api.v1.ingest import router as ingest_router
 from app.api.v1.router import api_router
 from app.api.v1.scopes import router as scopes_router
 from app.core.config import STRICT_ENVIRONMENTS, settings
-from app.core.errors import app_exception_handler, learning_memory_disabled_handler
+from app.core.errors import (
+    app_exception_handler,
+    learning_memory_disabled_handler,
+    model_gateway_error_handler,
+)
 from app.core.learning_memory_gate import LearningMemoryDisabled
 from app.core.logging import logger, setup_logging
 from app.core.metrics import learning_memory_enabled, setup_metrics
+from app.core.models.errors import ModelGatewayError
 from app.core.middleware.request_id import RequestIDMiddleware
 from app.core.middleware.service_auth import ReplayGuard, SignedServiceRequestMiddleware
 from app.core.replay_guard import RedisReplayGuard
@@ -77,6 +82,7 @@ def create_app(replay_guard: ReplayGuard | None = None) -> FastAPI:
 
     # Exception handlers
     app.add_exception_handler(LearningMemoryDisabled, learning_memory_disabled_handler)
+    app.add_exception_handler(ModelGatewayError, model_gateway_error_handler)
     app.add_exception_handler(Exception, app_exception_handler)
 
     # Routes
