@@ -15,7 +15,9 @@ from app.services.rag.retrieval import Retrieved
 
 
 class DummyOrchestrator:
-    async def chat(self, user_id: str, question: str, denied_assets: frozenset[str]):
+    async def chat(
+        self, user_id: str, question: str, denied_assets: frozenset[str], invocation=None
+    ):
         return {
             "answer": "ok",
             "context_used": [],
@@ -23,7 +25,7 @@ class DummyOrchestrator:
             "sources_used": [{"asset_id": "a1", "run_number": 1, "attempt": 1}],
         }
 
-    async def explain(self, subject: str, denied_assets: frozenset[str]):
+    async def explain(self, subject: str, denied_assets: frozenset[str], invocation=None):
         return {"explanation": f"explained {subject}", "sources_used": []}
 
     async def generate_questions(
@@ -35,7 +37,7 @@ class DummyOrchestrator:
 # What the signed-route dependency hands a route (a verified user call).
 USER_CALL = types.SimpleNamespace(
     request_id="4f1c2a7e-4b3d-4c8e-9a1f-2d3e4f5a6b7c",
-    context=types.SimpleNamespace(user_id="u1"),
+    context=types.SimpleNamespace(user_id="u1", tenant_id="t1"),
 )
 
 

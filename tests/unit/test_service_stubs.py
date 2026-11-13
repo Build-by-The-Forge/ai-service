@@ -46,18 +46,13 @@ class DummyDB:
 
 
 @pytest.mark.asyncio
-async def test_get_ai_orchestrator_constructs_orchestrator(monkeypatch):
-    import app.services.ai.dependencies as ai_dependencies
-
-    class DummyOpenAILLM:
-        pass
-
-    monkeypatch.setattr(ai_dependencies, "OpenAILLM", lambda: DummyOpenAILLM())
+async def test_get_ai_orchestrator_constructs_orchestrator():
+    from app.services.ai.gateway_llm import GatewayLLM
 
     orchestrator = await get_ai_orchestrator(db=DummyDB())
 
-    assert orchestrator is not None
     assert hasattr(orchestrator, "chat")
+    assert isinstance(orchestrator.llm, GatewayLLM)  # the gateway, never a provider SDK
 
 
 def test_system_prompt_constants_are_defined():

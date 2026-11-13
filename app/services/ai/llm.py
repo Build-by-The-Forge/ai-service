@@ -1,6 +1,10 @@
 import json
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
+from contextlib import contextmanager
 from typing import Any
+
+from app.core.models.contracts import ModelInvocationContext
 
 
 class StructuredOutputError(ValueError):
@@ -11,6 +15,15 @@ class LLMProvider(ABC):
     @abstractmethod
     async def generate(self, prompt: str) -> str:
         pass
+
+    @contextmanager
+    def for_capability(
+        self, capability: str, invocation: ModelInvocationContext | None
+    ) -> Iterator["LLMProvider"]:
+        """The provider for one capability's model work in one request. An
+        offline provider needs nothing per request; GatewayLLM binds the
+        request's context and opens the capability's budget for it."""
+        yield self
 
     async def generate_json(self, prompt: str, *, kind: str, **hints: Any) -> dict[str, Any]:
         """A JSON object answer. ``kind`` and ``hints`` (such as count) let
