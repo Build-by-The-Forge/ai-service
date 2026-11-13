@@ -59,3 +59,29 @@ async def test_the_deterministic_answer_identifies_its_prompt():
 def test_a_strict_environment_cannot_approve_the_deterministic_adapter(environment):
     with pytest.raises(ValidationError, match="no production adapter"):
         make(environment, MODEL_PROVIDERS_APPROVED="deterministic")
+
+
+BUDGETS = [
+    f"AI_BUDGET_{capability}_{limit}"
+    for capability in ("CHAT", "EXPLAIN", "QUESTIONS")
+    for limit in ("CALLS", "TOKENS", "COST_USD")
+]
+
+
+@pytest.mark.parametrize("name", BUDGETS)
+@pytest.mark.parametrize("value", [0, -1, None])
+def test_no_capability_runs_without_a_budget(name, value):
+    """AI-01 decision P3-3: every limit is set and positive; none is unlimited."""
+    with pytest.raises(ValidationError):
+        make("development", **{name: value})
+
+
+def test_the_budget_defaults_are_two_calls_and_conservative_caps():
+    settings = make("production")
+    assert (
+        settings.AI_BUDGET_CHAT_CALLS,
+        settings.AI_BUDGET_EXPLAIN_CALLS,
+        settings.AI_BUDGET_QUESTIONS_CALLS,
+    ) == (2, 2, 2)
+    assert settings.AI_BUDGET_CHAT_TOKENS == settings.AI_BUDGET_EXPLAIN_TOKENS == 12_000
+    assert settings.AI_BUDGET_QUESTIONS_TOKENS == 16_000

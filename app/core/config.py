@@ -75,6 +75,19 @@ class Settings(BaseSettings):
     # is never called, not even as a fallback. Empty, the default, means no
     # provider is called at all: the gateway fails closed.
     MODEL_PROVIDERS_APPROVED: str = ""
+    # One request's model use, per capability (AI-01 decision P3-3): calls (a
+    # first attempt and its retry share them), tokens and cost, each reserved
+    # before a call and reconciled after. None would be unlimited, so each is
+    # required and positive: no capability runs without a budget.
+    AI_BUDGET_CHAT_CALLS: int = Field(default=2, ge=1)
+    AI_BUDGET_CHAT_TOKENS: int = Field(default=12_000, ge=1)
+    AI_BUDGET_CHAT_COST_USD: float = Field(default=0.05, gt=0)
+    AI_BUDGET_EXPLAIN_CALLS: int = Field(default=2, ge=1)
+    AI_BUDGET_EXPLAIN_TOKENS: int = Field(default=12_000, ge=1)
+    AI_BUDGET_EXPLAIN_COST_USD: float = Field(default=0.05, gt=0)
+    AI_BUDGET_QUESTIONS_CALLS: int = Field(default=2, ge=1)
+    AI_BUDGET_QUESTIONS_TOKENS: int = Field(default=16_000, ge=1)
+    AI_BUDGET_QUESTIONS_COST_USD: float = Field(default=0.08, gt=0)
 
     # Directory of the verified OCR models installed by
     # scripts/fetch_ocr_models.py (the image sets it). Required wherever OCR
