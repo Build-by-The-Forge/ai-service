@@ -25,11 +25,18 @@ from app.core.models.contracts import (
     ModelUsage,
 )
 from app.core.models.gateway import ModelGateway, get_model_gateway
+from app.core.safe_log import describe
 from app.core.tools.contracts import ToolContext, ToolInvocation
 from app.core.tools.registry import ToolRegistry, get_tool_registry
 from app.services.tools.executor import ToolExecutor, get_tool_executor
 
 logger = logging.getLogger(__name__)
+
+# What a failed run's result says (#57 follow-up): fixed text, never an
+# exception's. The error code names the failure's category; the exception's
+# type and place go to the log, and its text goes nowhere.
+RESOLUTION_FAILED_MESSAGE = "The agent could not be started for this request."
+MODEL_FAILURES_MESSAGE = "Consecutive model failure limit reached"
 
 
 class AgentExecutor:
@@ -87,12 +94,13 @@ class AgentExecutor:
         try:
             definition = self._resolve_agent(agent_id, context)
         except Exception as exc:
+            logger.warning("Agent resolution failed: %s", describe(exc))
             return AgentResult(
                 run_id=context.agent_run_id,
                 agent_id=agent_id,
                 state=AgentState.FAILED,
                 error_code=getattr(exc, "error_code", "AUTHORIZATION_FAILED"),
-                error_message=str(exc),
+                error_message=RESOLUTION_FAILED_MESSAGE,
                 started_at=start_time,
                 completed_at=time.time(),
                 latency_ms=(time.time() - start_time) * 1000.0,
@@ -224,7 +232,7 @@ class AgentExecutor:
                 if run.consecutive_failures >= effective_policy.max_consecutive_failures:
                     run.transition_to(
                         AgentState.FAILED,
-                        error=f"Consecutive model failure limit reached: {model_err!s}",
+                        error=MODEL_FAILURES_MESSAGE,
                     )
                     break
                 else:
