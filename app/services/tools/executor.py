@@ -28,6 +28,27 @@ from app.services.tools.builtins.question import (
 
 logger = logging.getLogger(__name__)
 
+# What the agent reads about a failure (#53): a fixed message per error code,
+# never the exception's text, which can quote a passage, an argument or a
+# provider's response. The code and the retry flag come from the failure's
+# category (its class or typed code), never from its message.
+FAILURE_MESSAGES: dict[str, str] = {
+    "TOOL_EXECUTION_FAILED": "The tool could not complete this operation.",
+    "TOOL_TIMEOUT": "The tool did not finish in time.",
+    "EXECUTION_CANCELLED": "The tool's run was cancelled.",
+    "TOOL_BUDGET_EXCEEDED": "The tool budget for this run is used up.",
+    "INVALID_PARAMETERS": "The tool's arguments were not valid.",
+    "TENANT_MISMATCH": "The tool can act only within the caller's institution.",
+    "PERMISSION_DENIED": "The tool is not permitted here.",
+    "TOOL_NOT_FOUND": "The tool is not available.",
+    "TOOL_DISABLED": "The tool is not available.",
+}
+RETRYABLE_CODES = frozenset({"TOOL_TIMEOUT"})
+
+
+def failure_message(code: str) -> str:
+    return FAILURE_MESSAGES.get(code, FAILURE_MESSAGES["TOOL_EXECUTION_FAILED"])
+
 
 class ToolExecutor:
     """
@@ -51,6 +72,20 @@ class ToolExecutor:
         self.registry.register(CURRICULUM_LOOKUP_DEFINITION, curriculum_lookup_handler)
         self.registry.register(CONTENT_SEARCH_DEFINITION, content_search_handler)
         self.registry.register(DRAFT_QUESTION_DEFINITION, draft_question_handler)
+
+    @staticmethod
+    def _failed(invocation: ToolInvocation, code: str, start_time: float) -> ToolResult:
+        """A failure the agent may read: the code, its fixed message and whether
+        it is worth retrying, from the failure's category (#53)."""
+        return ToolResult(
+            invocation_id=invocation.invocation_id,
+            tool_name=invocation.tool_name,
+            success=False,
+            error_code=code,
+            error_message=failure_message(code),
+            retryable=code in RETRYABLE_CODES,
+            latency_ms=(time.time() - start_time) * 1000.0,
+        )
 
     async def execute(
         self,
@@ -165,27 +200,13 @@ class ToolExecutor:
         try:
             ToolValidator.validate_input(definition, invocation, effective_policy)
         except ToolError as val_err:
-            return ToolResult(
-                invocation_id=invocation.invocation_id,
-                tool_name=tool_name,
-                success=False,
-                error_code=val_err.error_code,
-                error_message=val_err.message,
-                latency_ms=(time.time() - start_time) * 1000.0,
-            )
+            return self._failed(invocation, val_err.error_code, start_time)
 
         # 6. Check Execution Budgets
         try:
             self.budget_tracker.check_pre_invocation(scope_key, effective_policy)
         except ToolBudgetExceededError as budget_err:
-            return ToolResult(
-                invocation_id=invocation.invocation_id,
-                tool_name=tool_name,
-                success=False,
-                error_code=budget_err.error_code,
-                error_message=budget_err.message,
-                latency_ms=(time.time() - start_time) * 1000.0,
-            )
+            return self._failed(invocation, budget_err.error_code, start_time)
 
         # 7. Execute Handler with Timeout
         timeout = min(definition.timeout_seconds, effective_policy.max_runtime_seconds)
@@ -197,49 +218,25 @@ class ToolExecutor:
             )
         except TimeoutError:
             logger.warning("Tool '%s' execution timed out after %fs", tool_name, timeout)
-            return ToolResult(
-                invocation_id=invocation.invocation_id,
-                tool_name=tool_name,
-                success=False,
-                error_code="TOOL_TIMEOUT",
-                error_message=f"Tool timed out after {timeout}s",
-                latency_ms=(time.time() - start_time) * 1000.0,
-            )
+            return self._failed(invocation, "TOOL_TIMEOUT", start_time)
         except asyncio.CancelledError:
             logger.info("Tool '%s' execution was cancelled", tool_name)
-            return ToolResult(
-                invocation_id=invocation.invocation_id,
-                tool_name=tool_name,
-                success=False,
-                error_code="EXECUTION_CANCELLED",
-                error_message="Tool execution cancelled",
-                latency_ms=(time.time() - start_time) * 1000.0,
-            )
+            return self._failed(invocation, "EXECUTION_CANCELLED", start_time)
+        except ToolError as tool_err:
+            # A typed failure keeps its category's code; its text stays here.
+            logger.warning("Tool '%s' failed: %s", tool_name, describe(tool_err))
+            return self._failed(invocation, tool_err.error_code, start_time)
         except Exception as exc:
             # Type and place only: a tool handles passages, and its
             # exception's text may quote one.
             logger.error("Tool '%s' unhandled runtime exception: %s", tool_name, describe(exc))
-            return ToolResult(
-                invocation_id=invocation.invocation_id,
-                tool_name=tool_name,
-                success=False,
-                error_code="EXECUTION_FAILED",
-                error_message=str(exc),
-                latency_ms=(time.time() - start_time) * 1000.0,
-            )
+            return self._failed(invocation, "TOOL_EXECUTION_FAILED", start_time)
 
         # 8. Validate Output Payload Size Limit
         try:
             output_bytes = ToolValidator.validate_output(tool_name, raw_result, effective_policy)
         except ToolError as out_err:
-            return ToolResult(
-                invocation_id=invocation.invocation_id,
-                tool_name=tool_name,
-                success=False,
-                error_code=out_err.error_code,
-                error_message=out_err.message,
-                latency_ms=(time.time() - start_time) * 1000.0,
-            )
+            return self._failed(invocation, out_err.error_code, start_time)
 
         latency_seconds = time.time() - start_time
         latency_ms = latency_seconds * 1000.0

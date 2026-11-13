@@ -301,7 +301,9 @@ class AgentExecutor:
                         else str(tool_result.data)
                     )
                 else:
-                    obs_content = f"Error ({tool_result.error_code}): {tool_result.error_message}"
+                    # The structured failure only: code, retry flag and a fixed
+                    # message. No exception's text reaches the model (#53).
+                    obs_content = json.dumps(tool_result.failure())
 
                 messages.append(
                     ModelMessage(
