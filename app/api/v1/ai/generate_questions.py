@@ -5,6 +5,7 @@ from app.core.signed_response import signed_response
 from app.core.service_signature_v1 import VerifiedCall
 from app.schemas.ai import GeneratedQuestionsResponse, GenerateQuestionsRequest
 from app.services.ai.dependencies import get_ai_orchestrator
+from app.services.ai.gateway_llm import invocation_context
 from app.services.ai.orchestrator import AIOrchestrator
 
 router = APIRouter()
@@ -22,6 +23,7 @@ async def generate_questions(
         count=body.count,
         difficulty=body.difficulty,
         question_type=body.question_type,
+        invocation=invocation_context(call, "generate_questions"),
     )
 
     sources_used = result.pop("sources_used")

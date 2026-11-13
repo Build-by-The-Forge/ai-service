@@ -4,7 +4,7 @@ from pydantic import ValidationError
 from app.core.config import Settings
 from app.services.ai import dependencies
 from app.services.ai.deterministic import DeterministicLLM
-from app.services.ai.openai import OpenAILLM
+from app.services.ai.gateway_llm import GatewayLLM
 
 CALLBACK_URL = "https://api.build.example/content/ingestion/callbacks"
 SECRETS = {"BACKEND_TO_AI_SECRET": "b2a-" + "x" * 40, "AI_TO_BACKEND_SECRET": "a2b-" + "z" * 40}
@@ -40,11 +40,17 @@ def test_the_deterministic_provider_is_refused_in_strict_environments(environmen
         make(environment, MODEL_PROVIDER="deterministic")
 
 
-def test_get_llm_follows_the_setting(monkeypatch):
-    monkeypatch.setattr(dependencies.settings, "MODEL_PROVIDER", "deterministic")
-    assert isinstance(dependencies.get_llm(), DeterministicLLM)
-    monkeypatch.setattr(dependencies.settings, "MODEL_PROVIDER", "openai")
-    assert isinstance(dependencies.get_llm(), OpenAILLM)
+async def test_chat_explain_and_questions_are_wired_to_the_gateway(monkeypatch):
+    """AI-01 PR 3: the orchestrator's model layer is the gateway, whatever
+    MODEL_PROVIDER says; the provider is the gateway's policy and approval."""
+    gateway = object()
+    monkeypatch.setattr(dependencies, "get_model_gateway", lambda: gateway)
+
+    orchestrator = await dependencies.get_ai_orchestrator(db=None)
+
+    assert isinstance(orchestrator.llm, GatewayLLM)
+    assert orchestrator.llm._gateway is gateway
+    assert not hasattr(dependencies, "get_llm")  # no path around the gateway
 
 
 async def test_the_deterministic_answer_identifies_its_prompt():

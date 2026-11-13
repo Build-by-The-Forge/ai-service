@@ -1,4 +1,5 @@
 from app.core.learning_memory_gate import LearningMemoryDisabled
+from app.core.models.contracts import ModelInvocationContext
 from app.core.prompt_builder import PromptBuilder
 from app.services.ai.llm import LLMProvider
 from app.services.generation.structured_questions import StructuredQuestionGenerator
@@ -14,7 +15,13 @@ class AIOrchestrator:
         self.memory = memory
         self.prompts = PromptBuilder()
 
-    async def chat(self, user_id: str, question: str, denied_assets: frozenset[str]):
+    async def chat(
+        self,
+        user_id: str,
+        question: str,
+        denied_assets: frozenset[str],
+        invocation: ModelInvocationContext | None = None,
+    ):
         try:
             user_memory = await self.memory.get_user_memory(user_id)
         except LearningMemoryDisabled:
@@ -36,6 +43,8 @@ class AIOrchestrator:
         answer = await self._grounded(
             evidence,
             "chat_tutor",
+            capability="chat",
+            invocation=invocation,
             context=evidence.prompt_block(),
             question=question,
             memory=memory_text,
@@ -50,10 +59,20 @@ class AIOrchestrator:
             "sources_used": [s.as_dict() for s in evidence.sources_used],
         }
 
-    async def explain(self, subject: str, denied_assets: frozenset[str]):
+    async def explain(
+        self,
+        subject: str,
+        denied_assets: frozenset[str],
+        invocation: ModelInvocationContext | None = None,
+    ):
         evidence = await self.retriever.evidence(subject, denied_assets)
         answer = await self._grounded(
-            evidence, "explain", context=evidence.prompt_block(), subject=subject
+            evidence,
+            "explain",
+            capability="explain",
+            invocation=invocation,
+            context=evidence.prompt_block(),
+            subject=subject,
         )
         return {
             "explanation": answer.text,
@@ -62,16 +81,24 @@ class AIOrchestrator:
             "sources_used": [s.as_dict() for s in evidence.sources_used],
         }
 
-    async def _grounded(self, evidence: Evidence, template: str, **fields) -> GroundedAnswer:
+    async def _grounded(
+        self,
+        evidence: Evidence,
+        template: str,
+        *,
+        capability: str,
+        invocation: ModelInvocationContext | None,
+        **fields,
+    ) -> GroundedAnswer:
         """The model answers from the evidence, or not at all: with no
         passages it is not asked, and an answer that does not cite the
         passages it was given is replaced (check_grounded)."""
         if not evidence.passages:
             return check_grounded("", evidence)
         prompt = self.prompts.build(name=template, **fields)
-        return check_grounded(
-            await self.llm.generate(prompt["system"] + "\n" + prompt["user"]), evidence
-        )
+        with self.llm.for_capability(capability, invocation) as llm:
+            text = await llm.generate(prompt["system"] + "\n" + prompt["user"])
+        return check_grounded(text, evidence)
 
     async def generate_questions(
         self,
@@ -80,14 +107,16 @@ class AIOrchestrator:
         count: int = 5,
         difficulty: str = "medium",
         question_type: str = "mcq",
+        invocation: ModelInvocationContext | None = None,
     ):
-        result = await StructuredQuestionGenerator(self.llm, self.retriever).generate(
-            topic,
-            denied_assets=denied_assets,
-            count=count,
-            difficulty=difficulty,
-            question_type=question_type,
-        )
+        with self.llm.for_capability("generate_questions", invocation) as llm:
+            result = await StructuredQuestionGenerator(llm, self.retriever).generate(
+                topic,
+                denied_assets=denied_assets,
+                count=count,
+                difficulty=difficulty,
+                question_type=question_type,
+            )
         return {
             "questions": [q.model_dump() for q in result.questions],
             "discarded": result.discarded,

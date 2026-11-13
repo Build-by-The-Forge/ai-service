@@ -5,6 +5,7 @@ from app.core.service_call import signed_user_call_with
 from app.core.service_signature_v1 import VerifiedCall
 from app.schemas.ai import ChatRequest, ChatResponse
 from app.services.ai.dependencies import get_ai_orchestrator
+from app.services.ai.gateway_llm import invocation_context
 from app.services.ai.orchestrator import AIOrchestrator
 
 router = APIRouter()
@@ -21,7 +22,10 @@ async def chat(
     # Memory is the verified user's, in the verified tenant (design B.4).
     user_id = call.context.user_id or ""
     result = await orchestrator.chat(
-        user_id=user_id, question=body.message, denied_assets=frozenset(body.denied_assets)
+        user_id=user_id,
+        question=body.message,
+        denied_assets=frozenset(body.denied_assets),
+        invocation=invocation_context(call, "chat"),
     )
 
     sources_used = result.pop("sources_used")

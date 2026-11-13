@@ -12,6 +12,7 @@ from app.core import learning_memory_gate as gate
 from app.core.config import Settings, settings
 from app.core.learning_memory_gate import LearningMemoryDisabled
 from app.main import create_app
+from app.services.ai.llm import LLMProvider
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.generation.adaptive_engine import AdaptiveDifficultyEngine
 from app.services.memory.memory_service import MemoryService
@@ -191,7 +192,7 @@ def test_nothing_else_in_the_application_queries_learning_memory():
 # --- callers ------------------------------------------------------------------------
 
 
-class RecordingLLM:
+class RecordingLLM(LLMProvider):
     def __init__(self):
         self.prompts = []
 
