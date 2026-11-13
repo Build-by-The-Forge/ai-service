@@ -26,7 +26,12 @@ from __future__ import annotations
 from collections.abc import Awaitable, Callable
 from typing import Any
 
+from app.core.callbacks.failure_codes import FAILURE_CODES as FAILURE_CODES
+
 PIPELINE_UNAVAILABLE = "INGESTION_PIPELINE_UNAVAILABLE"
+
+# The closed set of failure codes lives with the callback boundary that
+# enforces it (app/core/callbacks/failure_codes.py), and is re-exported here.
 STAGES = ("extracted", "chunked", "indexed")
 
 
