@@ -5,6 +5,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings
+from app.core.safe_log import describe
 from app.db.base import Base
 
 DATABASE_URL = settings.DATABASE_URL
@@ -59,7 +60,8 @@ async def initialize_database() -> None:
                 await conn.run_sync(Base.metadata.create_all)
             break
         except Exception as exc:
-            logging.debug("initialize_database attempt %d failed: %s", attempt, exc)
+            # Type and place only (#52): a connection error can carry the URL.
+            logging.debug("initialize_database attempt %d failed: %s", attempt, describe(exc))
             if attempt == max_attempts:
                 raise
             await asyncio.sleep(delay)
@@ -82,6 +84,6 @@ async def reset_engine() -> None:
         try:
             await engine.dispose()
         except Exception as exc:
-            logging.warning("Failed to dispose SQLAlchemy engine cleanly: %s", exc)
+            logging.warning("Failed to dispose SQLAlchemy engine cleanly: %s", describe(exc))
     engine = None
     AsyncSessionLocal = None
