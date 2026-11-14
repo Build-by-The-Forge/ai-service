@@ -7,6 +7,7 @@ structured output and sanitized errors (decisions P3-1 to P3-4).
 
 import logging
 import time
+from typing import get_args
 
 import pytest
 
@@ -29,7 +30,12 @@ from app.core.models.provider import ModelProviderAdapter
 from app.core.models.providers.deterministic import DeterministicProviderAdapter
 from app.core.service_signature_v1 import VerifiedCall
 from app.services.ai.deterministic import DeterministicLLM
-from app.services.ai.gateway_llm import GatewayLLM, capability_limits, invocation_context
+from app.services.ai.gateway_llm import (
+    Capability,
+    GatewayLLM,
+    capability_limits,
+    invocation_context,
+)
 from app.services.ai.llm import StructuredOutputError
 from tests.signing import TENANT_A, user_context
 
@@ -172,7 +178,7 @@ async def test_the_context_comes_from_the_verified_call(provider):
     assert first.execution_id.startswith("exec_")
 
 
-@pytest.mark.parametrize("capability", ["chat", "explain"])
+@pytest.mark.parametrize("capability", get_args(Capability))
 def test_there_is_no_model_call_without_the_requests_context(capability):
     llm = GatewayLLM(gateway(Recording()))
 
@@ -198,8 +204,23 @@ def test_an_unknown_capability_has_no_budget_and_is_refused():
 # --- budgets per capability (P3-3) -------------------------------------------------------
 
 
+@pytest.mark.asyncio
+async def test_cbt_exam_generation_runs_under_its_own_budget(provider, monkeypatch):
+    provider("rec")
+    monkeypatch.setattr(gateway_llm.settings, "AI_BUDGET_CBT_CALLS", 1)
+    monkeypatch.setattr(gateway_llm.settings, "AI_BUDGET_QUESTIONS_CALLS", 5)
+
+    with GatewayLLM(gateway(Recording())).for_capability(
+        "cbt_exam", invocation_context(call(), "cbt_exam")
+    ) as bound:
+        await bound.generate("one")
+        with pytest.raises(BudgetExceededError):
+            await bound.generate("two")
+
+
 def test_every_capability_has_every_limit_by_default():
-    for capability in ("chat", "explain", "generate_questions"):
+    # Every capability the type names: a new one can't be added without a budget.
+    for capability in get_args(Capability):
         limits = capability_limits(capability)
         assert limits.max_model_calls == 2
         assert limits.max_tokens and limits.max_tokens > 0

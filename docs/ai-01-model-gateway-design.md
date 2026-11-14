@@ -52,7 +52,7 @@ Each PR has separate commits, with the tests first.
 1. **Gateway safety, before any route moves.** Covers F1 to F5, and decisions 1 to 5. The agent executor, the gateway's one current user, keeps working. Its tests show unlisted providers are never called, error bodies never reach logs, a strict start without a key fails, and the deadline bounds the attempts.
 2. **The deterministic adapter and structured output** (decisions 6 and 7). Deterministic mode then runs through the gateway.
 3. **The move.** `get_ai_orchestrator` builds a `GatewayLLM` over the gateway, with the request context threaded from the routes (decision 8). Chat, explain and generate-questions answer exactly as before in deterministic mode: the same prompts, grounding checks, `sources_used` and signed envelopes.
-4. **AI-10's generator onto the gateway**, scoped separately (decision P3-5). `CBTAIGenerator`, used only by the unrouted `CBTFusionEngine`, moves off `LLMProvider`.
+4. **AI-10's generator onto the gateway**, scoped separately (decision P3-5). `CBTAIGenerator`, used only by the unrouted `CBTFusionEngine`, moves off `LLMProvider`. **Done:** it takes a `GatewayLLM`, runs under its own `cbt_exam` capability and `AI_BUDGET_CBT_*` budget, and requires the verified request's context.
 5. **Removal.** `OpenAILLM`, `DeterministicLLM`, `LLMProvider`, the dead `OpenAIEmbeddingAdapter` and the `openai` dependency go.
    - **Condition:** the PR includes an explicit inventory: a repository-wide search, with its output, showing that no required code imports or invokes a direct provider path.
    - It can't merge while a required path, such as AI-10's generator, still depends on the old layer.
@@ -127,8 +127,9 @@ The gateway's model layer sends what `OpenAILLM` sent: a fixed system message, t
 | Path | Evidence | Disposition |
 |---|---|---|
 | `OpenAIEmbeddingAdapter` (`app/services/rag/embedder.py`) | Never constructed: no import, injection, setting, environment variable, workflow, Dockerfile or doc refers to it. Production embeds with local ONNX MiniLM (`EMBEDDING_MODEL_DIR`, fetched in the Dockerfile) | **Removed** in the removal PR |
-| `CBTAIGenerator` (`app/services/generation/cbt_ai_generator.py`) | Reached only from `CBTFusionEngine` (AI-10), which no route calls, and from unit tests | **A known legacy path.** It moves to the gateway in its own PR, because AI-10 is on the roadmap (stage 6). It is not deleted, and it is not an approved second boundary |
-| `OpenAILLM`, `DeterministicLLM`, `LLMProvider` | After PR 3, used only by `CBTAIGenerator` and tests | Removed in the removal PR, once the AI-10 migration has merged |
+| `CBTAIGenerator` (`app/services/generation/cbt_ai_generator.py`) | Reached only from `CBTFusionEngine` (AI-10), which no route calls, and from unit tests | **Moved to the gateway** (AI-10 migration): `GatewayLLM`, the `cbt_exam` capability and budget, and the request's context, required. Still unrouted: a route must build the context with `invocation_context(call, "cbt_exam")` |
+| `OpenAILLM`, `DeterministicLLM` | After the AI-10 migration, constructed by no code in `app/`: tests only | Removed in the removal PR |
+| `LLMProvider` | The interface type, not a provider path: `GatewayLLM` subclasses it, and `AIOrchestrator` and `StructuredQuestionGenerator` take it (corrected: this row said only `CBTAIGenerator` and tests used it) | The removal PR replaces it with the interface `GatewayLLM` provides, under the inventory condition |
 | The `openai` SDK (`requirements.txt`, `pyproject.toml`) | Used by `OpenAILLM` and the dead embedder | Removed last, under the inventory condition above |
 
 ### The related data-flow findings

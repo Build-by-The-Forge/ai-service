@@ -88,6 +88,11 @@ class Settings(BaseSettings):
     AI_BUDGET_QUESTIONS_CALLS: int = Field(default=2, ge=1)
     AI_BUDGET_QUESTIONS_TOKENS: int = Field(default=16_000, ge=1)
     AI_BUDGET_QUESTIONS_COST_USD: float = Field(default=0.08, gt=0)
+    # CBT exam generation (AI-10): question generation's caps until AI-10 is
+    # routed and its own use is measured.
+    AI_BUDGET_CBT_CALLS: int = Field(default=2, ge=1)
+    AI_BUDGET_CBT_TOKENS: int = Field(default=16_000, ge=1)
+    AI_BUDGET_CBT_COST_USD: float = Field(default=0.08, gt=0)
 
     # Directory of the verified OCR models installed by
     # scripts/fetch_ocr_models.py (the image sets it). Required wherever OCR

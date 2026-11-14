@@ -1,3 +1,4 @@
+from app.core.models.contracts import ModelInvocationContext
 from app.services.generation.adaptive_engine import AdaptiveDifficultyEngine
 from app.services.generation.cbt_ai_generator import CBTAIGenerator
 
@@ -14,6 +15,7 @@ class CBTFusionEngine:
         topic: str,
         *,
         denied_assets: frozenset[str],
+        invocation: ModelInvocationContext,
     ):
         difficulty = await self.adaptive_engine.get_difficulty(user_id, topic)
 
@@ -21,6 +23,7 @@ class CBTFusionEngine:
             course=course,
             topic=topic,
             denied_assets=denied_assets,
+            invocation=invocation,
             difficulty=difficulty,
             count=10,
         )

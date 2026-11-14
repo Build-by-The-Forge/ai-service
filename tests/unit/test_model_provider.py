@@ -69,7 +69,7 @@ def test_a_strict_environment_cannot_approve_the_deterministic_adapter(environme
 
 BUDGETS = [
     f"AI_BUDGET_{capability}_{limit}"
-    for capability in ("CHAT", "EXPLAIN", "QUESTIONS")
+    for capability in ("CHAT", "EXPLAIN", "QUESTIONS", "CBT")
     for limit in ("CALLS", "TOKENS", "COST_USD")
 ]
 
@@ -88,6 +88,7 @@ def test_the_budget_defaults_are_two_calls_and_conservative_caps():
         settings.AI_BUDGET_CHAT_CALLS,
         settings.AI_BUDGET_EXPLAIN_CALLS,
         settings.AI_BUDGET_QUESTIONS_CALLS,
-    ) == (2, 2, 2)
+        settings.AI_BUDGET_CBT_CALLS,
+    ) == (2, 2, 2, 2)
     assert settings.AI_BUDGET_CHAT_TOKENS == settings.AI_BUDGET_EXPLAIN_TOKENS == 12_000
-    assert settings.AI_BUDGET_QUESTIONS_TOKENS == 16_000
+    assert settings.AI_BUDGET_QUESTIONS_TOKENS == settings.AI_BUDGET_CBT_TOKENS == 16_000

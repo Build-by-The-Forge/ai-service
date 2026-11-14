@@ -1,4 +1,5 @@
-"""Chat, explain and question generation through the gateway (AI-01 PR 3).
+"""Chat, explain, question generation and CBT exam generation through the
+gateway (AI-01 PR 3; AI-10's generator in its own PR, decision P3-5).
 
 GatewayLLM keeps the LLMProvider interface the orchestrator and
 StructuredQuestionGenerator already use (design decision 8), so they run
@@ -16,7 +17,7 @@ import logging
 import uuid
 from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Any, Literal, cast
+from typing import Any, Literal, cast, get_args
 
 from app.core.config import settings
 from app.core.models.budget import BudgetLimits
@@ -36,7 +37,7 @@ from app.services.ai.llm import LLMProvider, StructuredOutputError
 
 logger = logging.getLogger(__name__)
 
-Capability = Literal["chat", "explain", "generate_questions"]
+Capability = Literal["chat", "explain", "generate_questions", "cbt_exam"]
 
 TUTOR_SYSTEM = "You are an expert AI tutor."
 JSON_SYSTEM = "You answer with one JSON object only."
@@ -57,7 +58,12 @@ def invocation_context(call: VerifiedCall, capability: Capability) -> ModelInvoc
 def capability_limits(capability: Capability) -> BudgetLimits:
     """One request's budget for the capability (decision P3-3), from settings.
     Every limit is set: none is unlimited."""
-    prefix = {"chat": "CHAT", "explain": "EXPLAIN", "generate_questions": "QUESTIONS"}[capability]
+    prefix = {
+        "chat": "CHAT",
+        "explain": "EXPLAIN",
+        "generate_questions": "QUESTIONS",
+        "cbt_exam": "CBT",
+    }[capability]
     return BudgetLimits(
         max_model_calls=getattr(settings, f"AI_BUDGET_{prefix}_CALLS"),
         max_tokens=getattr(settings, f"AI_BUDGET_{prefix}_TOKENS"),
@@ -91,7 +97,7 @@ class GatewayLLM(LLMProvider):
     ) -> Iterator[LLMProvider]:
         if invocation is None:
             raise ValueError("a model call needs its request's context")
-        if capability not in ("chat", "explain", "generate_questions"):
+        if capability not in get_args(Capability):
             raise ValueError("unknown capability")
         bound = cast(Capability, capability)
         # The budget is the request's: set when its model work starts and
