@@ -227,7 +227,8 @@ class AgentExecutor:
                 run.record_step()
                 run.consecutive_failures = 0
             except Exception as model_err:
-                logger.warning("Model invocation failed during agent step: %s", str(model_err))
+                # Type and place only (#52): this clause catches any exception.
+                logger.warning("Model invocation failed during agent step: %s", describe(model_err))
                 run.consecutive_failures += 1
                 if run.consecutive_failures >= effective_policy.max_consecutive_failures:
                     run.transition_to(
