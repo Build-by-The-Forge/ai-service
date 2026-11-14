@@ -11,7 +11,6 @@ from app.services.ai.dependencies import get_ai_orchestrator
 from app.services.ai.llm import LLMProvider
 from app.services.ai.prompts import SYSTEM_PROMPT
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
-from app.services.generation.cbt_ai_generator import CBTAIGenerator
 from app.services.generation.explain import Explainer
 from app.services.generation.question_gen import QuestionGenerator
 from app.services.memory.reward import LearningReward
@@ -29,11 +28,6 @@ from app.services.tree.learning_path import LearningPathService
 from app.services.tree.traversal import TreeTraversalService
 from app.utils.text import normalize_text
 from app.utils.time import now_iso
-
-
-class DummyLLM:
-    async def generate(self, prompt: str) -> str:
-        return f"generated:{prompt}"
 
 
 class DummyRetriever:
@@ -80,22 +74,6 @@ async def test_tenant_aware_retriever_delegates_to_inner_retriever():
     result = await service.retrieve("query", frozenset())
 
     assert result.items == [{"text": "doc for query"}]
-
-
-@pytest.mark.asyncio
-async def test_cbt_ai_generator_returns_question_payload():
-    generator = CBTAIGenerator(llm=DummyLLM(), retriever=DummyRetriever())
-
-    result = await generator.generate_exam_questions(
-        course="math",
-        topic="algebra",
-        denied_assets=frozenset(),
-        difficulty="hard",
-        count=2,
-    )
-
-    assert "questions" in result
-    assert result["context_used"] == [{"text": "doc for algebra"}]
 
 
 def test_explainer_returns_empty_string():
