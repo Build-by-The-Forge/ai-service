@@ -25,6 +25,7 @@ from app.core.models.contracts import (
     ModelUsage,
 )
 from app.core.models.gateway import ModelGateway, get_model_gateway
+from app.core.safe_log import describe
 from app.core.tools.contracts import ToolContext, ToolInvocation
 from app.core.tools.registry import ToolRegistry, get_tool_registry
 from app.services.tools.executor import ToolExecutor, get_tool_executor
@@ -219,7 +220,8 @@ class AgentExecutor:
                 run.record_step()
                 run.consecutive_failures = 0
             except Exception as model_err:
-                logger.warning("Model invocation failed during agent step: %s", str(model_err))
+                # Type and place only (#52): this clause catches any exception.
+                logger.warning("Model invocation failed during agent step: %s", describe(model_err))
                 run.consecutive_failures += 1
                 if run.consecutive_failures >= effective_policy.max_consecutive_failures:
                     run.transition_to(
