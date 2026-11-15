@@ -28,6 +28,10 @@ redis==5.0.0
 # httpx and Starlette depend on it.
 anyio==4.14.2
 httpx==0.28.1
+# Gemini, behind the gateway only: app/core/models/providers/gemini.py is the
+# one module that may import it (tests/unit/test_model_interface.py). 2.34.0
+# is the newest release at least two weeks old.
+google-genai==2.34.0
 
 # Document Processing: PyMuPDF is pinned in requirements-ocr.txt (one place).
 
