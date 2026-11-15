@@ -57,7 +57,7 @@ Each PR has separate commits, with the tests first.
    - **Condition:** the PR includes an explicit inventory: a repository-wide search, with its output, showing that no required code imports or invokes a direct provider path.
    - It can't merge while a required path, such as AI-10's generator, still depends on the old layer.
 
-Gemini (AI-01's provider work) comes after PR 4, as a new adapter behind the allowlist.
+Gemini (AI-01's provider work) comes after PR 4, as a new adapter behind the allowlist. **Done:** `GeminiProviderAdapter` (google-genai) is registered beside OpenAI's and called only when approved. The SDK makes one attempt (the gateway retries), with the attempt's timeout and an explicit key. Errors carry status only. Each provider is asked for its own model (`model_for`).
 
 ## PR 3: the reviewer's decisions (2026-11-12)
 
