@@ -10,12 +10,23 @@ Two boundaries, both required before any route may reach it:
 - **Question correctness and grounding.** Questions come from
   StructuredQuestionGenerator: the verified tenant's own passages, a JSON
   answer validated item by item, and support checks against the cited
-  passages. When nothing covers the topic, the model isn't asked
-  (grounded: false). The exam rules (cbt_exam) then require a four-option
-  MCQ with a supported explanation. Anything else is discarded and
-  counted, never repaired. Each kept question names the exact document
-  versions it cites, and sources_used is every version retrieval returned
-  (the retrieval recorder's, never the model's).
+  passages. The exam rules (cbt_exam) then require a four-option MCQ with
+  a supported explanation. Anything else is discarded and counted, never
+  repaired. Each kept question names the exact document versions it cites,
+  and sources_used is every version retrieval returned (the retrieval
+  recorder's, never the model's).
+
+What is and isn't enforced about coverage (review of #62, issue A):
+
+- When retrieval returns **nothing**, the model isn't asked (grounded: false).
+- Retrieval returns its top passages even for a topic they don't cover,
+  and retrieval scores can't tell (ADR 001), so **those passages are sent**.
+  A question must then cite them and stay within them, or it is discarded:
+  a question on the absent topic fails the support checks.
+- **Not yet enforced:** a question that is supported by those passages but
+  is about something other than the requested topic can pass. There is no
+  topic-coverage check; whether to add a measured one before routing, or
+  to accept this rule, is a review decision.
 
 Not routed: CBTFusionEngine, its only caller, has no route. Routing it is
 its own reviewed change, with its own signed permission.

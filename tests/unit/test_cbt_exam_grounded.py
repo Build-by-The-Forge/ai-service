@@ -2,9 +2,11 @@
 
 The exam generator keeps only structurally valid, four-option, grounded
 questions with supported explanations, each naming the document versions it
-cites. Malformed or unsupported output is discarded and counted, a topic the
-material doesn't cover isn't sent to the model, and one tenant's material
-never reaches another's exam. No route reaches the generator yet.
+cites. Malformed or unsupported output is discarded and counted, and one
+tenant's material never reaches another's exam. When retrieval returns
+nothing the model isn't asked; when it returns passages that don't cover
+the topic, they are sent, and what is and isn't then enforced is tested on
+a populated index below. No route reaches the generator yet.
 """
 
 import ast
@@ -21,6 +23,7 @@ from app.services.rag.embedder import MockEmbeddingAdapter
 from app.services.rag.lexical import BM25Index
 from app.services.rag.retrieval import HybridRetrievalEngine, RetrievalService
 from app.services.rag.vector_store import InMemoryVectorStore
+from tests.cbt_support import PASSAGE as GOOD_PASSAGE
 from tests.cbt_support import (
     GOOD,
     NoMaterial,
@@ -175,7 +178,7 @@ async def test_an_unsupported_or_ungrounded_question_is_rejected_with_its_reason
 
 
 @pytest.mark.asyncio
-async def test_a_topic_the_material_doesnt_cover_is_never_sent_to_the_model():
+async def test_when_retrieval_returns_nothing_the_model_is_never_asked():
     result, adapter = await exam(retriever=NoMaterial())
 
     assert (
@@ -344,3 +347,74 @@ async def test_the_course_decides_which_material_an_overlapping_topic_draws_on(
     # The course's own material is passage [1], and the prompt names the course.
     assert f"[1] ({first}," in sent
     assert f"COURSE: {course}\nTOPIC: functions" in sent
+
+
+# --- an uncovered topic on a populated index (review of #62, issue A) --------------------
+#
+# Production retrieval returns its top passages even when the topic is absent,
+# and its scores can't tell (ADR 001). These tests run the hybrid engine on an
+# index holding only biology, and ask about quantum computing.
+
+QUANTUM_QUESTION = question(
+    prompt="Which property lets a qubit hold several states at once?",
+    options=[
+        {"text": "Superposition", "is_correct": True},
+        {"text": "Decoherence", "is_correct": False},
+        {"text": "Tunnelling", "is_correct": False},
+        {"text": "Entropy", "is_correct": False},
+    ],
+    explanation="Superposition lets a qubit hold several states at once.",
+)
+
+
+@pytest.fixture
+async def biology_only(in_memory_scopes):
+    engine = in_memory_engine(in_memory_scopes)
+    await engine.index_document(
+        tenant_id=TENANT_A, document_id="asset-bio", document_title="Cells", text=GOOD_PASSAGE
+    )
+    await institutional(in_memory_scopes, TENANT_A, "asset-bio")
+    return RetrievalService(engine=engine)
+
+
+async def ask_quantum(retriever, answer):
+    adapter = Recording(answer)
+    result = await CBTAIGenerator(
+        llm=GatewayLLM(gateway(adapter)), retriever=retriever
+    ).generate_exam_questions(
+        "physics",
+        "quantum computing",
+        denied_assets=frozenset(),
+        invocation=invocation_context(call(), "cbt_exam"),
+    )
+    return result, adapter
+
+
+@pytest.mark.asyncio
+async def test_an_uncovered_topic_on_a_populated_index_still_reaches_the_model(biology_only):
+    """What is enforced today, stated plainly: the unrelated passages are sent."""
+    result, adapter = await ask_quantum(biology_only, {"questions": []})
+
+    [request] = adapter.requests
+    assert "mitochondrion" in "\n".join(message.content for message in request.messages)
+    assert result["grounded"] is True and result["questions"] == []
+
+
+@pytest.mark.asyncio
+async def test_a_question_on_the_uncovered_topic_is_rejected(biology_only):
+    result, _ = await ask_quantum(biology_only, {"questions": [QUANTUM_QUESTION]})
+
+    assert result["questions"] == []
+    assert result["discarded"] == 1 and result["rejected"] == {"unsupported_premise": 1}
+
+
+@pytest.mark.asyncio
+@pytest.mark.xfail(
+    strict=True,
+    reason="Not enforced: no topic-coverage check (review decision on #62). A question "
+    "supported by unrelated passages but off the requested topic passes.",
+)
+async def test_a_supported_question_on_another_topic_is_rejected(biology_only):
+    result, _ = await ask_quantum(biology_only, {"questions": [GOOD]})
+
+    assert result["questions"] == []
