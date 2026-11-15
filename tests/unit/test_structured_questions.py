@@ -70,6 +70,12 @@ async def generate(llm, count=5, difficulty="medium", question_type="mcq"):
     )
 
 
+async def test_the_passages_given_to_the_model_come_back_for_citation():
+    result = await generate(Scripted({"questions": [GOOD]}))
+    [passage] = result.passages
+    assert (passage.number, passage.document_id, passage.page_start) == (1, "asset-1", 1)
+
+
 async def test_valid_questions_are_returned_and_the_prompt_carries_the_context():
     second = GOOD | {"prompt": "Which organelle in cells makes ATP?"}
     llm = Scripted({"questions": [GOOD, second]})
