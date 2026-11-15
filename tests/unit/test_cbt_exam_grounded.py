@@ -17,7 +17,10 @@ from app.core import tenant
 from app.core.tenant import RequestScopeMissingError
 from app.services.ai.gateway_llm import GatewayLLM, invocation_context
 from app.services.generation.cbt_ai_generator import CBTAIGenerator, CrossTenantInvocationError
-from app.services.rag.retrieval import RetrievalService
+from app.services.rag.embedder import MockEmbeddingAdapter
+from app.services.rag.lexical import BM25Index
+from app.services.rag.retrieval import HybridRetrievalEngine, RetrievalService
+from app.services.rag.vector_store import InMemoryVectorStore
 from tests.cbt_support import (
     GOOD,
     NoMaterial,
@@ -283,3 +286,61 @@ def test_no_route_or_service_outside_generation_reaches_the_exam_generator():
                 reaching.append(f"{path.relative_to(APP.parent)} imports {module}")
 
     assert reaching == []
+
+
+# --- the course disambiguates the topic --------------------------------------------------
+
+
+class NoDense(InMemoryVectorStore):
+    """Dense search off: the test embedder's vectors are hashes with no
+    meaning, so ranking is the real keyword index's alone, decided by words."""
+
+    async def query_dense(self, vector, filter, top_k=10):
+        return []
+
+
+@pytest.fixture
+async def two_courses(in_memory_scopes):
+    engine = HybridRetrievalEngine(
+        embedder=MockEmbeddingAdapter(),
+        vector_store=NoDense(scopes=in_memory_scopes),
+        lexical_index=BM25Index(scopes=in_memory_scopes),
+    )
+    for asset, text in (
+        (
+            "asset-maths",
+            "In mathematics, functions map each input in a domain to exactly one output.",
+        ),
+        (
+            "asset-bio",
+            "In biology, functions of the liver include detoxification and producing bile.",
+        ),
+    ):
+        await engine.index_document(
+            tenant_id=TENANT_A, document_id=asset, document_title=asset, text=text
+        )
+    await institutional(in_memory_scopes, TENANT_A, "asset-maths", "asset-bio")
+    return RetrievalService(engine=engine)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("course,first", [("mathematics", "asset-maths"), ("biology", "asset-bio")])
+async def test_the_course_decides_which_material_an_overlapping_topic_draws_on(
+    two_courses, course, first
+):
+    adapter = Recording()
+
+    await CBTAIGenerator(
+        llm=GatewayLLM(gateway(adapter)), retriever=two_courses
+    ).generate_exam_questions(
+        course,
+        "functions",
+        denied_assets=frozenset(),
+        invocation=invocation_context(call(), "cbt_exam"),
+    )
+
+    [request] = adapter.requests
+    sent = "\n".join(message.content for message in request.messages)
+    # The course's own material is passage [1], and the prompt names the course.
+    assert f"[1] ({first}," in sent
+    assert f"COURSE: {course}\nTOPIC: functions" in sent

@@ -59,8 +59,8 @@ async def test_the_exam_comes_through_the_gateway_with_the_verified_context():
     assert request.structured is not None and request.structured.kind == "questions"
     # The configured provider only, no fallbacks: approval is the gateway's.
     assert request.policy.preferred_provider == "rec" and request.policy.fallback_providers == []
-    # Denied assets still reach retrieval.
-    assert retriever.calls == [("cells", frozenset({"asset_denied"}))]
+    # The course disambiguates the topic; denied assets still reach retrieval.
+    assert retriever.calls == [("biology cells", frozenset({"asset_denied"}))]
 
 
 @pytest.mark.asyncio

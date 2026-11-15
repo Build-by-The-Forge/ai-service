@@ -64,6 +64,8 @@ class CBTAIGenerator:
                 count=count,
                 difficulty=difficulty,
                 question_type="mcq",
+                # The course disambiguates the topic, in retrieval and prompt.
+                course=course,
             )
 
         questions: list[dict[str, Any]] = []
