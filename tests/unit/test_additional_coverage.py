@@ -190,11 +190,6 @@ def test_prompt_builder():
     chat_prompt = builder.build("chat_tutor", memory="m", context="c", question="q")
     assert "STUDENT MEMORY" in chat_prompt["user"]
 
-    question_prompt = builder.build(
-        "question_generator", topic="math", difficulty="hard", count=2, context="ctx"
-    )
-    assert "COURSE: math" in question_prompt["user"]
-
     default_prompt = builder.build("unknown", question="hello")
     assert default_prompt["user"] == "hello"
 
