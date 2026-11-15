@@ -1,8 +1,9 @@
 """Every model call in the app goes through the gateway (AI-01 decision P3-5).
 
 The legacy model layer (LLMProvider, OpenAILLM, DeterministicLLM) is removed,
-and this keeps it removed. Its modules can't be imported, nothing in app/
-imports a provider SDK, and the only model interface in app/ is GatewayLLM.
+and this keeps it removed. Its modules can't be imported, a provider SDK is
+imported only by its own gateway adapter (listed below), and the only model
+interface in app/ is GatewayLLM.
 The gateway's own adapters (app/core/models/providers) call providers over
 HTTP behind its approval check, and are the one approved path.
 """
@@ -20,6 +21,9 @@ from app.services.ai.gateway_llm import GatewayLLM, ModelCaller
 APP = Path(__file__).resolve().parents[2] / "app"
 SDKS = {"openai", "anthropic", "google", "vertexai", "cohere", "mistralai"}
 INTERFACE = {"generate", "generate_json", "for_capability"}
+# The gateway adapters that may import a provider SDK, and which SDK. Each is
+# reached only through the gateway, behind its approval check.
+SDK_ADAPTERS = {("app/core/models/providers/gemini.py", "google")}
 
 
 @pytest.mark.parametrize(
@@ -37,8 +41,8 @@ def _modules() -> list[tuple[str, ast.Module]]:
     ]
 
 
-def test_nothing_in_app_imports_a_provider_sdk():
-    found = []
+def test_a_provider_sdk_is_imported_only_by_its_gateway_adapter():
+    imported = set()
     for path, tree in _modules():
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -47,9 +51,10 @@ def test_nothing_in_app_imports_a_provider_sdk():
                 names = [node.module]
             else:
                 continue
-            found += [f"{path}: {name}" for name in names if name.split(".")[0] in SDKS]
+            imported |= {(path, name.split(".")[0]) for name in names if name.split(".")[0] in SDKS}
 
-    assert found == []
+    # Nowhere else, and the listed adapters really do (so the list can't go stale).
+    assert imported == SDK_ADAPTERS
 
 
 def test_gateway_llm_is_the_only_model_interface_in_app():
