@@ -24,11 +24,11 @@ from app.core.service_signature_v1 import (
 )
 from app.core.tenant import get_tenant_id
 from app.main import create_app
-from app.services.ai.deterministic import DeterministicLLM
 from app.services.ai.dependencies import get_ai_orchestrator
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
 from app.services.rag.scopes import get_scope_store
+from tests.fake_models import OfflineModel
 from tests.rag_support import institutional
 from tests.signing import TENANT_A, TENANT_B, USER_ID, signed_headers, user_context
 
@@ -98,7 +98,7 @@ def memory():
 def app(guard, memory):
     app = create_app(replay_guard=guard)
     app.dependency_overrides[get_ai_orchestrator] = lambda: AIOrchestrator(
-        llm=DeterministicLLM(), retriever=TenantAwareRetrievalService(), memory=memory
+        llm=OfflineModel(), retriever=TenantAwareRetrievalService(), memory=memory
     )
     return app
 
@@ -461,7 +461,7 @@ async def test_an_uncited_source_is_reported_and_the_model_cannot_change_the_sou
         )
     await institutional(in_memory_scopes, TENANT_A, "cited", "uncited")
 
-    class Instructed(DeterministicLLM):
+    class Instructed(OfflineModel):
         """A model told to drop a source and name another."""
 
         async def generate(self, prompt: str) -> str:

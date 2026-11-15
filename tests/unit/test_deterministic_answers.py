@@ -3,8 +3,9 @@
 Deterministic mode answers chat, explain and question generation without a
 model, and CI and the two-service boundary suite depend on exactly what it
 says (a cited passage, questions in passage [1]'s words). These are its
-answers as they were before it moved behind the gateway (AI-01 decision 6):
-DeterministicLLM and the gateway's adapter both give exactly these.
+answers as they were before it moved behind the gateway (AI-01 decision 6),
+now pinned on the gateway's deterministic adapter (text, streamed text and
+structured), the one offline model left.
 """
 
 import json
@@ -22,7 +23,6 @@ from app.core.models.contracts import (
 )
 from app.core.models.gateway import ModelGateway
 from app.core.models.providers.deterministic import DeterministicProviderAdapter
-from app.services.ai.deterministic import DeterministicLLM
 
 PASSAGES = (
     "Explain osmosis.\n\nCourse passages:\n"
@@ -120,18 +120,6 @@ STRUCTURED_ANSWERS = [
         {"answer": "[deterministic model] prompt sha256:48dab5b4d97403c7 (206 chars) [1]"},
     ),
 ]
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(("prompt", "expected"), TEXT_ANSWERS)
-async def test_the_text_answer(prompt, expected):
-    assert await DeterministicLLM().generate(prompt) == expected
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(("prompt", "kind", "hints", "expected"), STRUCTURED_ANSWERS)
-async def test_the_structured_answer(prompt, kind, hints, expected):
-    assert await DeterministicLLM().generate_json(prompt, kind=kind, **hints) == expected
 
 
 # --- The same answers from the gateway's deterministic adapter (AI-01 decision 6)

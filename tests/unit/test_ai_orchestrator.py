@@ -3,7 +3,7 @@ course passages, citing them, or not at all (P3-5 grounding)."""
 
 import pytest
 
-from app.services.ai.llm import LLMProvider
+from tests.fake_models import FakeModel
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.rag.evidence import NOT_COVERED, Evidence, Passage
 from tests.rag_support import sources_for
@@ -18,7 +18,7 @@ OSMOSIS = Passage(
 )
 
 
-class ScriptedLLM(LLMProvider):
+class ScriptedLLM(FakeModel):
     def __init__(self, reply: str = "Water moves across the membrane [1]."):
         self.reply = reply
         self.prompts: list[str] = []

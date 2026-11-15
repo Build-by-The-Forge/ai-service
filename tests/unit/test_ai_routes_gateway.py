@@ -1,7 +1,7 @@
 """AI-01 PR 3: /v1/ai/chat, /explain and /generate-questions through the gateway.
 
 In deterministic mode the routes answer exactly as they did through
-DeterministicLLM. A model execution failure is a 503 with a fixed body
+the offline model's direct answers. A model execution failure is a 503 with a fixed body
 (decision P3-1); with no approved provider they fail closed (P3-2); invalid
 input is still a 422 that reaches no model; and the request's model context
 comes from the verified signed call (P3-4).
@@ -23,13 +23,12 @@ from app.core.models.providers.deterministic import DeterministicProviderAdapter
 from app.core.replay_guard import RedisReplayGuard
 from app.core.service_signature_v1 import REQUEST_ID_HEADER
 from app.main import create_app
-from app.services.ai.deterministic import DeterministicLLM
 from app.services.ai.dependencies import get_ai_orchestrator
 from app.services.ai.gateway_llm import GatewayLLM
-from app.services.ai.llm import LLMProvider
 from app.services.ai.orchestrator import AIOrchestrator
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
 from app.services.rag.scopes import get_scope_store
+from tests.fake_models import FakeModel, OfflineModel
 from tests.rag_support import institutional
 from tests.signing import TENANT_A, signed_headers, user_context
 
@@ -104,7 +103,7 @@ async def notes(in_memory_retrieval):
     await institutional(get_scope_store(), TENANT_A, "notes")
 
 
-def serving(guard, llm: LLMProvider):
+def serving(guard, llm: FakeModel | GatewayLLM):
     app = create_app(replay_guard=guard)
     app.dependency_overrides[get_ai_orchestrator] = lambda: AIOrchestrator(
         llm=llm, retriever=TenantAwareRetrievalService(), memory=NoMemory()
@@ -137,7 +136,7 @@ async def test_deterministic_mode_answers_through_the_gateway_as_before(
 ):
     monkeypatch.setattr(gateway_llm.settings, "MODEL_PROVIDER", "deterministic")
 
-    before, _ = await post(serving(guard, DeterministicLLM()), path, permission, body)
+    before, _ = await post(serving(guard, OfflineModel()), path, permission, body)
     after, _ = await post(
         serving(guard, through(DeterministicProviderAdapter())), path, permission, body
     )

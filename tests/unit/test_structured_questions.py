@@ -4,10 +4,9 @@ import copy
 
 import pytest
 
-from app.services.ai.deterministic import DeterministicLLM
-from app.services.ai.llm import LLMProvider
 from app.services.generation.structured_questions import StructuredQuestionGenerator
 from app.services.rag.evidence import Evidence, Passage
+from tests.fake_models import FakeModel, OfflineModel
 from tests.rag_support import sources_for
 
 PASSAGE = (
@@ -44,7 +43,7 @@ def bad(**changes):
     return item
 
 
-class Scripted(LLMProvider):
+class Scripted(FakeModel):
     def __init__(self, answer):
         self.answer = answer
         self.prompts: list[str] = []
@@ -171,9 +170,7 @@ async def test_an_unusable_answer_yields_nothing(answer):
 
 @pytest.mark.parametrize("question_type", ["mcq", "true_false"])
 async def test_the_deterministic_provider_produces_valid_questions(question_type):
-    result = await generate(
-        DeterministicLLM(), count=4, difficulty="hard", question_type=question_type
-    )
+    result = await generate(OfflineModel(), count=4, difficulty="hard", question_type=question_type)
     # Built from the passage and citing it, the questions pass the checks.
     assert len(result.questions) == 4 and result.discarded == 0 and result.rejected == {}
     assert all(

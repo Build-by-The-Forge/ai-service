@@ -29,7 +29,6 @@ from app.core.models.gateway import ModelGateway
 from app.core.models.provider import ModelProviderAdapter
 from app.core.models.providers.deterministic import DeterministicProviderAdapter
 from app.core.service_signature_v1 import VerifiedCall
-from app.services.ai.deterministic import DeterministicLLM
 from app.services.ai.gateway_llm import (
     Capability,
     GatewayLLM,
@@ -37,6 +36,7 @@ from app.services.ai.gateway_llm import (
     invocation_context,
 )
 from app.services.ai.llm import StructuredOutputError
+from tests.fake_models import OfflineModel
 from tests.signing import TENANT_A, user_context
 
 PASSAGES = (
@@ -119,7 +119,7 @@ async def test_deterministic_mode_answers_through_the_gateway_as_it_did_before(p
     llm = GatewayLLM(gateway(DeterministicProviderAdapter()))
 
     with llm.for_capability("chat", invocation_context(call(), "chat")) as bound:
-        assert await bound.generate(prompt) == await DeterministicLLM().generate(prompt)
+        assert await bound.generate(prompt) == await OfflineModel().generate(prompt)
 
 
 @pytest.mark.asyncio
@@ -132,7 +132,7 @@ async def test_deterministic_questions_come_through_the_gateway_as_they_did_befo
     with llm.for_capability("generate_questions", context) as bound:
         answer = await bound.generate_json(PASSAGES, kind="questions", **hints)
 
-    assert answer == await DeterministicLLM().generate_json(PASSAGES, kind="questions", **hints)
+    assert answer == await OfflineModel().generate_json(PASSAGES, kind="questions", **hints)
 
 
 @pytest.mark.asyncio
