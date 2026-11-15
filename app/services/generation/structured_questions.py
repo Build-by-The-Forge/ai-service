@@ -13,7 +13,7 @@ from pydantic import ValidationError
 
 from app.core.prompt_builder import PromptBuilder
 from app.schemas.ai import GeneratedQuestion
-from app.services.ai.llm import LLMProvider, StructuredOutputError
+from app.services.ai.gateway_llm import ModelCaller, StructuredOutputError
 from app.services.generation.question_checks import Verdict, check_question, count_reasons
 from app.services.rag.evidence import Passage
 from app.services.rag.recorder import SourceUsed
@@ -39,7 +39,7 @@ class GeneratedQuestions:
 
 
 class StructuredQuestionGenerator:
-    def __init__(self, llm: LLMProvider, retriever: RetrievalService) -> None:
+    def __init__(self, llm: ModelCaller, retriever: RetrievalService) -> None:
         self.llm = llm
         self.retriever = retriever
         self.prompts = PromptBuilder()

@@ -1,23 +1,24 @@
 """Chat, explain, question generation and CBT exam generation through the
 gateway (AI-01 PR 3; AI-10's generator in its own PR, decision P3-5).
 
-GatewayLLM keeps the LLMProvider interface the orchestrator and
-StructuredQuestionGenerator already use (design decision 8), so they run
-through the one model execution boundary unchanged. Everything the gateway
-owns applies to them: provider approval (MODEL_PROVIDERS_APPROVED, failing
+GatewayLLM is the one model interface in the app (design decision 8, and
+the legacy layer's removal). The orchestrator and the question generators
+take a ModelCaller, which GatewayLLM is; tests/unit/test_model_interface.py
+checks no other class in app/ is one. Everything the gateway owns applies to
+every call: provider approval (MODEL_PROVIDERS_APPROVED, failing
 closed when empty), one deadline, retries, budgets, structured output and
 sanitized errors.
 
-It sends what the old OpenAILLM sent: a fixed system message, then the
-prompt as the user message. The deterministic adapter answers the last user
+It sends a fixed system message, then the prompt as the user message (what
+the removed OpenAILLM sent). The deterministic adapter answers the last user
 message, so deterministic mode gives exactly the answers it gave before.
 """
 
 import logging
 import uuid
 from collections.abc import Iterator
-from contextlib import contextmanager
-from typing import Any, Literal, cast, get_args
+from contextlib import AbstractContextManager, contextmanager
+from typing import Any, Literal, Protocol, cast, get_args
 
 from app.core.config import settings
 from app.core.models.budget import BudgetLimits
@@ -33,7 +34,6 @@ from app.core.models.contracts import (
 from app.core.models.errors import InvalidStructuredOutputError, ModelGatewayError
 from app.core.models.gateway import ModelGateway
 from app.core.service_signature_v1 import VerifiedCall
-from app.services.ai.llm import LLMProvider, StructuredOutputError
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,23 @@ Capability = Literal["chat", "explain", "generate_questions", "cbt_exam"]
 
 TUTOR_SYSTEM = "You are an expert AI tutor."
 JSON_SYSTEM = "You answer with one JSON object only."
+
+
+class StructuredOutputError(ValueError):
+    """The model's answer was not the JSON object that was asked for."""
+
+
+class ModelCaller(Protocol):
+    """The model interface the orchestrator and the question generators take.
+    In the app, only GatewayLLM is one."""
+
+    def for_capability(
+        self, capability: str, invocation: ModelInvocationContext | None
+    ) -> AbstractContextManager["ModelCaller"]: ...
+
+    async def generate(self, prompt: str) -> str: ...
+
+    async def generate_json(self, prompt: str, *, kind: str, **hints: Any) -> dict[str, Any]: ...
 
 
 def invocation_context(call: VerifiedCall, capability: Capability) -> ModelInvocationContext:
@@ -77,8 +94,8 @@ def _policy() -> ModelPolicy:
     return ModelPolicy(preferred_provider=settings.MODEL_PROVIDER, fallback_providers=[])
 
 
-class GatewayLLM(LLMProvider):
-    """The LLMProvider interface over the gateway. Bound to one request's
+class GatewayLLM:
+    """The model interface over the gateway. Bound to one request's
     context and capability by for_capability; unbound, it refuses to call."""
 
     def __init__(
@@ -94,7 +111,7 @@ class GatewayLLM(LLMProvider):
     @contextmanager
     def for_capability(
         self, capability: str, invocation: ModelInvocationContext | None
-    ) -> Iterator[LLMProvider]:
+    ) -> Iterator["GatewayLLM"]:
         if invocation is None:
             raise ValueError("a model call needs its request's context")
         if capability not in get_args(Capability):

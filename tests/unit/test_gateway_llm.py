@@ -1,4 +1,4 @@
-"""AI-01 PR 3: GatewayLLM, the LLMProvider interface over the gateway.
+"""AI-01 PR 3: GatewayLLM, the model interface over the gateway.
 
 Chat, explain and question generation call the model through it, so every
 call is the gateway's: its approval check, deadline, retries, budgets,
@@ -32,10 +32,10 @@ from app.core.service_signature_v1 import VerifiedCall
 from app.services.ai.gateway_llm import (
     Capability,
     GatewayLLM,
+    StructuredOutputError,
     capability_limits,
     invocation_context,
 )
-from app.services.ai.llm import StructuredOutputError
 from tests.fake_models import OfflineModel
 from tests.signing import TENANT_A, user_context
 

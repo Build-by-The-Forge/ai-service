@@ -20,7 +20,7 @@ from typing import Any
 
 from app.core.models.contracts import ModelInvocationContext
 from app.core.models.providers.deterministic import questions_answer, text_answer
-from app.services.ai.llm import StructuredOutputError
+from app.services.ai.gateway_llm import StructuredOutputError
 
 
 class FakeModel:
