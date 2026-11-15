@@ -180,3 +180,31 @@ async def test_the_deterministic_provider_produces_valid_questions(question_type
         q.difficulty == "hard" and q.question_type == question_type and q.sources == [1]
         for q in result.questions
     )
+
+
+class RecordingRetrieval(NoRetrieval):
+    def __init__(self):
+        self.queries: list[str] = []
+
+    async def evidence(self, query, denied_assets):
+        self.queries.append(query)
+        return await super().evidence(query, denied_assets)
+
+
+@pytest.mark.parametrize(
+    "course,query", [(None, "functions"), ("Mathematics", "Mathematics functions")]
+)
+async def test_a_course_joins_the_retrieval_query_and_the_prompt(course, query):
+    llm, retrieval = Scripted({"questions": [GOOD]}), RecordingRetrieval()
+
+    await StructuredQuestionGenerator(llm, retrieval).generate(
+        "functions",
+        denied_assets=frozenset(),
+        count=1,
+        difficulty="medium",
+        question_type="mcq",
+        course=course,
+    )
+
+    assert retrieval.queries == [query]
+    assert ("COURSE: Mathematics\nTOPIC: functions" in llm.prompts[0]) is (course is not None)

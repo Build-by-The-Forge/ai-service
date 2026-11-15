@@ -52,14 +52,19 @@ class StructuredQuestionGenerator:
         count: int,
         difficulty: str,
         question_type: str,
+        course: str | None = None,
     ) -> GeneratedQuestions:
-        evidence = await self.retriever.evidence(topic, denied_assets)
+        # The course, when given, is part of both the retrieval query and the
+        # prompt, so it disambiguates a topic shared by several courses.
+        query = f"{course} {topic}" if course else topic
+        evidence = await self.retriever.evidence(query, denied_assets)
         if not evidence.passages:
             return GeneratedQuestions(
                 questions=[], discarded=0, grounded=False, sources_used=evidence.sources_used
             )
         prompt = self.prompts.build(
             "structured_questions",
+            course=course,
             topic=topic,
             count=count,
             difficulty=difficulty,

@@ -72,8 +72,10 @@ For "true_false" give exactly two options, "True" and "False".
 Every question must be answerable from the passages it cites, and must not
 introduce facts, names or numbers that are not in them.
 """,
+                # The course, when given, disambiguates the topic. Without one
+                # the prompt is unchanged.
                 "user": """
-TOPIC: {topic}
+{course_line}TOPIC: {topic}
 QUESTION TYPE: {question_type}
 DIFFICULTY: {difficulty}
 NUMBER OF QUESTIONS: {count}
@@ -81,6 +83,7 @@ NUMBER OF QUESTIONS: {count}
 CONTEXT:
 {context}
 """.format(
+                    course_line=f"COURSE: {kwargs['course']}\n" if kwargs.get("course") else "",
                     topic=kwargs.get("topic", ""),
                     question_type=kwargs.get("question_type", "mcq"),
                     difficulty=kwargs.get("difficulty", "medium"),

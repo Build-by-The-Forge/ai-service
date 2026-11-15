@@ -23,3 +23,27 @@ def test_the_raw_text_exam_prompt_is_gone():
     prompt = PromptBuilder().build(name="question_generator", topic="geometry", context="ctx")
 
     assert prompt == {"system": "", "user": ""}
+
+
+def test_the_question_prompt_is_unchanged_without_a_course():
+    user = PromptBuilder().build(
+        name="structured_questions",
+        topic="cells",
+        question_type="mcq",
+        difficulty="easy",
+        count=2,
+        context="[1] passage",
+    )["user"]
+
+    assert user == (
+        "\nTOPIC: cells\nQUESTION TYPE: mcq\nDIFFICULTY: easy\nNUMBER OF QUESTIONS: 2\n"
+        "\nCONTEXT:\n[1] passage\n"
+    )
+
+
+def test_a_course_leads_the_question_prompt():
+    user = PromptBuilder().build(
+        name="structured_questions", course="Mathematics", topic="functions", context="c"
+    )["user"]
+
+    assert user.startswith("\nCOURSE: Mathematics\nTOPIC: functions\n")
