@@ -34,6 +34,7 @@ from app.core.models.errors import (
 from app.core.models.provider import ModelProviderAdapter
 from app.core.models.providers.deterministic import NAME as DETERMINISTIC
 from app.core.models.providers.deterministic import DeterministicProviderAdapter
+from app.core.models.providers.gemini import GeminiProviderAdapter
 from app.core.models.providers.openai import OpenAIProviderAdapter
 from app.core.models.resilience import (
     CircuitBreaker,
@@ -82,7 +83,9 @@ class ModelGateway:
         elif offline:
             self.register_provider(DeterministicProviderAdapter())
         else:
+            # Registered is not eligible: each is called only if approved.
             self.register_provider(OpenAIProviderAdapter())
+            self.register_provider(GeminiProviderAdapter())
 
     def register_provider(self, provider: ModelProviderAdapter) -> None:
         self._providers[provider.name] = provider
