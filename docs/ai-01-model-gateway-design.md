@@ -53,7 +53,7 @@ Each PR has separate commits, with the tests first.
 2. **The deterministic adapter and structured output** (decisions 6 and 7). Deterministic mode then runs through the gateway.
 3. **The move.** `get_ai_orchestrator` builds a `GatewayLLM` over the gateway, with the request context threaded from the routes (decision 8). Chat, explain and generate-questions answer exactly as before in deterministic mode: the same prompts, grounding checks, `sources_used` and signed envelopes.
 4. **AI-10's generator onto the gateway**, scoped separately (decision P3-5). `CBTAIGenerator`, used only by the unrouted `CBTFusionEngine`, moves off `LLMProvider`. **Done:** it takes a `GatewayLLM`, runs under its own `cbt_exam` capability and `AI_BUDGET_CBT_*` budget, and requires the verified request's context.
-5. **Removal.** `OpenAILLM`, `DeterministicLLM`, `LLMProvider`, the dead `OpenAIEmbeddingAdapter` and the `openai` dependency go.
+5. **Removal.** `OpenAILLM`, `DeterministicLLM`, `LLMProvider`, the dead `OpenAIEmbeddingAdapter` and the `openai` dependency go. **Done:** the orchestrator and the question generators take `ModelCaller`, the interface `GatewayLLM` provides, and `tests/unit/test_model_interface.py` keeps the layer removed (no legacy module, no provider SDK import in `app/`, no model interface but `GatewayLLM`).
    - **Condition:** the PR includes an explicit inventory: a repository-wide search, with its output, showing that no required code imports or invokes a direct provider path.
    - It can't merge while a required path, such as AI-10's generator, still depends on the old layer.
 
@@ -126,11 +126,11 @@ The gateway's model layer sends what `OpenAILLM` sent: a fixed system message, t
 
 | Path | Evidence | Disposition |
 |---|---|---|
-| `OpenAIEmbeddingAdapter` (`app/services/rag/embedder.py`) | Never constructed: no import, injection, setting, environment variable, workflow, Dockerfile or doc refers to it. Production embeds with local ONNX MiniLM (`EMBEDDING_MODEL_DIR`, fetched in the Dockerfile) | **Removed** in the removal PR |
+| `OpenAIEmbeddingAdapter` (`app/services/rag/embedder.py`) | Never constructed: no import, injection, setting, environment variable, workflow, Dockerfile or doc refers to it. Production embeds with local ONNX MiniLM (`EMBEDDING_MODEL_DIR`, fetched in the Dockerfile) | **Removed** (removal PR) |
 | `CBTAIGenerator` (`app/services/generation/cbt_ai_generator.py`) | Reached only from `CBTFusionEngine` (AI-10), which no route calls, and from unit tests | **Moved to the gateway** (AI-10 migration): `GatewayLLM`, the `cbt_exam` capability and budget, and the request's context, required. **Structured and grounded** (AI-10 exam PR): `StructuredQuestionGenerator`, four-option MCQs with supported explanations, citations to exact document versions, `sources_used`, the course in retrieval and the prompt. **Coverage:** empty retrieval stops the model call; unrelated passages that retrieval returns are sent, and questions must stay within them, but a supported question off the requested topic can pass (no topic-coverage check; a review decision). Still unrouted, by review: a route is its own reviewed change, with its own signed permission and `invocation_context(call, "cbt_exam")` |
-| `OpenAILLM`, `DeterministicLLM` | After the AI-10 migration, constructed by no code in `app/`: tests only | Removed in the removal PR |
-| `LLMProvider` | The interface type, not a provider path: `GatewayLLM` subclasses it, and `AIOrchestrator` and `StructuredQuestionGenerator` take it (corrected: this row said only `CBTAIGenerator` and tests used it) | The removal PR replaces it with the interface `GatewayLLM` provides, under the inventory condition |
-| The `openai` SDK (`requirements.txt`, `pyproject.toml`) | Used by `OpenAILLM` and the dead embedder | Removed last, under the inventory condition above |
+| `OpenAILLM`, `DeterministicLLM` | After the AI-10 migration, constructed by no code in `app/`: tests only | **Removed** (removal PR). Tests use `tests/fake_models.py`; deterministic mode is the gateway's adapter |
+| `LLMProvider` | The interface type, not a provider path: `GatewayLLM` subclassed it, and `AIOrchestrator` and `StructuredQuestionGenerator` took it | **Removed** (removal PR): replaced by `ModelCaller`, a Protocol of `GatewayLLM`'s interface, in `gateway_llm.py` |
+| The `openai` SDK (`requirements.txt`, `pyproject.toml`) | Used by `OpenAILLM` and the dead embedder. The gateway's OpenAI adapter uses `httpx` | **Removed** (removal PR); AnyIO stays pinned for httpx and Starlette |
 
 ### The related data-flow findings
 
@@ -158,4 +158,4 @@ The reviewer has decided their safe contracts.
 | A per-capability call limit refuses the call after it; usage doesn't outlive the request | 1 |
 | The deterministic adapter's chat, explain and questions match today's `DeterministicLLM` output for the same prompts | 2 |
 | `/v1/ai/chat`, `/explain` and `/generate-questions` are unchanged in deterministic mode: the existing contract, signature and retrieval tests pass untouched | 3 |
-| Nothing imports `OpenAILLM` or `openai` | 4 |
+| Nothing imports `OpenAILLM` or `openai` (`tests/unit/test_model_interface.py`) | 5 |

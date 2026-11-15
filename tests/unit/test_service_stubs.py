@@ -8,7 +8,6 @@ from app.core.documents.errors import OCRDependencyUnavailableError
 from app.core import rate_limit
 from app.core.prompts import SYSTEM_PROMPT as CORE_PROMPT
 from app.services.ai.dependencies import get_ai_orchestrator
-from app.services.ai.llm import LLMProvider
 from app.services.ai.prompts import SYSTEM_PROMPT
 from app.services.ai.tenanted_retriever import TenantAwareRetrievalService
 from app.services.generation.explain import Explainer
@@ -53,18 +52,6 @@ def test_system_prompt_constants_are_defined():
     assert isinstance(SYSTEM_PROMPT, str)
     assert "AI assistant" in SYSTEM_PROMPT
     assert CORE_PROMPT == "You are an assistant for an AI service."
-
-
-@pytest.mark.asyncio
-async def test_llm_provider_subclass_implements_generate():
-    class DummyProvider(LLMProvider):
-        async def generate(self, prompt: str) -> str:
-            return prompt.upper()
-
-    provider = DummyProvider()
-    output = await provider.generate("hello")
-
-    assert output == "HELLO"
 
 
 @pytest.mark.asyncio

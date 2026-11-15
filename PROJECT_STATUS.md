@@ -66,7 +66,7 @@ These items must be resolved before production deployment:
 High-risk items that must be addressed before treating the system as production-grade:
 
 1. **LLM Provider Resilience & Circuit Breaking:**
-   - `OpenAILLM` directly invokes `AsyncOpenAI` without retry policies (exponential backoff), circuit breakers, timeout limits, token usage telemetry, or fallback provider switching (e.g. Gemini, Anthropic, local vLLM).
+   - **Resolved (AI-01):** every model call goes through the model gateway (provider allowlist failing closed, one deadline, retries, per-capability budgets, sanitized errors). `OpenAILLM` and the `openai` SDK are removed; see `docs/ai-01-model-gateway-design.md`.
 2. **Missing Production Vector Database (pgvector / Qdrant):**
    - The RAG pipeline lacks a live vector store index with embedding generation, chunking, and tenant-scoped similarity search.
 3. **Absence of Asynchronous Task Queue:**
@@ -84,7 +84,7 @@ High-risk items that must be addressed before treating the system as production-
 | **Datetime Handling** | `datetime.utcnow()` used in JWT utilities | Replace with timezone-aware `datetime.now(timezone.utc)` for Python 3.12+ compatibility. |
 | **Database Pool** | Default pool settings in `app/db/session.py` | Add `pool_size=20`, `max_overflow=10`, `pool_pre_ping=True`, `pool_recycle=3600` to prevent stale connection drops. |
 | **WebSocket Scaling** | In-memory `active_connections` dict | Refactor `ConnectionManager` to broadcast events across nodes via Redis Pub/Sub channels keyed by `school_id:session_id`. |
-| **LLM Resilience** | Direct API call without retry / timeout | Wrap `OpenAILLM.generate()` with `@retry` (Tenacity) with exponential backoff, configurable timeout (e.g., 15s), and structured fallback. |
+| **LLM Resilience** | Resolved (AI-01) | Every model call goes through the model gateway: retries, one deadline, budgets and a provider allowlist. `OpenAILLM` is removed. |
 | **Event Loop Offloading** | Synchronous PDF/OCR parsing in async routes | Wrap CPU-heavy OCR and PDF parsing inside `asyncio.to_thread` / `run_in_threadpool` or background worker jobs. |
 | **Error Handling** | Generic exception catches in some service stubs | Define domain-specific exceptions (`ExamSessionExpiredError`, `TenantContextMissingError`, `LLMGenerationError`). |
 

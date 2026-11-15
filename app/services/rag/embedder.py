@@ -1,9 +1,6 @@
 import hashlib
 import math
 from abc import ABC, abstractmethod
-from typing import Any
-
-from app.core.rag.errors import EmbeddingGenerationError
 
 
 def l2_normalize(vec: list[float]) -> list[float]:
@@ -72,54 +69,6 @@ class MockEmbeddingAdapter(EmbeddingPort):
 
     async def embed_batch(self, texts: list[str]) -> list[list[float]]:
         return [await self.embed_text(t) for t in texts]
-
-
-class OpenAIEmbeddingAdapter(EmbeddingPort):
-    """
-    Production OpenAI Embedding Adapter supporting text-embedding-3-small and text-embedding-ada-002.
-    """
-
-    def __init__(
-        self,
-        api_key: str | None = None,
-        model: str = "text-embedding-3-small",
-        dimension: int = 1536,
-    ):
-        self._model = model
-        self._dimension = dimension
-        self._api_key = api_key
-        self._client: Any = None  # openai is imported lazily
-
-    def _get_client(self):
-        if self._client is None:
-            try:
-                from openai import AsyncOpenAI
-
-                self._client = AsyncOpenAI(api_key=self._api_key)
-            except Exception as e:
-                raise EmbeddingGenerationError(str(e), provider="openai")
-        return self._client
-
-    @property
-    def dimension(self) -> int:
-        return self._dimension
-
-    async def embed_text(self, text: str) -> list[float]:
-        batch = await self.embed_batch([text])
-        if not batch:
-            raise EmbeddingGenerationError("Empty embedding response", provider="openai")
-        return batch[0]
-
-    async def embed_batch(self, texts: list[str]) -> list[list[float]]:
-        if not texts:
-            return []
-        try:
-            client = self._get_client()
-            resp = await client.embeddings.create(input=texts, model=self._model)
-            embeddings = [item.embedding for item in resp.data]
-            return [l2_normalize(vec) for vec in embeddings]
-        except Exception as e:
-            raise EmbeddingGenerationError(str(e), provider="openai")
 
 
 # Alias for backward compatibility

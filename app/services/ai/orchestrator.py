@@ -1,7 +1,7 @@
 from app.core.learning_memory_gate import LearningMemoryDisabled
 from app.core.models.contracts import ModelInvocationContext
 from app.core.prompt_builder import PromptBuilder
-from app.services.ai.llm import LLMProvider
+from app.services.ai.gateway_llm import ModelCaller
 from app.services.generation.structured_questions import StructuredQuestionGenerator
 from app.services.memory.memory_service import MemoryService
 from app.services.rag.evidence import Evidence, GroundedAnswer, check_grounded
@@ -9,7 +9,7 @@ from app.services.rag.retrieval import RetrievalService
 
 
 class AIOrchestrator:
-    def __init__(self, llm: LLMProvider, retriever: RetrievalService, memory: MemoryService):
+    def __init__(self, llm: ModelCaller, retriever: RetrievalService, memory: MemoryService):
         self.llm = llm
         self.retriever = retriever
         self.memory = memory

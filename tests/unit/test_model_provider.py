@@ -3,7 +3,7 @@ from pydantic import ValidationError
 
 from app.core.config import Settings
 from app.services.ai import dependencies
-from app.services.ai.deterministic import DeterministicLLM
+from tests.fake_models import OfflineModel
 from app.services.ai.gateway_llm import GatewayLLM
 
 CALLBACK_URL = "https://api.build.example/content/ingestion/callbacks"
@@ -54,7 +54,7 @@ async def test_chat_explain_and_questions_are_wired_to_the_gateway(monkeypatch):
 
 
 async def test_the_deterministic_answer_identifies_its_prompt():
-    llm = DeterministicLLM()
+    llm = OfflineModel()
     first = await llm.generate("explain photosynthesis")
     assert first == await llm.generate("explain photosynthesis")
     assert first != await llm.generate("explain osmosis")
