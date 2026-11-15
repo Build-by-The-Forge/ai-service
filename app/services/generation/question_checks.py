@@ -72,6 +72,15 @@ def _covered(terms: set[str], available: set[str]) -> float:
     return len(terms & available) / len(terms) if terms else 1.0
 
 
+def supported(text: str, cited: str, *, coverage: float = PREMISE_COVERAGE) -> bool:
+    """The premise rule for any text: no number, and few content terms,
+    beyond the cited passages."""
+    return (
+        numbers(text) <= numbers(cited)
+        and _covered(content_terms(text), content_terms(cited)) >= coverage
+    )
+
+
 @dataclass(frozen=True)
 class Verdict:
     ok: bool

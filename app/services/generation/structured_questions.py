@@ -15,6 +15,7 @@ from app.core.prompt_builder import PromptBuilder
 from app.schemas.ai import GeneratedQuestion
 from app.services.ai.llm import LLMProvider, StructuredOutputError
 from app.services.generation.question_checks import Verdict, check_question, count_reasons
+from app.services.rag.evidence import Passage
 from app.services.rag.recorder import SourceUsed
 from app.services.rag.retrieval import RetrievalService
 
@@ -32,6 +33,9 @@ class GeneratedQuestions:
     rejected: dict[str, int] = field(default_factory=dict)
     # Every source retrieval returned for the topic (M3-D), used or not.
     sources_used: tuple[SourceUsed, ...] = field(kw_only=True)
+    # The numbered passages the model was given, so a caller can resolve a
+    # question's `sources` to the exact document versions it cites.
+    passages: tuple[Passage, ...] = field(default=(), kw_only=True)
 
 
 class StructuredQuestionGenerator:
@@ -48,14 +52,19 @@ class StructuredQuestionGenerator:
         count: int,
         difficulty: str,
         question_type: str,
+        course: str | None = None,
     ) -> GeneratedQuestions:
-        evidence = await self.retriever.evidence(topic, denied_assets)
+        # The course, when given, is part of both the retrieval query and the
+        # prompt, so it disambiguates a topic shared by several courses.
+        query = f"{course} {topic}" if course else topic
+        evidence = await self.retriever.evidence(query, denied_assets)
         if not evidence.passages:
             return GeneratedQuestions(
                 questions=[], discarded=0, grounded=False, sources_used=evidence.sources_used
             )
         prompt = self.prompts.build(
             "structured_questions",
+            course=course,
             topic=topic,
             count=count,
             difficulty=difficulty,
@@ -73,7 +82,10 @@ class StructuredQuestionGenerator:
         except StructuredOutputError:
             logger.warning("question generation: the model did not answer with JSON")
             return GeneratedQuestions(
-                questions=[], discarded=count, sources_used=evidence.sources_used
+                questions=[],
+                discarded=count,
+                sources_used=evidence.sources_used,
+                passages=evidence.passages,
             )
 
         raw = answer.get("questions")
@@ -109,4 +121,5 @@ class StructuredQuestionGenerator:
             discarded=discarded,
             rejected=count_reasons(rejected),
             sources_used=evidence.sources_used,
+            passages=evidence.passages,
         )
