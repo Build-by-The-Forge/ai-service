@@ -66,6 +66,12 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost/build_ai"
 
     OPENAI_API_KEY: str | None = None
+    # Gemini through the gateway's adapter (google-genai). The key is passed to
+    # the SDK explicitly; the SDK's own environment variables are never read.
+    GEMINI_API_KEY: str | None = None
+    # The Gemini model the gateway asks for. gemini-3.8-flash is listed as
+    # stable on the Gemini API models page (checked 2026-11-15).
+    GEMINI_MODEL: str = "gemini-3.8-flash"
     # Model behind chat, explain and question generation. "deterministic" is an
     # offline stand-in (no network, no model) for development and tests, such
     # as the two-service boundary suite; it is refused in staging/production.
