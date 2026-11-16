@@ -126,6 +126,24 @@ def tables(runs: list[dict[str, Any]]) -> str:
             f"| {r['model_id']} | {' | '.join(cells)} | {' | '.join(explains)} | "
             f"{pct(s.get('en_explain_term_recall'))} |"
         )
+    devices = [r for r in runs if r.get("device_monitor")]
+    if devices:
+        lines += [
+            "",
+            "### Device battery and thermal (device_monitor)",
+            "",
+            "| Model | Device | Battery %/h | Max battery C | Max skin/CPU C | "
+            "Worst thermal status | Sustained ratio | Min MemAvailable MB |",
+            "|---|---|---:|---:|---:|---:|---:|---:|",
+        ]
+        for r in devices:
+            d = r["device_monitor"]
+            lines.append(
+                f"| {r['model_id']} | {r['label']} | {num(d.get('battery_drop_pct_per_hour'))} | "
+                f"{num(d.get('max_battery_temp_c'))} | {num(d.get('max_skin_or_cpu_c'))} | "
+                f"{num(d.get('worst_thermal_status'), 0)} | {num(d.get('sustained_ratio'), 2)} | "
+                f"{num(d.get('min_mem_available_mb'), 0)} |"
+            )
     hw = runs[0]["hardware"] if runs else {}
     settings = runs[0]["settings"] if runs else {}
     lines += [
