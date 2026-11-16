@@ -14,7 +14,10 @@ from app.core.config import settings
 from app.core.idempotency import InMemoryIdempotencyStore, set_idempotency_store
 from app.core.replay_guard import RedisReplayGuard
 from app.core.service_context import ServiceContext
+from app.api.v1.ingest import dispatch_scope_store
+from app.core.rag.scope import KnowledgeScope
 from app.main import create_app
+from app.services.rag.scopes import ScopeStoreUnavailableError
 from app.services.tasks.dispatcher import get_task_dispatcher
 from tests.signing import (
     DISPATCH_PATH,
@@ -501,3 +504,166 @@ async def test_a_task_whose_record_could_not_be_written_releases_its_claim(guard
     app.dependency_overrides[get_task_record_store] = InMemoryTaskRecordStore
     assert (await post(app, body, signed_headers(body))).json()["status"] == "ACCEPTED"
     assert len(recorder.tasks) == 1
+
+
+# --- M3-D PR 7: every dispatch states its scope -------------------------------------
+
+ASSET = "asset-1"
+
+
+@real_redis
+async def test_the_dispatch_applies_the_scope_it_states(guard, in_memory_scopes):
+    app, recorder = build(guard)
+    body = dispatch_body(scope="personal", scope_version=2)
+    response = await post(app, body, signed_headers(body))
+
+    assert response.status_code == 202, response.text
+    assert in_memory_scopes.rows[(TENANT_A, ASSET)] == (KnowledgeScope.PERSONAL, 2)
+    data = response.json()["data"]
+    assert (data["scope"], data["scope_version"]) == ("personal", 2)
+    [task] = recorder.tasks
+    # The worker never carries a scope: chunks read it from asset_scopes.
+    assert "scope" not in task["payload"] and "scope_version" not in task["payload"]
+
+
+@real_redis
+async def test_an_older_scope_on_a_dispatch_changes_nothing(guard, in_memory_scopes):
+    in_memory_scopes.rows[(TENANT_A, ASSET)] = (KnowledgeScope.UNKNOWN, 5)
+    app, _ = build(guard)
+    body = dispatch_body(scope="institutional", scope_version=4)
+    response = await post(app, body, signed_headers(body))
+
+    assert response.status_code == 202, response.text
+    assert in_memory_scopes.rows[(TENANT_A, ASSET)] == (KnowledgeScope.UNKNOWN, 5)
+    data = response.json()["data"]
+    assert (data["scope"], data["scope_version"]) == ("unknown", 5)
+
+
+@real_redis
+async def test_an_equal_version_on_a_dispatch_changes_nothing(guard, in_memory_scopes):
+    in_memory_scopes.rows[(TENANT_A, ASSET)] = (KnowledgeScope.UNKNOWN, 3)
+    app, _ = build(guard)
+    body = dispatch_body(scope="institutional", scope_version=3)
+    assert (await post(app, body, signed_headers(body))).status_code == 202
+    assert in_memory_scopes.rows[(TENANT_A, ASSET)] == (KnowledgeScope.UNKNOWN, 3)
+
+
+@real_redis
+async def test_an_unassigned_document_stays_unknown_and_nothing_is_written(guard, in_memory_scopes):
+    app, recorder = build(guard)
+    body = dispatch_body()  # unknown at version 0
+    response = await post(app, body, signed_headers(body))
+
+    assert response.status_code == 202, response.text
+    assert in_memory_scopes.rows == {}
+    assert not in_memory_scopes.retrievable(TENANT_A, ASSET)
+    data = response.json()["data"]
+    assert (data["scope"], data["scope_version"]) == ("unknown", 0)
+    assert len(recorder.tasks) == 1
+
+
+@real_redis
+async def test_version_zero_never_lowers_an_accepted_scope(guard, in_memory_scopes):
+    in_memory_scopes.rows[(TENANT_A, ASSET)] = (KnowledgeScope.INSTITUTIONAL, 1)
+    app, _ = build(guard)
+    body = dispatch_body()
+    data = (await post(app, body, signed_headers(body))).json()["data"]
+    assert in_memory_scopes.rows[(TENANT_A, ASSET)] == (KnowledgeScope.INSTITUTIONAL, 1)
+    assert (data["scope"], data["scope_version"]) == ("institutional", 1)
+
+
+@real_redis
+@pytest.mark.parametrize(
+    "overrides",
+    [
+        {"scope": None},
+        {"scope_version": None},
+        {"scope": None, "scope_version": None},
+        {"scope": "public", "scope_version": 1},
+        {"scope": "personal", "scope_version": 0},
+        {"scope": "personal", "scope_version": -1},
+        {"scope": "personal", "scope_version": "2"},
+        {"scope": "personal", "scope_version": True},
+    ],
+)
+async def test_a_missing_or_malformed_scope_is_refused_before_anything(
+    guard, in_memory_scopes, in_memory_index_fence, overrides
+):
+    app, recorder = build(guard)
+    body = dispatch_body(**overrides)
+    response = await post(app, body, signed_headers(body))
+
+    assert response.status_code == 422
+    assert recorder.tasks == []
+    assert in_memory_scopes.rows == {}
+    assert in_memory_index_fence.fences == {}
+
+
+@real_redis
+async def test_a_retry_after_a_newer_decision_is_a_duplicate_and_applies_it(
+    guard, in_memory_scopes
+):
+    """The backend retries an uncertain attempt with the same key; a scope
+    decided in between isn't a different request."""
+    app, recorder = build(guard)
+    first = dispatch_body(scope="unknown", scope_version=1)
+    second = dispatch_body(scope="personal", scope_version=2)
+    a = await post(app, first, signed_headers(first))
+    b = await post(app, second, signed_headers(second))
+
+    assert a.json()["status"] == "ACCEPTED"
+    assert b.status_code == 202 and b.json()["status"] == "DUPLICATE"
+    assert b.json()["external_task_id"] == a.json()["external_task_id"]
+    assert in_memory_scopes.rows[(TENANT_A, ASSET)] == (KnowledgeScope.PERSONAL, 2)
+    assert len(recorder.tasks) == 1
+
+
+@real_redis
+async def test_a_conflicting_key_still_never_raises_a_scope_past_its_version(
+    guard, in_memory_scopes
+):
+    """A 409 for a reused key applies the stated assignment at most: the rule
+    keeps it monotonic, so nothing is left at a scope no one decided."""
+    app, _ = build(guard)
+    first = dispatch_body(scope="unknown", scope_version=1)
+    other_work = dispatch_body(scope="unknown", scope_version=1, run_number=2)
+    assert (await post(app, first, signed_headers(first))).status_code == 202
+    assert (await post(app, other_work, signed_headers(other_work))).status_code == 409
+    assert in_memory_scopes.rows[(TENANT_A, ASSET)] == (KnowledgeScope.UNKNOWN, 1)
+
+
+@real_redis
+async def test_a_dispatch_naming_another_tenants_asset_is_refused(guard, in_memory_scopes):
+    in_memory_scopes.rows[(TENANT_B, ASSET)] = (KnowledgeScope.PERSONAL, 1)
+    app, recorder = build(guard)
+    body = dispatch_body(scope="institutional", scope_version=9)
+    response = await post(app, body, signed_headers(body))
+
+    assert response.status_code == 403
+    assert recorder.tasks == []
+    assert (TENANT_A, ASSET) not in in_memory_scopes.rows
+    assert in_memory_scopes.rows[(TENANT_B, ASSET)] == (KnowledgeScope.PERSONAL, 1)
+
+
+class _DownScopes:
+    async def assign(self, **_):
+        raise ScopeStoreUnavailableError("down")
+
+    async def current(self, **_):
+        raise ScopeStoreUnavailableError("down")
+
+
+@real_redis
+@pytest.mark.parametrize("version", [0, 3])
+async def test_dispatch_fails_closed_when_the_scope_store_is_unavailable(
+    guard, in_memory_index_fence, version
+):
+    app, recorder = build(guard)
+    app.dependency_overrides[dispatch_scope_store] = _DownScopes
+    scope = "unknown" if version == 0 else "personal"
+    body = dispatch_body(scope=scope, scope_version=version)
+    response = await post(app, body, signed_headers(body))
+
+    assert response.status_code == 503
+    assert recorder.tasks == []
+    assert in_memory_index_fence.fences == {}

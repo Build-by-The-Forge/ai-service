@@ -3,6 +3,11 @@
 Only the backend sets a document's scope, on its own authority: the route
 needs a system context, and a user context is refused whatever permissions
 it carries. No student or staff request carries a scope.
+
+The ingestion dispatch also states the document's scope (M3-D PR 7), under
+the same version rule. That value is the backend's own record, read from its
+assignment outbox when it builds the signed body, whichever context signs
+the dispatch; no field of a user's request reaches it.
 """
 
 import logging
