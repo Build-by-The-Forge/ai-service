@@ -91,6 +91,12 @@ class Evidence:
             f"[{p.number}] ({p.document_id}, {_pages(p)}) {p.text}" for p in self.passages
         )
 
+    def anonymous_prompt_block(self) -> str:
+        """Numbered passages with their pages and no document identifier:
+        '[n] (pages) text'. A model never shown an identifier can't copy one
+        into an answer the student reads (M3-F)."""
+        return "\n\n".join(f"[{p.number}] ({_pages(p)}) {p.text}" for p in self.passages)
+
     def context(self) -> list[dict]:
         """The passages as the API's context items (each has `text`)."""
         return [{"text": p.text, **p.citation()} for p in self.passages]
