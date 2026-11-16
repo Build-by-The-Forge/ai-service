@@ -96,6 +96,24 @@ class PgScopeStore:
             raise ScopeStoreUnavailableError(type(exc).__name__) from exc
         return ScopeState(asset_id, KnowledgeScope(row.scope), int(row.version))
 
+    async def current(self, *, tenant_id: str, asset_id: str) -> ScopeState:
+        """The stored state, or ``unknown`` at version 0 when the tenant's
+        document has no row. Writes nothing."""
+        try:
+            async with self._session() as db:
+                row = (
+                    await db.execute(
+                        select(AssetScope.scope, AssetScope.version).where(
+                            AssetScope.tenant_id == tenant_id, AssetScope.asset_id == asset_id
+                        )
+                    )
+                ).one_or_none()
+        except SQLAlchemyError as exc:
+            raise ScopeStoreUnavailableError(type(exc).__name__) from exc
+        if row is None:
+            return ScopeState(asset_id, KnowledgeScope.UNKNOWN, 0)
+        return ScopeState(asset_id, KnowledgeScope(row.scope), int(row.version))
+
 
 class InMemoryScopes:
     """For tests only: the same rules as PgScopeStore, without a fence check."""
@@ -113,6 +131,12 @@ class InMemoryScopes:
             self.rows[(tenant_id, asset_id)] = (scope, version)
         stored, stored_version = self.rows[(tenant_id, asset_id)]
         return ScopeState(asset_id, stored, stored_version)
+
+    async def current(self, *, tenant_id: str, asset_id: str) -> ScopeState:
+        row = self.rows.get((tenant_id, asset_id))
+        if row is None:
+            return ScopeState(asset_id, KnowledgeScope.UNKNOWN, 0)
+        return ScopeState(asset_id, row[0], row[1])
 
     def retrievable(self, tenant_id: str, asset_id: str) -> bool:
         row = self.rows.get((tenant_id, asset_id))
