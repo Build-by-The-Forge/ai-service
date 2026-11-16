@@ -260,6 +260,7 @@ class GeminiProviderAdapter(ModelProviderAdapter):
         contents, config = self._contents(request, decision)
         client = self._client(decision)
         failure: ModelGatewayError | None = None
+        visible = False  # any user-visible text so far
         try:
             stream = await client.aio.models.generate_content_stream(
                 model=decision.model, contents=contents, config=config
@@ -271,6 +272,13 @@ class GeminiProviderAdapter(ModelProviderAdapter):
                     self._check_prompt(response)
                     continue
                 text, finish_reason = self._answer(response)
+                visible = visible or bool(text.strip())
+                if finish_reason is None and not text:
+                    continue  # thought-only while thinking: nothing to deliver
+                if finish_reason is not None and not visible:
+                    # Finished with no visible text: no answer, never an
+                    # empty success, whatever the finish reason says.
+                    raise _no_answer()
                 yield ModelStreamChunk(
                     delta_content=text,
                     model=decision.model,
@@ -284,3 +292,5 @@ class GeminiProviderAdapter(ModelProviderAdapter):
                 await client.aio.aclose()
         if failure is not None:
             raise failure
+        if not visible:
+            raise _no_answer()  # the stream ended without any visible text

@@ -378,6 +378,79 @@ async def test_a_stream_with_a_blocked_prompt_fails_without_retry_or_text(chunks
     assert SECRET not in str(caught.value) and caught.value.__context__ is None
 
 
+def thought(text: str) -> dict:
+    return {"candidates": [{"content": {"parts": [{"text": text, "thought": True}]}}]}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "chunks",
+    [
+        (
+            thought(SECRET),
+            {"candidates": [{"content": {"parts": []}, "finishReason": "STOP"}]},
+        ),
+        (
+            thought(SECRET),
+            {
+                "candidates": [
+                    {
+                        "content": {"parts": [{"text": SECRET, "thought": True}]},
+                        "finishReason": "MAX_TOKENS",
+                    }
+                ]
+            },
+        ),
+        ({"candidates": [{"content": {"parts": [{"text": "  "}]}, "finishReason": "STOP"}]},),
+        (thought(SECRET), {"candidates": [{"content": {"parts": []}}]}),
+        ({"usageMetadata": {"promptTokenCount": 7}},),
+    ],
+    ids=[
+        "thinking then an empty finish",
+        "thought-only finish",
+        "whitespace-only finish",
+        "ends without text or finish",
+        "usage only",
+    ],
+)
+async def test_a_stream_without_visible_text_fails_and_never_finishes(chunks):
+    provider = Provider(lambda req: sse(*chunks))
+    delivered = []
+
+    with pytest.raises(ModelGatewayError) as caught:
+        async for chunk in provider.adapter().generate_stream(request(), DECISION):
+            delivered.append(chunk)
+
+    assert str(caught.value) == "Gemini returned no answer"
+    assert caught.value.retryable is False and caught.value.__context__ is None
+    # No finish was reported, and nothing of the thoughts was delivered.
+    assert all(c.finish_reason is None for c in delivered)
+    assert all(SECRET not in c.delta_content for c in delivered)
+
+
+@pytest.mark.asyncio
+async def test_a_stream_skips_thinking_and_delivers_the_answer():
+    provider = Provider(
+        lambda req: sse(
+            thought(SECRET),
+            {"candidates": [{"content": {"parts": [{"text": "Osmosis "}]}}]},
+            thought(SECRET),
+            {
+                "candidates": [
+                    {"content": {"parts": [{"text": "moves water."}]}, "finishReason": "STOP"}
+                ]
+            },
+        )
+    )
+
+    chunks = [c async for c in provider.adapter().generate_stream(request(), DECISION)]
+
+    assert [(c.delta_content, c.finish_reason) for c in chunks] == [
+        ("Osmosis ", None),
+        ("moves water.", "stop"),
+    ]
+
+
 @pytest.mark.asyncio
 async def test_a_stream_failure_is_mapped_with_none_of_its_text():
     with pytest.raises(ProviderUnavailableError) as caught:
