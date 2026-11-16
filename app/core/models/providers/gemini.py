@@ -175,13 +175,19 @@ class GeminiProviderAdapter(ModelProviderAdapter):
         return mapped
 
     @staticmethod
+    def _check_prompt(response: Any) -> None:
+        """A blocked prompt is a non-retryable failure, with no provider text.
+        Gemini reports it at the prompt level, usually with no candidates."""
+        feedback = getattr(response, "prompt_feedback", None)
+        if feedback is not None and getattr(feedback, "block_reason", None):
+            raise ModelGatewayError("Gemini blocked the prompt", provider=NAME, retryable=False)
+
+    @staticmethod
     def _answer(response: Any) -> tuple[str, str | None]:
         """The answer's text (no thought parts) and its finish reason, None while
         a stream continues. A blocked or withheld answer is a non-retryable
         failure, with no provider text."""
-        feedback = getattr(response, "prompt_feedback", None)
-        if feedback is not None and getattr(feedback, "block_reason", None):
-            raise ModelGatewayError("Gemini blocked the prompt", provider=NAME, retryable=False)
+        GeminiProviderAdapter._check_prompt(response)
         candidates = getattr(response, "candidates", None) or []
         if not candidates:
             raise _no_answer()
@@ -260,6 +266,9 @@ class GeminiProviderAdapter(ModelProviderAdapter):
             )
             async for response in stream:
                 if not (getattr(response, "candidates", None) or []):
+                    # A chunk without candidates (usage only, say) carries no
+                    # text, but it can carry the prompt's block: check first.
+                    self._check_prompt(response)
                     continue
                 text, finish_reason = self._answer(response)
                 yield ModelStreamChunk(

@@ -352,6 +352,33 @@ async def test_a_stream_yields_text_and_ends_with_its_finish_reason():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "chunks",
+    [
+        ({"promptFeedback": {"blockReason": "SAFETY", "blockReasonMessage": SECRET}},),
+        (
+            {"usageMetadata": {"promptTokenCount": 7}},
+            {"promptFeedback": {"blockReason": "PROHIBITED_CONTENT"}, "candidates": []},
+        ),
+    ],
+    ids=["blocked prompt", "blocked after a usage-only chunk"],
+)
+async def test_a_stream_with_a_blocked_prompt_fails_without_retry_or_text(chunks):
+    provider = Provider(lambda req: sse(*chunks))
+    delivered = []
+
+    with pytest.raises(ModelGatewayError) as caught:
+        async for chunk in provider.adapter().generate_stream(request(), DECISION):
+            delivered.append(chunk)
+
+    assert delivered == []
+    # The block itself, not only a stream that came back empty.
+    assert str(caught.value) == "Gemini blocked the prompt"
+    assert caught.value.retryable is False
+    assert SECRET not in str(caught.value) and caught.value.__context__ is None
+
+
+@pytest.mark.asyncio
 async def test_a_stream_failure_is_mapped_with_none_of_its_text():
     with pytest.raises(ProviderUnavailableError) as caught:
         async for _ in Provider(status(503)).adapter().generate_stream(request(), DECISION):
