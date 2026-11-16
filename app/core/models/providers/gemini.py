@@ -65,6 +65,11 @@ def calculate_gemini_cost(model: str, prompt_tokens: int, completion_tokens: int
     return round(prompt_tokens / 1000.0 * rates[0] + completion_tokens / 1000.0 * rates[1], 6)
 
 
+def _no_answer() -> ModelGatewayError:
+    """No user-visible text came back. Asking again is unlikely to change it."""
+    return ModelGatewayError("Gemini returned no answer", provider=NAME, retryable=False)
+
+
 class GeminiProviderAdapter(ModelProviderAdapter):
     def __init__(
         self,
@@ -179,7 +184,7 @@ class GeminiProviderAdapter(ModelProviderAdapter):
             raise ModelGatewayError("Gemini blocked the prompt", provider=NAME, retryable=False)
         candidates = getattr(response, "candidates", None) or []
         if not candidates:
-            raise ModelGatewayError("Gemini returned no answer", provider=NAME, retryable=False)
+            raise _no_answer()
         candidate = candidates[0]
         reason = getattr(candidate, "finish_reason", None)
         reason_name = (getattr(reason, "name", None) or str(reason)).lower() if reason else None
@@ -212,6 +217,10 @@ class GeminiProviderAdapter(ModelProviderAdapter):
             raise failure
 
         text, finish_reason = self._answer(response)
+        if not text.strip():
+            # No visible text once thought parts are removed: an empty or
+            # thought-only candidate is no answer, not an empty success.
+            raise _no_answer()
         usage_meta = getattr(response, "usage_metadata", None)
         prompt_tokens = getattr(usage_meta, "prompt_token_count", None) or 0
         # Thinking tokens are billed as output.

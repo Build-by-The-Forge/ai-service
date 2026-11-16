@@ -220,8 +220,27 @@ async def test_the_answer_its_usage_and_cost():
         {"promptFeedback": {"blockReason": "SAFETY"}, "candidates": []},
         {"candidates": [{"content": {"parts": [{"text": SECRET}]}, "finishReason": "SAFETY"}]},
         {"candidates": []},
+        {"candidates": [{"content": {"role": "model", "parts": []}, "finishReason": "STOP"}]},
+        {"candidates": [{"finishReason": "STOP"}]},
+        {
+            "candidates": [
+                {
+                    "content": {"role": "model", "parts": [{"text": SECRET, "thought": True}]},
+                    "finishReason": "MAX_TOKENS",
+                }
+            ]
+        },
+        {"candidates": [{"content": {"parts": [{"text": " \n "}]}, "finishReason": "STOP"}]},
     ],
-    ids=["blocked prompt", "withheld answer", "no answer"],
+    ids=[
+        "blocked prompt",
+        "withheld answer",
+        "no answer",
+        "empty candidate",
+        "candidate without content",
+        "thought-only candidate",
+        "whitespace-only candidate",
+    ],
 )
 async def test_a_blocked_or_empty_answer_fails_without_retry_or_text(answer):
     provider = Provider(lambda req: httpx.Response(200, json=answer))
