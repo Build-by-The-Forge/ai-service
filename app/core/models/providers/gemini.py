@@ -13,6 +13,9 @@ The SDK is configured so the gateway keeps control of every call:
 - **Timeout:** the attempt's, which the gateway caps at the time left.
 - **Errors:** by status code only. The SDK's error text quotes the
   provider's response body, so it is never kept, logged or raised.
+- **Answers:** a blocked prompt, a withheld answer, or no visible text once
+  thought parts are removed fails, non-retryable, streamed or not. A
+  stream never reports a finish reason without having delivered text.
 
 Data use: on the free tier and the "Contributor" tier, Google may use the
 content to improve its products; on the paid Standard tier it doesn't
