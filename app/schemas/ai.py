@@ -23,6 +23,8 @@ MAX_MEMORY_OBSERVATIONS = 200
 # The backend refuses a tenant's retrieving calls when its list passes the
 # configured size, starting at 1,000 (M3-D), so a longer list never arrives.
 MAX_DENIED_ASSETS = 1000
+# A tutor turn sees at most this many of the student's earlier questions (M3-F T1).
+MAX_EARLIER_QUESTIONS = 3
 
 
 class SignedAIRequest(BaseModel):
@@ -50,6 +52,25 @@ class RetrievingRequest(SignedAIRequest):
 
 class ChatRequest(RetrievingRequest):
     message: str = Field(min_length=1, max_length=MAX_MESSAGE_CHARS)
+
+
+Question = Annotated[str, Field(min_length=1, max_length=MAX_MESSAGE_CHARS)]
+
+
+class TutorTurnRequest(RetrievingRequest):
+    """One turn of an AI Tutor conversation (M3-F). The backend owns the
+    conversation: no conversation, turn or idempotency field exists here.
+
+    ``earlier_questions`` are the student's own earlier questions in the
+    conversation, oldest first, never earlier answers: an answer is
+    source-derived, and carrying one into a new turn would let a document
+    shape it without being in its ``sources_used``. They reach the prompt
+    only; retrieval runs on ``message`` alone."""
+
+    message: Question
+    earlier_questions: list[Question] = Field(
+        default_factory=list, max_length=MAX_EARLIER_QUESTIONS
+    )
 
 
 class ExplainRequest(RetrievingRequest):
@@ -135,6 +156,17 @@ class ChatData(BaseModel):
     memory_used: str
 
 
+class TutorTurnData(BaseModel):
+    """A turn's answer. Only the passages the answer cites are returned, as
+    structured citations; the answer text carries their [n] markers and
+    nothing else of them. No uncited passage and no memory is returned."""
+
+    answer: str
+    # False: the fixed "not covered" reply, with no citations.
+    grounded: bool
+    citations: list[Citation]
+
+
 class ExplainData(BaseModel):
     explanation: str
     grounded: bool = False
@@ -210,6 +242,10 @@ class _SourcedEnvelope(_Envelope):
 
 class ChatResponse(_SourcedEnvelope):
     data: ChatData
+
+
+class TutorTurnResponse(_SourcedEnvelope):
+    data: TutorTurnData
 
 
 class ExplainResponse(_SourcedEnvelope):
