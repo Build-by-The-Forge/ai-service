@@ -13,9 +13,12 @@ The SDK is configured so the gateway keeps control of every call:
 - **Timeout:** the attempt's, which the gateway caps at the time left.
 - **Errors:** by status code only. The SDK's error text quotes the
   provider's response body, so it is never kept, logged or raised.
-- **Answers:** a blocked prompt, a withheld answer, or no visible text once
-  thought parts are removed fails, non-retryable, streamed or not. A
-  stream never reports a finish reason without having delivered text.
+- **Answers:** only STOP and MAX_TOKENS complete an answer. A blocked
+  prompt, any other finish reason, or no visible text once thought parts
+  are removed fails, non-retryable, streamed or not.
+- **Streams:** nothing is yielded until the whole stream has been checked,
+  so no text from an answer withheld in a later chunk reaches the caller.
+  The text arrives at the end: no incremental display.
 
 Data use: on the free tier and the "Contributor" tier, Google may use the
 content to improve its products; on the paid Standard tier it doesn't
@@ -66,6 +69,11 @@ GEMINI_PRICING: dict[str, tuple[float, float]] = {
 def calculate_gemini_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
     rates = GEMINI_PRICING.get(model) or max(GEMINI_PRICING.values(), key=sum)
     return round(prompt_tokens / 1000.0 * rates[0] + completion_tokens / 1000.0 * rates[1], 6)
+
+
+# The finish reasons that complete an answer. MAX_TOKENS is a complete,
+# truncated answer, reported as such; every other reason withholds it.
+_ACCEPTED_FINISH = frozenset({"stop", "max_tokens"})
 
 
 def _no_answer() -> ModelGatewayError:
@@ -199,7 +207,9 @@ class GeminiProviderAdapter(ModelProviderAdapter):
         reason_name = (getattr(reason, "name", None) or str(reason)).lower() if reason else None
         if reason_name in ("finish_reason_unspecified",):
             reason_name = None
-        if reason_name in ("safety", "blocklist", "prohibited_content", "spii", "recitation"):
+        if reason_name is not None and reason_name not in _ACCEPTED_FINISH:
+            # An allowlist: SAFETY, BLOCKLIST, IMAGE_SAFETY, LANGUAGE, OTHER and
+            # any reason the SDK adds later end the answer as withheld.
             raise ModelGatewayError("Gemini withheld the answer", provider=NAME, retryable=False)
         content = getattr(candidate, "content", None)
         parts = getattr(content, "parts", None) or []

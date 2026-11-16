@@ -252,6 +252,54 @@ async def test_a_blocked_or_empty_answer_fails_without_retry_or_text(answer):
     assert SECRET not in str(caught.value)
 
 
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "IMAGE_SAFETY",
+        "IMAGE_PROHIBITED_CONTENT",
+        "LANGUAGE",
+        "OTHER",
+        "MALFORMED_FUNCTION_CALL",
+        "UNEXPECTED_TOOL_CALL",
+        "CONTINUATION",
+    ],
+)
+async def test_only_stop_and_max_tokens_complete_an_answer(reason):
+    answer = {"candidates": [{"content": {"parts": [{"text": SECRET}]}, "finishReason": reason}]}
+    provider = Provider(lambda req: httpx.Response(200, json=answer))
+
+    with pytest.raises(ModelGatewayError) as caught:
+        await provider.adapter().generate(request(), DECISION)
+
+    assert str(caught.value) == "Gemini withheld the answer"
+    assert caught.value.retryable is False and SECRET not in str(caught.value)
+
+    streamed = Provider(lambda req: sse(text_chunk(SECRET), answer))
+    delivered = []
+    with pytest.raises(ModelGatewayError):
+        async for chunk in streamed.adapter().generate_stream(request(), DECISION):
+            delivered.append(chunk)
+    assert delivered == []
+
+
+@pytest.mark.asyncio
+async def test_a_max_tokens_answer_is_returned_as_truncated():
+    answer = {
+        "candidates": [
+            {"content": {"parts": [{"text": "Osmosis is"}]}, "finishReason": "MAX_TOKENS"}
+        ]
+    }
+
+    response = (
+        await Provider(lambda req: httpx.Response(200, json=answer))
+        .adapter()
+        .generate(request(), DECISION)
+    )
+
+    assert (response.content, response.finish_reason) == ("Osmosis is", "max_tokens")
+
+
 def test_the_cost_estimate_is_high_not_low():
     # The paid Standard tier's 2027 prices: $1.50 in, $7.50 out, per 1M tokens.
     assert calculate_gemini_cost("gemini-3.8-flash", 1_000_000, 1_000_000) == 9.0
