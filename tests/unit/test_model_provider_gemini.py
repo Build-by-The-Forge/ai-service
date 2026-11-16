@@ -428,6 +428,73 @@ async def test_a_stream_without_visible_text_fails_and_never_finishes(chunks):
     assert all(SECRET not in c.delta_content for c in delivered)
 
 
+def text_chunk(text: str) -> dict:
+    return {"candidates": [{"content": {"parts": [{"text": text}]}}]}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "late,message",
+    [
+        (
+            {"candidates": [{"content": {"parts": []}, "finishReason": reason}]},
+            "Gemini withheld the answer",
+        )
+        for reason in ("SAFETY", "BLOCKLIST", "PROHIBITED_CONTENT", "SPII", "RECITATION")
+    ]
+    + [
+        (
+            {"promptFeedback": {"blockReason": "SAFETY"}, "candidates": []},
+            "Gemini blocked the prompt",
+        ),
+        (
+            {
+                "promptFeedback": {"blockReason": "OTHER"},
+                "candidates": [{"content": {"parts": [{"text": "more"}]}}],
+            },
+            "Gemini blocked the prompt",
+        ),
+    ],
+    ids=[
+        "withheld SAFETY",
+        "withheld BLOCKLIST",
+        "withheld PROHIBITED_CONTENT",
+        "withheld SPII",
+        "withheld RECITATION",
+        "late prompt block without candidates",
+        "late prompt block with a candidate",
+    ],
+)
+async def test_text_before_a_late_withholding_never_reaches_the_caller(late, message):
+    # Visible text first, with no finish reason; the same answer is withheld,
+    # or the prompt blocked, only in a later chunk.
+    provider = Provider(lambda req: sse(text_chunk(SECRET), text_chunk(f" and {SECRET}"), late))
+    delivered = []
+
+    with pytest.raises(ModelGatewayError) as caught:
+        async for chunk in provider.adapter().generate_stream(request(), DECISION):
+            delivered.append(chunk)
+
+    assert delivered == []  # not one chunk, so none of the withheld text
+    assert str(caught.value) == message
+    assert caught.value.retryable is False and caught.value.__context__ is None
+    assert SECRET not in str(caught.value)
+
+
+@pytest.mark.asyncio
+async def test_a_stream_that_ends_without_a_finish_reason_delivers_nothing():
+    provider = Provider(lambda req: sse(text_chunk(SECRET), text_chunk(" more")))
+    delivered = []
+
+    with pytest.raises(ModelGatewayError) as caught:
+        async for chunk in provider.adapter().generate_stream(request(), DECISION):
+            delivered.append(chunk)
+
+    assert delivered == []
+    assert str(caught.value) == "Gemini's answer was incomplete"
+    assert caught.value.retryable is False
+
+
 @pytest.mark.asyncio
 async def test_a_stream_skips_thinking_and_delivers_the_answer():
     provider = Provider(

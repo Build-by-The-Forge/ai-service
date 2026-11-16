@@ -260,10 +260,19 @@ class GeminiProviderAdapter(ModelProviderAdapter):
     async def generate_stream(
         self, request: ModelRequest, decision: ModelDecision
     ) -> AsyncIterator[ModelStreamChunk]:
+        """The answer, delivered only once the whole stream has been checked.
+
+        Gemini can withhold a candidate (SAFETY, BLOCKLIST...) or block the
+        prompt in a later chunk, after text has already arrived. So nothing is
+        yielded until the stream has ended with an accepted finish reason and
+        visible text: a withheld answer fails with none of its text delivered.
+        The price is incremental display: the text arrives at the end, in the
+        deltas Gemini sent."""
         contents, config = self._contents(request, decision)
         client = self._client(decision)
         failure: ModelGatewayError | None = None
-        visible = False  # any user-visible text so far
+        deltas: list[str] = []  # visible text, held until the stream is accepted
+        finish_reason: str | None = None
         try:
             stream = await client.aio.models.generate_content_stream(
                 model=decision.model, contents=contents, config=config
@@ -274,20 +283,13 @@ class GeminiProviderAdapter(ModelProviderAdapter):
                     # text, but it can carry the prompt's block: check first.
                     self._check_prompt(response)
                     continue
-                text, finish_reason = self._answer(response)
-                visible = visible or bool(text.strip())
-                if finish_reason is None and not text:
-                    continue  # thought-only while thinking: nothing to deliver
-                if finish_reason is not None and not visible:
-                    # Finished with no visible text: no answer, never an
-                    # empty success, whatever the finish reason says.
-                    raise _no_answer()
-                yield ModelStreamChunk(
-                    delta_content=text,
-                    model=decision.model,
-                    provider=NAME,
-                    finish_reason=finish_reason,
-                )
+                # Raises on a blocked prompt or a withheld candidate, in any
+                # chunk, before anything has been yielded.
+                text, reason = self._answer(response)
+                if text:  # thought-only chunks carry nothing to deliver
+                    deltas.append(text)
+                if reason is not None:
+                    finish_reason = reason
         except (genai_errors.APIError, httpx.TimeoutException, httpx.NetworkError) as exc:
             failure = self._failure(exc)
         finally:
@@ -295,5 +297,18 @@ class GeminiProviderAdapter(ModelProviderAdapter):
                 await client.aio.aclose()
         if failure is not None:
             raise failure
-        if not visible:
-            raise _no_answer()  # the stream ended without any visible text
+        if not "".join(deltas).strip():
+            raise _no_answer()  # no visible text, whatever the finish reason says
+        if finish_reason is None:
+            # Ended without a finish reason: the candidate was never accepted.
+            raise ModelGatewayError(
+                "Gemini's answer was incomplete", provider=NAME, retryable=False
+            )
+        last = len(deltas) - 1
+        for i, delta in enumerate(deltas):
+            yield ModelStreamChunk(
+                delta_content=delta,
+                model=decision.model,
+                provider=NAME,
+                finish_reason=finish_reason if i == last else None,
+            )
