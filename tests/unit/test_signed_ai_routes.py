@@ -53,6 +53,16 @@ ROUTES = [
         {"response_nonce": NONCE, "denied_assets": [], "message": "What is osmosis?"},
     ),
     (
+        "/v1/ai/tutor/turn",
+        "ai.use",
+        {
+            "response_nonce": NONCE,
+            "denied_assets": [],
+            "message": "And in plants?",
+            "earlier_questions": ["What is osmosis?"],
+        },
+    ),
+    (
         "/v1/ai/explain",
         "ai.use",
         {"response_nonce": NONCE, "denied_assets": [], "subject": "osmosis"},
@@ -280,6 +290,56 @@ async def test_a_body_changed_after_signing_is_401(app):
             "ai.use",
             {"response_nonce": NONCE, "denied_assets": [], "query": "x" * 4001},
         ),
+        (
+            "/v1/ai/tutor/turn",
+            "ai.use",
+            {"response_nonce": NONCE, "denied_assets": [], "message": "x" * 4001},
+        ),
+        (
+            "/v1/ai/tutor/turn",
+            "ai.use",
+            {
+                "response_nonce": NONCE,
+                "denied_assets": [],
+                "message": "q",
+                "earlier_questions": ["a", "b", "c", "d"],
+            },
+        ),
+        (
+            "/v1/ai/tutor/turn",
+            "ai.use",
+            {
+                "response_nonce": NONCE,
+                "denied_assets": [],
+                "message": "q",
+                "earlier_questions": ["x" * 4001],
+            },
+        ),
+        (
+            "/v1/ai/tutor/turn",
+            "ai.use",
+            {
+                "response_nonce": NONCE,
+                "denied_assets": [],
+                "message": "q",
+                "earlier_questions": [""],
+            },
+        ),
+        (
+            "/v1/ai/tutor/turn",
+            "ai.use",
+            {"response_nonce": NONCE, "denied_assets": [], "message": "q", "conversation_id": "c1"},
+        ),
+        (
+            "/v1/ai/tutor/turn",
+            "ai.use",
+            {
+                "response_nonce": NONCE,
+                "denied_assets": [],
+                "message": "q",
+                "history": [{"role": "assistant", "content": "a"}],
+            },
+        ),
     ],
 )
 async def test_inputs_beyond_the_limits_are_422(app, path, permission, body):
@@ -292,6 +352,23 @@ async def test_the_limits_themselves_are_accepted(app):
     path = "/v1/ai/generate-questions"
     response = await post(app, path, raw, signed(path, raw, "ai.questions.generate"))
     assert response.status_code == 200
+
+
+async def test_a_tutor_turn_accepts_three_earlier_questions_and_reads_no_memory(app, memory):
+    raw = encode(
+        {
+            "response_nonce": NONCE,
+            "denied_assets": [],
+            "message": "x" * 4000,
+            "earlier_questions": ["a", "b", "x" * 4000],
+        }
+    )
+    path = "/v1/ai/tutor/turn"
+    response = await post(app, path, raw, signed(path, raw, "ai.use"))
+    assert response.status_code == 200, response.text
+    # Stateless and memory-free: the turn neither reads nor returns memory.
+    assert memory.reads == []
+    assert "memory_used" not in response.json()["data"]
 
 
 # --- M5: structured question generation -------------------------------------------------
