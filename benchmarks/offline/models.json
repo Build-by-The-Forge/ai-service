@@ -1,0 +1,129 @@
+{
+  "verified_on": "2026-11-16",
+  "verified_by": "Hugging Face model API (?blobs=true) and each official model card",
+  "models": [
+    {
+      "id": "qwen3.5-0.8b-q4km",
+      "family": "Qwen3.5 0.8B",
+      "role": "low-memory baseline",
+      "card": "https://huggingface.co/Qwen/Qwen3.5-0.8B",
+      "licence": "apache-2.0",
+      "languages_note": "card claims 201 languages and dialects; Yoruba, Igbo and Hausa are not named individually",
+      "runtime": "llama.cpp",
+      "repo": "unsloth/Qwen3.5-0.8B-GGUF",
+      "revision": "6ab461498e2023f6e3c1baea90a8f0fe38ab64d0",
+      "file": "Qwen3.5-0.8B-Q4_K_M.gguf",
+      "size": 532517120,
+      "sha256": "bd258782e35f7f458f8aced1adc053e6e92e89bc735ba3be89d38a06121dc517"
+    },
+    {
+      "id": "qwen3.5-2b-q4km",
+      "family": "Qwen3.5 2B",
+      "role": "main lightweight candidate",
+      "card": "https://huggingface.co/Qwen/Qwen3.5-2B",
+      "licence": "apache-2.0",
+      "languages_note": "card claims 201 languages and dialects",
+      "runtime": "llama.cpp",
+      "repo": "unsloth/Qwen3.5-2B-GGUF",
+      "revision": "f6d5376be1edb4d416d56da11e5397a961aca8ae",
+      "file": "Qwen3.5-2B-Q4_K_M.gguf",
+      "size": 1280835840,
+      "sha256": "aaf42c8b7c3cab2bf3d69c355048d4a0ee9973d48f16c731c0520ee914699223"
+    },
+    {
+      "id": "gemma-4-e2b-q4km",
+      "family": "Gemma 4 E2B",
+      "role": "mobile alternative",
+      "card": "https://huggingface.co/google/gemma-4-E2B-it",
+      "licence": "apache-2.0",
+      "languages_note": "card: 35+ languages supported, pre-trained on 140+; 2.3B effective, 5.1B with per-layer embeddings",
+      "runtime": "llama.cpp",
+      "repo": "unsloth/gemma-4-E2B-it-GGUF",
+      "revision": "0314792d7f1f7e229411f620751375812bb9faf2",
+      "file": "gemma-4-E2B-it-Q4_K_M.gguf",
+      "size": 3106738272,
+      "sha256": "740185b21d22ceb83a11c3aa62ad5842ef32c70f6096d756bbee85a1e4ec34b8"
+    },
+    {
+      "id": "gemma-3n-e2b-q4km",
+      "family": "Gemma 3n E2B",
+      "role": "mobile alternative",
+      "card": "https://huggingface.co/google/gemma-3n-E2B-it",
+      "licence": "gemma (Gemma Terms of Use; accepted by the user 2026-11-16; google/ repo is gated)",
+      "languages_note": "see card",
+      "runtime": "llama.cpp",
+      "repo": "unsloth/gemma-3n-E2B-it-GGUF",
+      "revision": "d7bd20d510eff26f3f95260c50f032fee8931a35",
+      "file": "gemma-3n-E2B-it-Q4_K_M.gguf",
+      "size": 3026881888,
+      "sha256": "189d42b4303cb1078ea8d00963f437cd6d884069b7ba2ba80b38cd09585dc415"
+    },
+    {
+      "id": "ministral-3-3b-q4km",
+      "family": "Ministral 3 3B Instruct 2512",
+      "role": "higher-memory candidate",
+      "card": "https://huggingface.co/mistralai/Ministral-3-3B-Instruct-2512",
+      "licence": "apache-2.0",
+      "languages_note": "card names English, French, Spanish, German, Italian, Portuguese, Dutch, Chinese, Japanese, Korean, Arabic; no Nigerian language",
+      "runtime": "llama.cpp",
+      "repo": "mistralai/Ministral-3-3B-Instruct-2512-GGUF",
+      "revision": "eb599d408350ea2bb60452cb86be7c7b2fc28227",
+      "file": "Ministral-3-3B-Instruct-2512-Q4_K_M.gguf",
+      "size": 2147023008,
+      "sha256": "9ed150d4367e68df0ac8e1540f6ddc65b42d0ee26378329d1ecbca60f93fc5f8"
+    },
+    {
+      "id": "qwen3.5-4b-q4km",
+      "family": "Qwen3.5 4B",
+      "role": "higher-capability tier (high-memory devices)",
+      "card": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "licence": "apache-2.0",
+      "languages_note": "card claims 201 languages and dialects",
+      "runtime": "llama.cpp",
+      "repo": "unsloth/Qwen3.5-4B-GGUF",
+      "revision": "e87f176479d0855a907a41277aca2f8ee7a09523",
+      "file": "Qwen3.5-4B-Q4_K_M.gguf",
+      "size": 2740937888,
+      "sha256": "00fe7986ff5f6b463e62455821146049db6f9313603938a70800d1fb69ef11a4"
+    },
+    {
+      "id": "phi-4-mini-q4km",
+      "family": "Phi-4-mini-instruct 3.8B",
+      "role": "reasoning comparison",
+      "card": "https://huggingface.co/microsoft/Phi-4-mini-instruct",
+      "licence": "mit",
+      "languages_note": "card lists 23 languages; Yoruba, Igbo and Hausa are not among them",
+      "runtime": "llama.cpp",
+      "repo": "unsloth/Phi-4-mini-instruct-GGUF",
+      "revision": "78eb92a46fc37e6b524df991ed9aca9bc6aa7b80",
+      "file": "Phi-4-mini-instruct-Q4_K_M.gguf",
+      "size": 2491874272,
+      "sha256": "88c00229914083cd112853aab84ed51b87bdf6b9ce42f532d8c85c7c63b1730a"
+    },
+    {
+      "id": "gemma-4-e2b-litertlm",
+      "family": "Gemma 4 E2B",
+      "role": "Google AI Edge runtime comparison",
+      "card": "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm",
+      "licence": "apache-2.0",
+      "languages_note": "as Gemma 4 E2B",
+      "runtime": "litert-lm",
+      "repo": "litert-community/gemma-4-E2B-it-litert-lm",
+      "revision": "2d74ac41a33d7da82f39f7d5720a04c68514a103",
+      "file": "gemma-4-E2B-it.litertlm",
+      "size": 2588147712,
+      "sha256": "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
+    }
+  ],
+  "not_benchmarked": [
+    {
+      "name": "Glimmer 2B",
+      "reason": "No model of that name exists on Hugging Face or in release coverage as of 2026-11-16. 'Glimmer' is Meta's Muse-Glimmer-30B (Apache-2.0, ~30B parameters, a 2B perception encoder plus a 28B decoder); its 4-bit build is far beyond phone memory.",
+      "sources": ["https://huggingface.co/meta-models/Muse-Glimmer-30B", "https://research.meta.ai/blog/introducing-muse-glimmer-open-agentic-model"]
+    },
+    {
+      "name": "Nigerian-language model available to the team",
+      "reason": "Name and source not yet supplied by the user; the harness takes any GGUF via --gguf."
+    }
+  ]
+}
