@@ -20,8 +20,6 @@ class DummyOrchestrator:
     ):
         return {
             "answer": "ok",
-            "context_used": [],
-            "memory_used": "",
             "sources_used": [{"asset_id": "a1", "run_number": 1, "attempt": 1}],
         }
 

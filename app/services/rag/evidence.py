@@ -91,10 +91,6 @@ class Evidence:
             f"[{p.number}] ({p.document_id}, {_pages(p)}) {p.text}" for p in self.passages
         )
 
-    def context(self) -> list[dict]:
-        """The passages as the API's context items (each has `text`)."""
-        return [{"text": p.text, **p.citation()} for p in self.passages]
-
 
 @dataclass(frozen=True)
 class GroundedAnswer:

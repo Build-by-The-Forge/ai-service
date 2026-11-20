@@ -54,8 +54,6 @@ class AIOrchestrator:
             "answer": answer.text,
             "grounded": answer.grounded,
             "citations": answer.citations,
-            "context_used": evidence.context(),
-            "memory_used": memory_text,
             "sources_used": [s.as_dict() for s in evidence.sources_used],
         }
 

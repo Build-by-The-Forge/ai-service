@@ -59,3 +59,13 @@ def test_retrieving_routes_publish_the_shared_denial_limit_and_the_envelope(path
     assert request["properties"]["denied_assets"]["maxItems"] == 1000
     response = schema(operation["responses"]["200"]["content"]["application/json"]["schema"])
     assert "sources_used" in response["required"]
+
+
+def test_chat_returns_only_cited_passages_and_no_memory():
+    """G-18: the chat answer's data is the answer, whether it is grounded and
+    the cited passages as citations. Retrieved passages the answer did not
+    cite and learning memory are not part of the contract."""
+    operation = SPEC["paths"]["/v1/ai/chat"]["post"]
+    response = schema(operation["responses"]["200"]["content"]["application/json"]["schema"])
+    data = schema(response["properties"]["data"])
+    assert set(data["properties"]) == {"answer", "grounded", "citations"}
