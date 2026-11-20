@@ -19,6 +19,7 @@ EXPECTED = {
     "/v1/ai/read/start",
     "/v1/ai/retrieve",
     "/v1/ai/tree/generate",
+    "/v1/ai/tutor/turn",
 }
 
 
@@ -45,7 +46,13 @@ def test_request_and_response_data_are_typed(path):
     assert "data" in response.get("required", [])
 
 
-RETRIEVING_PATHS = ["/v1/ai/chat", "/v1/ai/explain", "/v1/ai/generate-questions", "/v1/ai/retrieve"]
+RETRIEVING_PATHS = [
+    "/v1/ai/chat",
+    "/v1/ai/explain",
+    "/v1/ai/generate-questions",
+    "/v1/ai/retrieve",
+    "/v1/ai/tutor/turn",
+]
 
 
 @pytest.mark.parametrize("path", RETRIEVING_PATHS)
@@ -59,3 +66,36 @@ def test_retrieving_routes_publish_the_shared_denial_limit_and_the_envelope(path
     assert request["properties"]["denied_assets"]["maxItems"] == 1000
     response = schema(operation["responses"]["200"]["content"]["application/json"]["schema"])
     assert "sources_used" in response["required"]
+
+
+def test_the_tutor_turn_contract_is_the_frozen_one():
+    """M3-F (docs/m3-f-tutor-turn.md): the request and response fields are
+    exactly these, so a change to either is a contract change the backend's
+    boundary gate must see."""
+    operation = SPEC["paths"]["/v1/ai/tutor/turn"]["post"]
+    request = schema(operation["requestBody"]["content"]["application/json"]["schema"])
+    assert set(request["properties"]) == {
+        "message",
+        "earlier_questions",
+        "denied_assets",
+        "response_nonce",
+    }
+    assert set(request["required"]) == {"message", "denied_assets", "response_nonce"}
+    earlier = request["properties"]["earlier_questions"]
+    assert earlier["maxItems"] == 3
+    assert (earlier["items"]["minLength"], earlier["items"]["maxLength"]) == (1, 4000)
+
+    response = schema(operation["responses"]["200"]["content"]["application/json"]["schema"])
+    data = schema(response["properties"]["data"])
+    # No uncited passage and no memory is part of a turn's answer (G-18).
+    assert set(data["properties"]) == {"answer", "grounded", "citations"}
+    assert set(data["required"]) == {"answer", "grounded", "citations"}
+    citation = schema(data["properties"]["citations"]["items"])
+    assert set(citation["required"]) == {
+        "number",
+        "chunk_id",
+        "document_id",
+        "excerpt",
+        "run_number",
+        "attempt",
+    }

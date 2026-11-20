@@ -47,3 +47,23 @@ def test_a_course_leads_the_question_prompt():
     )["user"]
 
     assert user.startswith("\nCOURSE: Mathematics\nTOPIC: functions\n")
+
+
+def test_the_tutor_turn_prompt_has_no_memory_and_no_earlier_block_without_history():
+    prompt = PromptBuilder().build(name="tutor_turn", context="[1] (a, p. 1) text", question="Q?")
+
+    assert "EARLIER QUESTIONS" not in prompt["user"]
+    assert "MEMORY" not in prompt["user"] + prompt["system"]
+    assert prompt["user"].strip().startswith("COURSE PASSAGES:")
+    assert prompt["user"].rstrip().endswith("QUESTION:\nQ?")
+
+
+def test_the_tutor_turn_prompt_lists_earlier_questions_as_context_not_evidence():
+    prompt = PromptBuilder().build(
+        name="tutor_turn", context="ctx", question="And {this}?", earlier_questions=["One?", "Two?"]
+    )
+
+    assert "EARLIER QUESTIONS (context only, not evidence):\n- One?\n- Two?" in prompt["user"]
+    assert "they are not a\nsource" in prompt["system"]
+    # Student text is inserted as is, never formatted again.
+    assert "And {this}?" in prompt["user"]

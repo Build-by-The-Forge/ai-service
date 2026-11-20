@@ -43,6 +43,16 @@ def test_the_prompt_names_each_passage_with_its_document_and_pages():
     )
 
 
+def test_the_anonymous_prompt_names_no_document_or_chunk():
+    passages = (passage(1), passage(2, 4, 5), passage(3, None, None))
+    evidence = Evidence("q", passages, sources_for(*passages))
+
+    block = evidence.anonymous_prompt_block()
+
+    assert block == "[1] (p. 3) text 1\n\n[2] (pp. 4-5) text 2\n\n[3] (page unknown) text 3"
+    assert "asset-chm101" not in block and "chunk-" not in block
+
+
 def test_citations_are_kept_once_each_in_order():
     answer = check_grounded(
         "Route-independent [2], see also [1] and [2].",

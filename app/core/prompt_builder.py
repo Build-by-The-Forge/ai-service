@@ -33,6 +33,42 @@ QUESTION:
                 ),
             }
 
+        if name == "tutor_turn":
+            # M3-F: one conversation turn. The earlier questions only say
+            # what the student means; they are never evidence. No memory.
+            earlier = kwargs.get("earlier_questions") or []
+            earlier_block = (
+                "EARLIER QUESTIONS (context only, not evidence):\n"
+                + "\n".join(f"- {q}" for q in earlier)
+                + "\n\n"
+                if earlier
+                else ""
+            )
+            return {
+                "system": """
+You are an AI tutor for a university course, in a conversation with a student.
+
+Answer ONLY from the numbered course passages provided. After each claim,
+cite the passage it comes from as [n]. If the passages do not contain the
+answer, say that the course materials do not cover it, and cite nothing.
+Never add facts that are not in the passages. The student's earlier
+questions only help you understand the current question; they are not a
+source. Cite with [n] only: do not list sources, quote passage headers or
+copy document identifiers into the answer.
+""",
+                "user": """
+{earlier}COURSE PASSAGES:
+{context}
+
+QUESTION:
+{question}
+""".format(
+                    earlier=earlier_block,
+                    context=kwargs.get("context", ""),
+                    question=kwargs.get("question", ""),
+                ),
+            }
+
         if name == "explain":
             return {
                 "system": """

@@ -59,6 +59,35 @@ class AIOrchestrator:
             "sources_used": [s.as_dict() for s in evidence.sources_used],
         }
 
+    async def tutor_turn(
+        self,
+        question: str,
+        earlier_questions: list[str],
+        denied_assets: frozenset[str],
+        invocation: ModelInvocationContext | None = None,
+    ):
+        """One AI Tutor conversation turn (M3-F). Stateless: nothing of the
+        turn is kept, and learning memory is neither read nor written.
+        Retrieval runs on the question alone; the earlier questions reach
+        the prompt only. Only cited passages are returned, as citations."""
+        evidence = await self.retriever.evidence(question, denied_assets)
+        answer = await self._grounded(
+            evidence,
+            "tutor_turn",
+            capability="chat",
+            invocation=invocation,
+            # No document identifier reaches the model, so none reaches the answer.
+            context=evidence.anonymous_prompt_block(),
+            question=question,
+            earlier_questions=earlier_questions,
+        )
+        return {
+            "answer": answer.text,
+            "grounded": answer.grounded,
+            "citations": answer.citations,
+            "sources_used": [s.as_dict() for s in evidence.sources_used],
+        }
+
     async def explain(
         self,
         subject: str,

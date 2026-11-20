@@ -46,6 +46,11 @@ UNAVAILABLE = {
 # path, permission, a valid body
 ROUTES = [
     ("/v1/ai/chat", "ai.use", {"message": "What is osmosis?"}),
+    (
+        "/v1/ai/tutor/turn",
+        "ai.use",
+        {"message": "What is osmosis?", "earlier_questions": ["What is diffusion?"]},
+    ),
     ("/v1/ai/explain", "ai.use", {"subject": "osmosis"}),
     ("/v1/ai/generate-questions", "ai.questions.generate", {"topic": "osmosis", "count": 2}),
 ]
@@ -221,3 +226,132 @@ async def test_an_unusable_question_answer_is_still_a_200_with_the_questions_dis
     assert response.status_code == 200, response.text
     data = response.json()["data"]
     assert data["questions"] == [] and data["discarded"] == 2
+
+
+# --- M3-F: the tutor turn -----------------------------------------------------------------
+
+OSMOSIS_TEXT = (
+    "Osmosis moves water across a semipermeable membrane toward higher solute concentration."
+)
+UNCITED_TEXT = "Osmotic pressure in plant cells keeps them turgid against the wall."
+TURN = "/v1/ai/tutor/turn"
+
+
+@pytest.fixture
+async def uncited(in_memory_retrieval):
+    """A second readable passage the model is given and doesn't cite."""
+    await in_memory_retrieval.index_document(
+        tenant_id=TENANT_A, document_id="plants", document_title="Plant notes", text=UNCITED_TEXT
+    )
+    await institutional(get_scope_store(), TENANT_A, "plants")
+
+
+async def test_a_turn_returns_only_the_cited_passages_as_structured_citations(
+    guard, notes, uncited, monkeypatch
+):
+    monkeypatch.setattr(gateway_llm.settings, "MODEL_PROVIDER", "rec")
+    recording = Recording(content="Water moves toward the solute [1].")
+
+    response, _ = await post(
+        serving(guard, through(recording)), TURN, "ai.use", {"message": "What is osmosis?"}
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    data = body["data"]
+    assert set(data) == {"answer", "grounded", "citations"}
+    assert data["grounded"] is True
+    [citation] = data["citations"]
+    cited = citation["document_id"]
+    # The excerpt is the cited chunk itself, and the answer carries only [1].
+    expected = OSMOSIS_TEXT if cited == "notes" else UNCITED_TEXT
+    assert citation["excerpt"] == expected
+    assert data["answer"] == "Water moves toward the solute [1]."
+    # The uncited passage reached the model, so it is a source, but its
+    # text is returned nowhere.
+    uncited_text = UNCITED_TEXT if cited == "notes" else OSMOSIS_TEXT
+    assert uncited_text not in response.text
+    assert {s["asset_id"] for s in body["sources_used"]} == {"notes", "plants"}
+    assert {(citation["document_id"], citation["run_number"], citation["attempt"])} <= {
+        (s["asset_id"], s["run_number"], s["attempt"]) for s in body["sources_used"]
+    }
+
+
+async def test_an_answer_citing_a_passage_it_was_not_given_is_not_covered(
+    guard, notes, monkeypatch
+):
+    monkeypatch.setattr(gateway_llm.settings, "MODEL_PROVIDER", "rec")
+
+    response, _ = await post(
+        serving(guard, through(Recording(content="Water moves [7]."))),
+        TURN,
+        "ai.use",
+        {"message": "What is osmosis?"},
+    )
+
+    data = response.json()["data"]
+    assert data["grounded"] is False and data["citations"] == []
+    assert "[7]" not in data["answer"]
+    assert OSMOSIS_TEXT not in response.text
+
+
+async def test_a_denied_document_never_reaches_the_model_or_the_turn(
+    guard, notes, uncited, monkeypatch
+):
+    monkeypatch.setattr(gateway_llm.settings, "MODEL_PROVIDER", "rec")
+    recording = Recording(content="Plants stay turgid [1].")
+
+    response, _ = await post(
+        serving(guard, through(recording)),
+        TURN,
+        "ai.use",
+        {"message": "What is osmosis?", "denied_assets": ["notes"]},
+    )
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert {s["asset_id"] for s in body["sources_used"]} == {"plants"}
+    assert all(c["document_id"] == "plants" for c in body["data"]["citations"])
+    [request] = recording.requests
+    assert OSMOSIS_TEXT not in request.messages[-1].content
+
+
+async def test_a_document_without_a_scope_is_never_retrieved_for_a_turn(
+    guard, in_memory_retrieval, monkeypatch
+):
+    monkeypatch.setattr(gateway_llm.settings, "MODEL_PROVIDER", "rec")
+    await in_memory_retrieval.index_document(
+        tenant_id=TENANT_A, document_id="unscoped", document_title="Draft", text=OSMOSIS_TEXT
+    )
+    recording = Recording()
+
+    response, _ = await post(
+        serving(guard, through(recording)), TURN, "ai.use", {"message": "What is osmosis?"}
+    )
+
+    body = response.json()
+    assert body["data"]["grounded"] is False and body["sources_used"] == []
+    assert recording.requests == []
+
+
+async def test_a_turn_runs_on_the_chat_budget_with_the_earlier_questions_in_the_prompt(
+    guard, notes, monkeypatch
+):
+    monkeypatch.setattr(gateway_llm.settings, "MODEL_PROVIDER", "rec")
+    recording = Recording()
+
+    response, headers = await post(
+        serving(guard, through(recording)),
+        TURN,
+        "ai.use",
+        {"message": "And in plants?", "earlier_questions": ["What is osmosis?"]},
+    )
+
+    assert response.status_code == 200, response.text
+    [request] = recording.requests
+    assert request.context.task_id == "chat"
+    assert request.context.tenant_id == TENANT_A
+    assert request.context.correlation_id == headers[REQUEST_ID_HEADER]
+    prompt = request.messages[-1].content
+    assert "- What is osmosis?" in prompt and "And in plants?" in prompt
+    assert "STUDENT MEMORY" not in prompt
