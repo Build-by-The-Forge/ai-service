@@ -123,7 +123,7 @@ async def test_stored_memories_are_unreachable_while_the_gate_is_closed(scope, m
         chat = await AIOrchestrator(llm=llm, retriever=OnePassage(), memory=service).chat(
             user, "q", frozenset()
         )
-    assert chat["memory_used"] == ""
+    assert "memory_used" not in chat
     assert chat["grounded"] is True
     assert marker not in llm.prompts[0]
 

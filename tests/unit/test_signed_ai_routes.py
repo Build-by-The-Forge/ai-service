@@ -148,10 +148,13 @@ async def test_chat_uses_the_context_tenant_and_user(app, memory, in_memory_retr
 
     data = response.json()["data"]
     assert memory.reads == [(TENANT_A, USER_ID)]
-    assert data["memory_used"] == f"memory of {USER_ID}: mastery=0.5"
-    [context] = data["context_used"]
-    assert context["text"].startswith(f"Tenant {TENANT_A} notes")
     assert data["answer"].startswith("[deterministic model]")
+    # Neither learning memory nor retrieved passages are returned (G-18):
+    # only the cited ones, as citations.
+    assert set(data) == {"answer", "grounded", "citations"}
+    assert "memory of" not in response.text
+    [citation] = data["citations"]
+    assert citation["excerpt"].startswith(f"Tenant {TENANT_A} notes")
 
 
 async def test_retrieval_follows_the_context_tenant(app, in_memory_retrieval):
