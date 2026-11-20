@@ -22,6 +22,13 @@ def num(value: Any, digits: int = 1) -> str:
     return "-" if value is None else f"{value:.{digits}f}"
 
 
+def switch(run: dict[str, Any]) -> str:
+    """Model-switch time on a one-model-at-a-time device: unload + warm reload."""
+    if run.get("reload_warm_s") is None:
+        return "-"
+    return f"{run.get('unload_s', 0) + run['reload_warm_s']:.1f}"
+
+
 def load_runs(folder: Path) -> list[dict[str, Any]]:
     runs = []
     for path in sorted(folder.glob("*.json")):
@@ -36,8 +43,9 @@ def tables(runs: list[dict[str, Any]]) -> str:
         "### Footprint and speed",
         "",
         "| Model | Runtime | Download MB | Peak RSS MB | Cold start s | TTFT median s | "
-        "Decode tok/s | Prefill tok/s | llama-bench tg128 | llama-bench pp512 |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "Decode tok/s | Prefill tok/s | llama-bench tg128 | llama-bench pp512 | "
+        "Switch s (unload + warm reload) |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for r in runs:
         s, b = r["summary"], r.get("llama_bench") or {}
@@ -46,7 +54,8 @@ def tables(runs: list[dict[str, Any]]) -> str:
             f"{num(r['memory'].get('peak_hwm_mb') or r['memory'].get('peak_rss_sampled_mb'), 0)} | "
             f"{num(r['cold_start_s'], 2)} | {num(s['ttft_median_s'], 2)} | "
             f"{num(s['decode_tps_median'])} | {num(s['prefill_tps_median'], 0)} | "
-            f"{num((b.get('tg128') or {}).get('avg_ts'))} | {num((b.get('pp512') or {}).get('avg_ts'), 0)} |"
+            f"{num((b.get('tg128') or {}).get('avg_ts'))} | {num((b.get('pp512') or {}).get('avg_ts'), 0)} | "
+            f"{switch(r)} |"
         )  # fmt: skip
     lines += [
         "",

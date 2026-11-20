@@ -413,7 +413,7 @@ def run_llama_bench(bin_dir: Path, gguf: Path, threads: int, reps: int) -> dict[
 
 
 def start_server(
-    args: argparse.Namespace,
+    args: argparse.Namespace, log_suffix: str = ".server.log"
 ) -> tuple[subprocess.Popen[bytes], float, BinaryIO]:
     """Start llama-server; cold start = spawn until /health reports the model loaded."""
     command = [
@@ -422,7 +422,7 @@ def start_server(
         "--jinja", "--no-webui", "--seed", "42",
     ] + args.server_arg  # fmt: skip
     started = time.perf_counter()
-    log = open(args.out.with_suffix(".server.log"), "wb")
+    log = open(args.out.with_suffix(log_suffix), "wb")
     process = subprocess.Popen(command, stdout=log, stderr=subprocess.STDOUT)
     base = f"http://127.0.0.1:{args.port}"
     deadline = started + args.load_timeout
@@ -453,6 +453,7 @@ def main() -> int:
     parser.add_argument("--reps", type=int, default=3, help="llama-bench repetitions")
     parser.add_argument("--only", default="", help="comma-separated task ids")
     parser.add_argument("--skip-llama-bench", action="store_true")
+    parser.add_argument("--skip-reload", action="store_true", help="skip the reload timing")
     parser.add_argument("--load-timeout", type=float, default=600)
     parser.add_argument("--sampled-repeats", type=int, default=3, help="consistency runs")
     parser.add_argument("--extra-tasks", type=Path, help="local dataset B file (pdf_eval.py)")
@@ -489,12 +490,26 @@ def main() -> int:
         peak_hwm = sampler.status_kb("VmHWM")
     finally:
         sampler.stop_event.set()
+        unload_started = time.perf_counter()
         process.terminate()
         try:
             process.wait(timeout=20)
         except subprocess.TimeoutExpired:
             process.kill()
+        unload_s = time.perf_counter() - unload_started
         process_log.close()
+
+    # Model switching on a one-model-at-a-time device = unload the current model, then
+    # load the next. The reload below is a load with the file already in the page cache
+    # (the fastest case); cold_start_s above is the first load. On a phone the first
+    # load after a download or a memory-pressure eviction is the number that matters.
+    reload_s = None
+    if not args.skip_reload:
+        again, reload_s, again_log = start_server(args, ".reload.log")
+        again.terminate()
+        again.wait(timeout=20)
+        again_log.close()
+        args.out.with_suffix(".reload.log").unlink(missing_ok=True)
 
     speed = (
         {}
@@ -525,6 +540,8 @@ def main() -> int:
             "peak_hwm_mb": round((peak_hwm or 0) / 1024, 1),
         },
         "cold_start_s": round(cold_start, 3),
+        "unload_s": round(unload_s, 3),
+        "reload_warm_s": round(reload_s, 3) if reload_s is not None else None,
         "llama_bench": speed,
         "summary": summarise(rows),
         # Dataset B text comes from local PDFs that must not leave the machine: keep scores only.

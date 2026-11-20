@@ -154,5 +154,6 @@ def test_end_to_end_against_fake_server(tmp_path):
     assert s["free"]["json_strict_rate"] > 0
     assert s["sampled_consistency"] == 1.0
     assert s["decode_tps_median"] == 25.0
+    assert result["reload_warm_s"] > 0 and result["unload_s"] >= 0
     # Only T03 expects calculate(0.75*120+18); T05 expects no call.
     assert s["tool_call_accuracy"] == round(1 / 6, 3)
