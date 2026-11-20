@@ -46,6 +46,9 @@ def dispatch_body(**overrides: Any) -> bytes:
         "content_sha256": "ab" * 32,
         "storage_uri": "s3://build-assets/tenant-a/syllabus.pdf",
         "correlation_id": "corr-test",
+        # Every dispatch states a scope (M3-D PR 7); never assigned here.
+        "scope": "unknown",
+        "scope_version": 0,
     }
     body.update(overrides)
     return json.dumps({k: v for k, v in body.items() if v is not None}).encode()

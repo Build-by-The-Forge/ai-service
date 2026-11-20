@@ -177,3 +177,22 @@ async def test_a_failed_assignment_writes_nothing_and_keeps_the_previous_state()
         assert rows == 0
     finally:
         await reset_engine()
+
+
+async def test_current_reads_the_stored_state_and_writes_nothing(store):
+    """M3-D PR 7: a dispatch stating version 0 only reads. A document with
+    no row is unknown at version 0, and another tenant's row is invisible."""
+    tenant, asset = ids()
+    other_tenant, _ = ids()
+    unseen = await store.current(tenant_id=tenant, asset_id=asset)
+    assert (unseen.scope, unseen.version) == (UNKNOWN, 0)
+    async with get_async_session_local()() as db:
+        count = "SELECT count(*) FROM asset_scopes WHERE asset_id = :a"
+        assert (await db.execute(text(count), {"a": asset})).scalar_one() == 0
+
+    await store.assign(tenant_id=tenant, asset_id=asset, scope=PERSONAL, version=3)
+    for _ in range(7):  # past five runs, where a generic plan could differ
+        held = await store.current(tenant_id=tenant, asset_id=asset)
+        assert (held.scope, held.version) == (PERSONAL, 3)
+    elsewhere = await store.current(tenant_id=other_tenant, asset_id=asset)
+    assert (elsewhere.scope, elsewhere.version) == (UNKNOWN, 0)

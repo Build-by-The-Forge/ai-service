@@ -20,6 +20,14 @@ from app.schemas.ingest import (
     IngestTaskStatusResponse,
 )
 from app.services.rag.index_fence import IndexFencePort, get_index_fence
+from app.services.rag.scopes import (
+    AssetHeldByAnotherTenantError,
+    InMemoryScopes,
+    PgScopeStore,
+    ScopeState,
+    ScopeStoreUnavailableError,
+    get_scope_store,
+)
 from app.services.tasks.dispatcher import TaskDispatcher, get_task_dispatcher
 from app.services.tasks.task_records import (
     TaskRecord,
@@ -34,8 +42,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 # What identifies the work a dispatch asks for. The correlation id is
-# tracing, not work, and the key is what is being compared.
-_NOT_FINGERPRINTED = frozenset({"correlation_id", "idempotency_key"})
+# tracing, not work, and the key is what is being compared. The scope isn't
+# work either: it's an assignment with its own version rule, and the backend
+# may retry an attempt after a newer decision, which must not read as a
+# conflicting reuse of the key.
+_SCOPE_FIELDS = frozenset({"scope", "scope_version"})
+_NOT_FINGERPRINTED = frozenset({"correlation_id", "idempotency_key"}) | _SCOPE_FIELDS
 
 
 def request_fingerprint(payload: IngestDispatchRequest) -> str:
@@ -49,6 +61,27 @@ def _unavailable(exc: Exception) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail="service temporarily unavailable",
+    )
+
+
+async def dispatch_scope_store() -> PgScopeStore | InMemoryScopes:
+    return get_scope_store()
+
+
+async def apply_dispatch_scope(
+    store: PgScopeStore | InMemoryScopes, tenant_id: str, payload: IngestDispatchRequest
+) -> ScopeState:
+    """Apply the dispatch's scope by the assignment rule (M3-D PR 7) and
+    return the state now stored. Version 0 is the backend saying it has
+    decided nothing: it writes nothing, so the document stays at whatever
+    was accepted before, ``unknown`` if nothing was."""
+    if payload.scope_version == 0:
+        return await store.current(tenant_id=tenant_id, asset_id=payload.asset_id)
+    return await store.assign(
+        tenant_id=tenant_id,
+        asset_id=payload.asset_id,
+        scope=payload.scope,
+        version=payload.scope_version,
     )
 
 
@@ -66,8 +99,11 @@ INGEST_DISPATCH_PERMISSION = "content.job.manage"
         "Signed backend-only endpoint (BUILD Service Signature v1): a user context with "
         "content.job.manage, or the backend worker's system context. The task's tenant is "
         "the verified context's tenant; the body cannot name one. Idempotent per tenant "
-        "and idempotency key. Outcomes: 202 ACCEPTED (queued now) or DUPLICATE (the "
-        "original task, queued); 409 the key was used for a different request (no task); "
+        "and idempotency key. The body states the document's scope and its version, applied "
+        "by the scope-assignment rule before anything else, on every outcome; `data.scope` "
+        "and `data.scope_version` report the state then stored. Outcomes: 202 ACCEPTED "
+        "(queued now) or DUPLICATE (the original task, queued); 409 the key was used for a "
+        "different request (no task); "
         "400/401/403/422 refused before any task exists; 503 not decided, retry the same "
         "request (a task exists only if a later retry answers DUPLICATE)."
     ),
@@ -79,13 +115,32 @@ async def dispatch_ingest_task(
     dispatcher: TaskDispatcher = Depends(get_task_dispatcher),
     task_records: TaskRecordStore = Depends(get_task_record_store),
     index_fence: IndexFencePort = Depends(get_index_fence),
+    scopes: PgScopeStore | InMemoryScopes = Depends(dispatch_scope_store),
 ) -> IngestDispatchResponse:
     tenant_id = call.context.tenant_id
+    # Scope first, so whatever happens next the document is at its stated
+    # scope or a newer one. Applying it is idempotent and only ever moves to
+    # a higher version, so a refusal below leaves nothing to undo.
+    try:
+        scope_state = await apply_dispatch_scope(scopes, tenant_id, payload)
+    except AssetHeldByAnotherTenantError as exc:
+        logger.warning(
+            "dispatch refused: asset held by another tenant tenant=%s asset=%s",
+            tenant_id,
+            payload.asset_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="asset belongs to another tenant"
+        ) from exc
+    except ScopeStoreUnavailableError as exc:
+        raise _unavailable(exc) from exc
     receipt = {
         "job_id": payload.job_id,
         "asset_id": payload.asset_id,
         "run_number": payload.run_number,
         "attempt_count": payload.attempt_count,
+        "scope": scope_state.scope.value,
+        "scope_version": scope_state.version,
     }
 
     candidate_task_id = f"task_{uuid.uuid4().hex}"
@@ -164,7 +219,9 @@ async def dispatch_ingest_task(
             asset_id=payload.asset_id,
             tenant_id=tenant_id,
             correlation_id=payload.correlation_id,
-            payload=payload.model_dump(),
+            # The worker never carries a scope: chunks take their document's
+            # from asset_scopes when they're read, so none can be stale.
+            payload=payload.model_dump(exclude=set(_SCOPE_FIELDS)),
             run_number=payload.run_number,
             attempt_count=payload.attempt_count,
             external_task_id=candidate_task_id,
