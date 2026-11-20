@@ -113,17 +113,49 @@
       "file": "gemma-4-E2B-it.litertlm",
       "size": 2588147712,
       "sha256": "181938105e0eefd105961417e8da75903eacda102c4fce9ce90f50b97139a63c"
+    },
+    {
+      "id": "qwen3-1.7b-q4km",
+      "family": "Qwen3 1.7B",
+      "role": "target portfolio: general model (Release 2)",
+      "card": "https://huggingface.co/Qwen/Qwen3-1.7B",
+      "licence": "apache-2.0",
+      "languages_note": "card: 100+ languages and dialects; the model has a thinking mode, disabled in the benchmark",
+      "runtime": "llama.cpp",
+      "repo": "unsloth/Qwen3-1.7B-GGUF",
+      "file": "Qwen3-1.7B-Q4_K_M.gguf",
+      "revision": "d7f544eead698dbd1f15126ef60b45a1e1933222",
+      "size": 1107409472,
+      "sha256": "b139949c5bd74937ad8ed8c8cf3d9ffb1e99c866c823204dc42c0d91fa181897"
+    },
+    {
+      "id": "smollm2-1.7b-q4km",
+      "family": "SmolLM2 1.7B Instruct",
+      "role": "target portfolio: English-only candidate (Release 2)",
+      "card": "https://huggingface.co/HuggingFaceTB/SmolLM2-1.7B-Instruct",
+      "licence": "apache-2.0",
+      "languages_note": "card: primarily English; no Nigerian language",
+      "runtime": "llama.cpp",
+      "repo": "HuggingFaceTB/SmolLM2-1.7B-Instruct-GGUF",
+      "file": "smollm2-1.7b-instruct-q4_k_m.gguf",
+      "revision": "2d4a76a30b4af41ecd395c35725ac11688d4cfe4",
+      "size": 1055609536,
+      "sha256": "decd2598bc2c8ed08c19adc3c8fdd461ee19ed5708679d1c54ef54a5a30d4f33"
     }
   ],
   "not_benchmarked": [
     {
       "name": "Glimmer 2B",
       "reason": "No model of that name exists on Hugging Face or in release coverage as of 2026-11-16. 'Glimmer' is Meta's Muse-Glimmer-30B (Apache-2.0, ~30B parameters, a 2B perception encoder plus a 28B decoder); its 4-bit build is far beyond phone memory.",
-      "sources": ["https://huggingface.co/meta-models/Muse-Glimmer-30B", "https://research.meta.ai/blog/introducing-muse-glimmer-open-agentic-model"]
+      "sources": [
+        "https://huggingface.co/meta-models/Muse-Glimmer-30B",
+        "https://research.meta.ai/blog/introducing-muse-glimmer-open-agentic-model"
+      ]
     },
     {
       "name": "Nigerian-language model available to the team",
       "reason": "Name and source not yet supplied by the user; the harness takes any GGUF via --gguf."
     }
-  ]
+  ],
+  "target_portfolio": "Qwen3.5 0.8B, Qwen3-1.7B, SmolLM2-1.7B (master plan approved 2026-11-20); every other model is a comparison. Roles are provisional until measured."
 }
