@@ -13,7 +13,7 @@
 **Backend:** FastAPI
 **Primary Database:** PostgreSQL
 **AI Platform:** BUILD AI Service
-**Online AI:** Gemini SDK, behind the Model Gateway. Free models for development and testing; Gemini 3.8 Flash as the production target, once its exact model identifier and availability are verified (§0.2)
+**Online AI:** Gemini SDK, behind the Model Gateway. Free models for development and testing; Gemini 3.8 Flash as the production target, once its exact model identifier and availability are verified (§0.2). **Provider strategy: under reconciliation (Gemini plus Fireworks pending G-33 and reviewer approval), §0.9**
 **Offline AI:** A portfolio of small local models, benchmarked per task (§146.3)
 **Model Strategy:** Provider-agnostic Model Gateway
 
@@ -38,9 +38,11 @@ The student journey the release must complete:
 7. Learning: Read Mode, explanations of concepts, and relevant academic resources.
 8. CBT and assessment: practice, generated questions, submission, and authoritative results with explanations.
 9. Progress and remediation: performance, weak topics, and what to study next.
-10. Offline continuity: downloaded materials, local AI assistance and available CBT without internet, with controlled synchronization afterwards.
+10. Offline continuity (**Release 2**, §0.8): managed offline packs, offline retrieval, local AI assistance and, only if separately approved, offline practice, with controlled synchronization afterwards. Release 1 has limited caching of already-opened documents only. Official CBT is online-only in every release.
 
 ## 0.2 Intelligence architecture
+
+> **Amended 2026-11-20 (§0.8).** Online intelligence: Gemini is the approved first provider, under the existing approval controls. A second provider, Fireworks, is proposed and disabled, under reconciliation (§0.9). Offline intelligence is Release 2 (§0.8).
 
 BUILD has three connected intelligence capabilities, behind one orchestration layer:
 
@@ -56,22 +58,28 @@ BUILD has three connected intelligence capabilities, behind one orchestration la
 
 ## 0.3 Naive RAG and Agentic RAG
 
+> **Amended 2026-11-20 (§0.8).** Release 1's tutor is naive RAG only. Agentic RAG, multi-hop study help, autonomous reading paths and agentic loops are Release 2 (§0.8).
+
 **Naive RAG is the default** for straightforward, well-scoped requests: definitions, summaries, explanations from the student's material, and question generation from a chapter. It understands the question, retrieves, reranks and filters the evidence, generates from it, and validates citations and grounding.
 
 **Agentic RAG is reserved** for work that needs multiple retrieval steps, planning or tools: comparing how sources explain a concept, finding contradictions across materials, multi-source research, or a revision plan from weak areas. It plans, retrieves iteratively, checks whether the evidence is sufficient, synthesizes and verifies. **It always runs within bounded permissions, budgets, iteration limits and retrieval scope**, and never gains unrestricted access to student materials. Routing between the two is an explicit policy (§26.1).
 
 ## 0.4 Execution order
 
+> **Amended 2026-11-20 (§0.8).** Release 1 covers the journey, online CBT and the naive-RAG tutor. Agentic RAG (step 5, second half) and offline AI (step 6) are Release 2 (§0.8). Fireworks waits for its governance (§0.9).
+
 1. Complete the remaining M paths: contracts, migrations, security boundaries, callbacks and their gates.
 2. Stabilize the core backend: authentication, student identity, academic context, ownership, courses, content, assessments and student permissions.
 3. Subscription and entitlement infrastructure (§84 to §86).
 4. The AI foundation: the Gemini SDK in the Model Gateway, routing, grounded retrieval, OCR, ingestion, evaluation and observability.
 5. Naive RAG, then bounded Agentic RAG, with evaluation.
-6. Offline AI: benchmark and integrate the local model portfolio, offline retrieval, local inference and synchronization.
+6. Offline AI: benchmark and integrate the local model portfolio, offline retrieval, local inference and synchronization. The benchmark runs from the start; managed offline packs, offline retrieval, sync and on-device generative inference ship in Release 2 (§0.8).
 7. Deployment, update delivery and monitoring (§105).
 8. **Frontend Student Intelligence, last:** the complete student journey integrated against real, tested backend and AI contracts. Lightweight contract tests and integration fixtures run earlier, so interface mismatches aren't discovered at the end.
 
 ## 0.5 Paused for the first release
+
+> **Amended 2026-11-20 (§0.8).** Also outside Release 1 (§0.8), without being paused for good: managed offline packs and sync, offline retrieval and AI, flashcards, knowledge trees, personalised study plans, multi-hop agentic study help, expanded caching.
 
 To protect the student experience, these leave the current production critical path. They stay in the architecture:
 
@@ -95,7 +103,7 @@ Green tests aren't enough. The AI service must demonstrate:
 4. **AI Tutor:** contextual help, citations, insufficient-evidence handling and safe conversation persistence.
 5. **Question intelligence:** structured generation, answer validation, source attribution, and generated questions kept separate from official ones.
 6. **Agent capabilities:** bounded tools, permission enforcement, budgets and auditability.
-7. **Offline AI:** a local generative model, local retrieval, offline CBT, deterministic tools, confidence handling and controlled synchronization. **Local storage and local embeddings alone don't satisfy this.**
+7. **Offline AI** (**Release 2**, §0.8): a local generative model, local retrieval, deterministic tools, confidence handling and controlled synchronization. **Local storage and local embeddings alone don't satisfy this.** Release 1 ships limited caching of already-opened documents only (§0.8).
 8. **Operations:** cost, latency, errors, provider availability and model performance, measured.
 
 **Learning Memory stays disabled** until its production gate's conditions are implemented and verified. `GATE_OPEN` stays `False`.
@@ -108,6 +116,61 @@ Green tests aren't enough. The AI service must demonstrate:
 * **The Platform Operations Layer:** subscription and entitlement management, usage metering and AI cost accounting, app versions and mandatory-update policy, feature flags, model configuration and routing policy, service health, and release history with rollback. These are platform capabilities, not frontend responsibilities.
 
 The implementation reference for this section is the **BUILD Production Architecture & Operations Blueprint**, `docs/build-production-blueprint.md` in build-backend. It covers the topology, the Gemini adapter, the grounding gaps, RAG routing, the offline benchmark, the entitlement schema, the update contract and the release gates.
+
+## 0.8 Releases (2026-11-20)
+
+The production push ships in two releases. This section governs where §0.1, §0.4 and §0.6 would place the same work earlier.
+
+| Release | Scope |
+|---|---|
+| **Release 1** | The core journey on staging, then production: registration, academic onboarding, upload and ingestion, the grounded tutor (naive RAG, citations, abstention), practice, **online** CBT and results, progress, settings, backend-authoritative entitlements, and limited caching of already-opened documents within storage limits (not a supported offline system) |
+| **Release 2** | Managed offline academic packs with the authorisation lease and sync; offline retrieval; offline AI inference, after benchmarking; flashcards and knowledge trees; personalised study plans; multi-hop agentic study help, autonomous reading paths and agentic loops; the enhanced tutor; expanded document caching; offline practice only if separately approved; personalisation (Learning Memory only after its production gate is approved) |
+
+In Release 1 the tutor is bounded: naive RAG only. It does no autonomous multi-hop retrieval, no reading paths and no agentic loops (§0.3 describes the Release 2 behaviour).
+
+**CBT and official assessments are online-only (decided 2026-11-20).** Release 1 has no offline assessment of any kind. When offline practice exists, in Release 2 and only if separately approved, official CBT attempts, submission, grading and results stay online-only; offline practice scores are provisional until the server validates them on reconnect; and an offline practice attempt never becomes an official attempt, never changes an official score, and never appears in official results (as with online practice, S-10).
+
+**Cached documents in Release 1** are a proposal for the reviewer, not an approved rule: app-private storage; cleared on logout, on session end, and when the backend reports a revocation or deletion; a short time-to-live set by the reviewer; revalidated whenever the device is online. The reason is that M3-D promises immediate denial, and a cached copy would outlive it.
+
+The offline model benchmark continues during Release 1, so Release 2 starts from device evidence. The delivery plan is `docs/BUILD_IMPLEMENTATION_PLAN.md`; the milestone register stays the one tracker.
+
+## 0.9 Provider strategy: under reconciliation (2026-11-20)
+
+**Under reconciliation: Gemini plus Fireworks pending G-33 and reviewer approval.** Nothing in this document adopts a provider. Sections that name Gemini (§0.2, §0.4, §38, §39, §146.17) record the 2026-11-04 direction and stay as written until reconciliation ends.
+
+- No provider receives student or institutional passages until its data-processing terms are recorded in a G-33 record and approved, and a paid-tier key exists where the free tier's terms disallow it.
+- The Model Gateway stays provider-agnostic. Gemini's adapter is under review (ai-service #65) with passages disabled; a Fireworks adapter is not started and waits for the governance steps: reconcile this document, record G-33 for both providers, verify terms and model identifiers, reviewer approval.
+- Model names and prices from outside this repository are unverified until a G-33 record checks them against the provider's own documentation.
+
+### Provider reconciliation (Notion report, 2026-11-18)
+
+**Source:** the page "BUILD — Provider and Agentic Architecture Model", https://app.notion.com/p/41c4e323b2f28052a699ebe18394fe6f, last edited 2026-11-18T17:48Z, as summarised to this lane by the review session (this lane did not read the page itself). It is a pasted research report marked "Decisions Locked for v1", not a reviewer-approved governance record, and its model facts rest on non-authoritative sources (a blog, a model directory, a latency post and unnamed "audits"). **It is a proposal.**
+
+| Report decision | Status |
+|---|---|
+| BUILD owns the foundation (RAG, tools, OCR, deterministic scoring); APIs only assist | Consistent with §0.2; **approved direction** |
+| No API keys in the mobile app; all AI calls through ai-service behind the Model Gateway | Consistent with the architecture; **approved direction** |
+| No model chosen by users; routing by task | **Proposed** |
+| Exactly two v1 providers: Gemini and Fireworks | Gemini **approved first provider**; Fireworks **proposed and disabled** |
+| Gemini "high-scale only"; Fireworks for all small and medium work, including grounded RAG answers | **Proposed**; conflicts with §0.2, §38, §39 |
+| Models and prices (`gemini-3.8-flash`; three Fireworks models) | **Unverified**; see the G-33 records |
+| Fallbacks (GLM, MiniMax, Qwen) | **Not adopted**; fallback only within approved portfolio entries |
+| Circuit breaker: three failures, five minutes | **Not adopted**; the gateway's breaker is the baseline, thresholds set from measurements |
+| Per-request, per-user, per-school and per-feature budgets; a monthly Fireworks spend limit | **Proposed** |
+| Offline "Tier 0" with one on-device model, shipped first | **Not adopted**; offline is Release 2 and roles are assigned after benchmarking |
+| Open: the two Tier 1 agentic jobs | **Open**; agentic work is Release 2 |
+| Open: who pays per token (BUILD absorbs small, schools pay for medium) | **Open**; no per-token student billing in v1; mapping provisional (§81) |
+| Open: exam mode, AI off during attempts, backend-enforced | **Adopted by the user** for the plan |
+
+**Conflicts with this document, to be settled by the reviewer** (none is resolved by this amendment):
+
+1. §0.2, §38, §39 and the production blueprint make Gemini the online provider and say it replaces the earlier plan. The report splits work between two providers. §0.2, §0.4, §38 to §41, §110, §146.9 and §146.10 need amending once the reviewer decides.
+2. G-33 is recorded for Gemini only. A second provider that receives student passages needs its own record.
+3. §146.3 and the report differ on offline models and on whether offline ships first.
+4. §78 to §88 define the entitlement model. The report's payer split is not it.
+5. The report's fallback list contains models outside its own default portfolio.
+6. The gateway already has a circuit breaker and retry policy; thresholds are to be measured, not copied.
+7. **Data protection, for both providers:** no student names, school IDs or unnecessary identifying information in prompts; pseudonymous or opaque identifiers, not "anonymous", since pseudonymous data can still be personal data. A student's own question text and course passages can contain personal data that can't be stripped. Each G-33 record states minimisation, identifier handling, retention, logging and contractual safeguards separately.
 
 ---
 
@@ -1358,6 +1421,8 @@ OCR output must feed downstream ingestion rather than remaining isolated.
 
 # 38. AI Model Gateway
 
+> **Amended 2026-11-20 (§0.8).** The gateway stays provider-agnostic. Gemini is the approved first provider; Fireworks is proposed and disabled (§0.9). No routing change follows from this document.
+
 BUILD shall implement a provider-agnostic Model Gateway.
 
 **Online models (§0.2):**
@@ -1388,6 +1453,8 @@ Other foundation models, and the local models, shall remain pluggable behind the
 
 # 39. Initial Model Configuration
 
+> **Amended 2026-11-20 (§0.8).** Model identifiers and prices named anywhere in this document, and in the provider report of 2026-11-18, are unverified until a G-33 record checks them (§0.9).
+
 Conceptually:
 
 ```text
@@ -1416,6 +1483,8 @@ The Model Gateway should handle:
 
 # 40. Model Evaluation
 
+> **Amended 2026-11-20 (§0.8).** Release 1 evaluation covers the grounded tutor, orchestration and question generation (the plan's 100-task set). Agentic and offline evaluation follow in Release 2 (§0.8).
+
 BUILD must not assume that one model is universally superior.
 
 The BUILD AI Evaluation Lab should compare models against BUILD-specific evaluations.
@@ -1441,6 +1510,8 @@ Model decisions should be evidence-driven.
 ---
 
 # 41. AI Cost Governance
+
+> **Amended 2026-11-20 (§0.8).** No per-token student billing in v1. Budgets are backend-authoritative and per request, per user and per feature. Any model-tier allowance by plan is a provisional policy (§0.9, §81).
 
 AI usage must be measurable by:
 
@@ -2291,6 +2362,8 @@ Premium should feel like **more intelligence**, not permission to learn.
 
 # 81. Future Subscription Levels
 
+> **Amended 2026-11-20 (§0.8).** Applies to §81 to §88. Free, Plus, Pro and Campus stay, with backend-authoritative entitlements and budgets. The provisional mapping in the provider report (Free on a small-model tier; Plus and Pro with medium-tier allowances; Campus institution-managed) is **not** adopted: exact limits, model capabilities, quotas and Campus allocation need explicit entitlement definitions and reviewer approval, and a plan name alone never grants a costlier model. While Fireworks is unapproved, every plan routes to Gemini under a conservative backend budget.
+
 The platform may eventually support:
 
 The agreed levels (2026-11-04). These are feature boundaries, not prices: prices follow measured Gemini, document-processing, storage, bandwidth and infrastructure costs.
@@ -2545,6 +2618,8 @@ BUILD should support accessibility across:
 
 # 93. Offline / Poor Connectivity Strategy
 
+> **Amended 2026-11-20 (§0.8).** Offline capability is Release 2. Release 1 has limited caching of already-opened documents, under the cache rule proposed in §0.8, and no offline assessment.
+
 Full offline AI is not an initial requirement.
 
 Future offline capability should prioritize:
@@ -2553,7 +2628,7 @@ Future offline capability should prioritize:
 * course metadata;
 * Read Mode;
 * selected learning content;
-* selected CBT;
+* selected practice questions (Release 2, if separately approved; official CBT is online-only, §0.8);
 * progress synchronization.
 
 AI features can initially require connectivity.
@@ -2930,6 +3005,8 @@ AI should fail gracefully rather than bringing down core academic functionality.
 
 # 110. Provider Fallback
 
+> **Amended 2026-11-20 (§0.8).** Fallback happens only between approved portfolio entries. The gateway's existing circuit breaker and retry policy are the baseline; provider-specific thresholds become configurable and are set from measurements.
+
 The Model Gateway should support future provider fallback.
 
 Possible:
@@ -3289,6 +3366,8 @@ This creates a continuous learning loop.
 
 # 123. V1 Scope
 
+> **Amended 2026-11-20 (§0.8).** V1 scope is Release 1 as defined in §0.8. Offline, agentic and personalisation items that appear below are Release 2.
+
 V1 should prioritize:
 
 ### Identity
@@ -3330,7 +3409,7 @@ V1 should prioritize:
 
 * downloaded academic materials;
 * local AI assistance from the local model portfolio (§146.3);
-* available CBT offline;
+* offline practice on downloaded questions (Release 2, if separately approved; official CBT is online-only, §0.8);
 * controlled synchronization.
 
 ### Analytics
@@ -3889,6 +3968,8 @@ The technology should remain modular enough that the product can evolve without 
 
 # 146. Offline AI & Hybrid Intelligence Architecture
 
+> **Amended 2026-11-20 (§0.8).** This whole section is Release 2. The benchmark and designs continue during Release 1 as preparation (§0.8).
+
 ## 146.1 Overview
 
 BUILD shall support a **hybrid AI architecture** in which online cloud intelligence and local/offline intelligence coexist as complementary capabilities.
@@ -3930,20 +4011,29 @@ Therefore, BUILD shall select its offline model configuration through evidence-b
 
 BUILD shall investigate supporting a **pool of compact local language models** rather than assuming that a single model must perform every offline task.
 
-The agreed starting portfolio (2026-11-04) is one general-purpose language model plus specialized models, rather than one model for everything:
+**Updated 2026-11-20 (§0.8): the benchmark targets and comparisons below replace the 2026-11-04 candidate list. No model has a role until it has been benchmarked on real devices.**
+
+| | Models |
+|---|---|
+| **Targets** | Qwen3.5-0.8B, Qwen3-1.7B, SmolLM2-1.7B |
+| **Comparisons** | Qwen3.5 2B and 4B, Gemma 4 E2B, Gemma 3n E2B, Ministral 3 3B, Phi-4-mini |
+
+Model names are as given by the delivery plan and are unverified here. The benchmark checks each model's exact identifier, weights, licence and runtime compatibility before it is run, and licence compatibility stays a mandatory gate (§146.16). Offline generative inference ships in Release 2; the benchmark runs during Release 1.
+
+The starting portfolio of 2026-11-04 was one general-purpose language model plus specialized models, rather than one model for everything. The table keeps its shape; its model names are superseded by the targets above:
 
 | Local capability | First candidate | Notes |
 |---|---|---|
-| General conversation, explanation and simple reasoning | **Qwen3-1.7B** | The first choice to benchmark |
-| Low-memory fallback | **Qwen3-0.6B** | For devices that can't run the 1.7B model |
-| Alternative general model | Glimmer 2B | Benchmarked alongside Qwen if its weights, licence, inference compatibility and quality allow |
+| General conversation, explanation and simple reasoning | A target from the list above | Role assigned after benchmarking; Qwen3-1.7B was the 2026-11-04 first choice |
+| Low-memory fallback | A target from the list above | Role assigned after benchmarking; Qwen3.5-0.8B is the smallest target |
+| Alternative general model | A target or comparison from the lists above | "Glimmer 2B" is removed: no such model was found (only a 30B model), so it can't be benchmarked |
 | Local semantic retrieval | A small embedding model | Matches the online index's embedding space where feasible |
 | Retrieval relevance | A compact reranker | Optional, by device capability |
 | OCR | A PaddleOCR / OpenVINO-class model | Where the device supports it |
 | Classification | Document and academic-content classification | May share a model |
 | Speech | Speech-to-text | Optional |
 
-Gemma 3 1B and SmolLM2-1.7B-Instruct remain benchmark comparisons. **More models aren't automatically better:** each is chosen by task, memory requirement, latency, quality and device compatibility, and one model may serve several capabilities. The production configuration is decided by the benchmarks below and on real Android devices.
+**More models aren't automatically better:** each is chosen by task, memory requirement, latency, quality and device compatibility, and one model may serve several capabilities. The production configuration is decided by the benchmarks below and on real Android devices.
 
 The architecture shall permit:
 
@@ -4100,7 +4190,9 @@ This is particularly important for university-specific content where the expecte
 
 ## 146.6 Offline CBT Intelligence
 
-BUILD shall provide access to locally available CBT resources when the student is offline.
+**Amended 2026-11-20 (§0.8): official CBT is online-only in every release; offline practice is Release 2, only if separately approved.** The list below describes what a device may hold and do for practice then. Official attempts, submission, grading and results are online-only, and offline practice scores are provisional until server validation.
+
+BUILD shall provide access to locally available CBT resources for practice when the student is offline.
 
 Where authorized and available, the device may retain:
 
@@ -4115,8 +4207,7 @@ Where authorized and available, the device may retain:
 
 Offline CBT functionality may include:
 
-* taking previously downloaded CBTs;
-* practicing questions;
+* practising previously downloaded questions (not taking official CBTs);
 * reviewing answers;
 * explaining why an answer is correct;
 * identifying weak topics;
@@ -4194,6 +4285,8 @@ The goal is to ensure that:
 
 ## 146.9 Online AI Remains the Primary High-Capability Layer
 
+> **Amended 2026-11-20 (§0.8).** Provider references follow §0.9: Gemini first, Fireworks proposed and disabled.
+
 Offline AI shall **not replace BUILD's online AI infrastructure**.
 
 When connectivity is available, BUILD may access substantially stronger models through the Model Gateway.
@@ -4239,6 +4332,8 @@ The gateway shall determine the appropriate execution path based on factors such
 
 ## 146.10 Intelligent Model Routing
 
+> **Amended 2026-11-20 (§0.8).** Routing changes only by an approved change to configuration; this document changes none (§0.9).
+
 BUILD shall implement provider- and model-agnostic routing.
 
 The routing system shall not assume that the most powerful available model is always the appropriate model.
@@ -4263,6 +4358,8 @@ Example routing policy:
 Routing decisions shall be configurable and should evolve as benchmark and production data become available.
 
 ## 146.11 Offline-to-Online Continuity
+
+> **Amended 2026-11-20 (§0.8).** Release 2. Release 1 has no offline continuity beyond limited caching (§0.8).
 
 BUILD shall support continuity between offline and online operation.
 
@@ -4656,7 +4753,7 @@ The implementation shall proceed in the following order:
 
 **Production local model: Not yet selected**
 
-**Initial candidates: Qwen3-1.7B first, Qwen3-0.6B as the fallback, Glimmer 2B benchmarked alongside (2026-11-04)**
+**Initial candidates (updated 2026-11-20, §146.3): targets Qwen3.5-0.8B, Qwen3-1.7B and SmolLM2-1.7B; comparisons Qwen3.5 2B and 4B, Gemma 4 E2B, Gemma 3n E2B, Ministral 3 3B and Phi-4-mini. Roles are assigned only after benchmarking.**
 
 **Not sufficient on its own: local storage and local embeddings are not offline generative AI (§0.6)**
 
