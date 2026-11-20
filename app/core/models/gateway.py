@@ -34,6 +34,7 @@ from app.core.models.errors import (
 from app.core.models.provider import ModelProviderAdapter
 from app.core.models.providers.deterministic import NAME as DETERMINISTIC
 from app.core.models.providers.deterministic import DeterministicProviderAdapter
+from app.core.models.providers.gemini import GeminiProviderAdapter
 from app.core.models.providers.openai import OpenAIProviderAdapter
 from app.core.models.resilience import (
     CircuitBreaker,
@@ -82,7 +83,9 @@ class ModelGateway:
         elif offline:
             self.register_provider(DeterministicProviderAdapter())
         else:
+            # Registered is not eligible: each is called only if approved.
             self.register_provider(OpenAIProviderAdapter())
+            self.register_provider(GeminiProviderAdapter())
 
     def register_provider(self, provider: ModelProviderAdapter) -> None:
         self._providers[provider.name] = provider
@@ -103,18 +106,10 @@ class ModelGateway:
         """
         policy = request.policy or ModelPolicy()
 
-        # Resolve model name based on policy quality tier if not explicitly specified
-        if request.model:
-            model_name = request.model
-        elif policy.quality == "high":
-            model_name = "gpt-4o"
-        elif policy.quality == "fast":
-            model_name = "gpt-4o-mini"
-        else:  # balanced
-            model_name = "gpt-4o-mini"
-
-        # The policy's provider, never a substitute for it.
+        # The policy's provider, never a substitute for it, and that
+        # provider's model.
         provider_name = policy.preferred_provider
+        model_name = model_for(provider_name, request, policy)
 
         max_tokens = request.max_tokens or policy.max_tokens
         timeout_seconds = policy.timeout_seconds
@@ -213,13 +208,20 @@ class ModelGateway:
                 # execution (its budget scope) and correlation IDs.
                 attempt_id = _attempt_id()
                 _log_attempt(request, attempt_id, provider_name, attempt, attempts)
+                # This provider's model, so a fallback never receives another
+                # provider's model name, and is estimated at its own price.
+                provider_decision = dataclasses.replace(
+                    decision,
+                    provider=provider_name,
+                    model=model_for(provider_name, request, request.policy or ModelPolicy()),
+                )
                 # Reserve before calling, so concurrent calls in this scope
                 # can't each pass a check the other is about to exhaust.
-                tokens, cost = _estimate(request, decision, adapter)
+                tokens, cost = _estimate(request, provider_decision, adapter)
                 reservation = self.budget_tracker.reserve(scope_key, tokens, cost)
                 # No attempt may outlast the request's deadline.
                 attempt_decision = dataclasses.replace(
-                    decision,
+                    provider_decision,
                     timeout_seconds=max(0.001, min(decision.timeout_seconds, _remaining(deadline))),
                 )
                 try:
@@ -512,6 +514,17 @@ def _deadline(request: ModelRequest) -> float:
 
 def _remaining(deadline: float) -> float:
     return deadline - time.monotonic()
+
+
+def model_for(provider: str, request: ModelRequest, policy: ModelPolicy) -> str:
+    """The model a provider is asked for: the request's own choice, else the
+    provider's. Gemini has one configured model (GEMINI_MODEL); the quality
+    tiers name OpenAI models, so they apply to OpenAI only."""
+    if request.model:
+        return request.model
+    if provider == "gemini":
+        return settings.GEMINI_MODEL
+    return "gpt-4o" if policy.quality == "high" else "gpt-4o-mini"
 
 
 def _estimate(

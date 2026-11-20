@@ -12,7 +12,7 @@ from app.core.learning_memory_gate import memory_allowed
 STRICT_ENVIRONMENTS = frozenset({"staging", "production"})
 # Providers ModelGateway has a production adapter for. A name outside this set
 # can't be approved in a strict environment: approving it would do nothing.
-GATEWAY_PROVIDERS = frozenset({"openai"})
+GATEWAY_PROVIDERS = frozenset({"openai", "gemini"})
 MIN_SERVICE_SECRET_BYTES = 32
 # The one backend path AI-service ever reports to (design B.3).
 BACKEND_CALLBACK_PATH = "/content/ingestion/callbacks"
@@ -66,10 +66,16 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost/build_ai"
 
     OPENAI_API_KEY: str | None = None
+    # Gemini through the gateway's adapter (google-genai). The key is passed to
+    # the SDK explicitly; the SDK's own environment variables are never read.
+    GEMINI_API_KEY: str | None = None
+    # The Gemini model the gateway asks for. gemini-3.8-flash is listed as
+    # stable on the Gemini API models page (checked 2026-11-15).
+    GEMINI_MODEL: str = "gemini-3.8-flash"
     # Model behind chat, explain and question generation. "deterministic" is an
     # offline stand-in (no network, no model) for development and tests, such
     # as the two-service boundary suite; it is refused in staging/production.
-    MODEL_PROVIDER: Literal["openai", "deterministic"] = "openai"
+    MODEL_PROVIDER: Literal["openai", "gemini", "deterministic"] = "openai"
     # Providers ModelGateway may call, comma-separated: only those with a
     # data-processing record (G-33). A registered provider that isn't listed
     # is never called, not even as a fallback. Empty, the default, means no
@@ -285,10 +291,11 @@ class Settings(BaseSettings):
                 "MODEL_PROVIDERS_APPROVED names providers with no production adapter: "
                 + ", ".join(sorted(unknown))
             )
-        if "openai" in self.model_providers_approved and not self.OPENAI_API_KEY:
-            raise ValueError(
-                "MODEL_PROVIDERS_APPROVED includes openai, but OPENAI_API_KEY is not set"
-            )
+        for provider, key_name in (("openai", "OPENAI_API_KEY"), ("gemini", "GEMINI_API_KEY")):
+            if provider in self.model_providers_approved and not getattr(self, key_name):
+                raise ValueError(
+                    f"MODEL_PROVIDERS_APPROVED includes {provider}, but {key_name} is not set"
+                )
         return self
 
     @model_validator(mode="after")

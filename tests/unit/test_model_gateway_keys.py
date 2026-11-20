@@ -49,7 +49,7 @@ def make(environment: str, **values) -> Settings:
 
 @pytest.fixture(autouse=True)
 def no_env(monkeypatch):
-    for name in ("OPENAI_API_KEY", "MODEL_PROVIDERS_APPROVED"):
+    for name in ("OPENAI_API_KEY", "GEMINI_API_KEY", "MODEL_PROVIDERS_APPROVED"):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -69,15 +69,18 @@ async def test_without_a_key_the_adapter_sends_nothing(monkeypatch):
 
 
 @pytest.mark.parametrize("environment", ["staging", "production"])
-def test_a_strict_start_refuses_an_approved_provider_without_a_key(environment):
-    with pytest.raises(ValidationError, match="OPENAI_API_KEY is not set"):
-        make(environment, MODEL_PROVIDERS_APPROVED="openai")
+@pytest.mark.parametrize(
+    "provider,key", [("openai", "OPENAI_API_KEY"), ("gemini", "GEMINI_API_KEY")]
+)
+def test_a_strict_start_refuses_an_approved_provider_without_a_key(environment, provider, key):
+    with pytest.raises(ValidationError, match=f"{key} is not set"):
+        make(environment, MODEL_PROVIDERS_APPROVED=provider)
 
 
 @pytest.mark.parametrize("environment", ["staging", "production"])
 def test_a_strict_start_refuses_a_provider_with_no_adapter(environment):
-    with pytest.raises(ValidationError, match="no production adapter: gemini"):
-        make(environment, MODEL_PROVIDERS_APPROVED="openai,gemini", OPENAI_API_KEY="sk-real")
+    with pytest.raises(ValidationError, match="no production adapter: anthropic"):
+        make(environment, MODEL_PROVIDERS_APPROVED="openai,anthropic", OPENAI_API_KEY="sk-real")
 
 
 @pytest.mark.parametrize("environment", ["staging", "production"])
@@ -85,6 +88,8 @@ def test_a_strict_start_accepts_an_empty_list_and_a_keyed_approval(environment):
     assert make(environment).model_providers_approved == frozenset()
     keyed = make(environment, MODEL_PROVIDERS_APPROVED="openai", OPENAI_API_KEY="sk-real")
     assert keyed.model_providers_approved == {"openai"}
+    gemini = make(environment, MODEL_PROVIDERS_APPROVED="gemini", GEMINI_API_KEY="g-real")
+    assert gemini.model_providers_approved == {"gemini"}
 
 
 @pytest.mark.parametrize("environment", ["development", "testing"])
