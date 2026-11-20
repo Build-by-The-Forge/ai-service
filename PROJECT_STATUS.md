@@ -1,190 +1,69 @@
-# Project Status & System Review: AI Service
+# Project Status: AI Service
 
-**Service:** `ai-service` (Build Core)  
-**Version:** 1.0.0 (AI Runtime Foundation v1.0)  
-**Current Test Status:** 208 passed, 2 skipped across unit, contract, and E2E integration suites (100% pass rate)  
-**Primary Focus:** Adaptive Learning Memory, Multi-Tenant RAG, Bounded Agent Orchestration & OCR Document Ingestion  
+**Service:** `ai-service` (Build Core). **Checked against:** `origin/main` `2c76c93` (2026-11-16, after #64), on 2026-11-20.
 
----
+**What this file is:** a status statement with every claim checked in this repository. A path in backticks is where the claim was read. The delivery plan and the milestone register live in `build-backend` (`docs/BUILD_IMPLEMENTATION_PLAN.md`, `docs/milestone-register.md`); this file doesn't track milestones.
 
-## 1. Executive System Overview
+**Tests:** a local `pytest tests --collect-only` on this commit collected 1,493 tests with 23 collection errors (modules whose dependencies weren't installed on the checking machine), so 1,493 is a lower bound; the lane that owns the CI environment reports about 1,730. Collected is not passed. CI runs the suite with a coverage floor of 80% (`.github/workflows/backend.yml`, "Run the full test suite"), and CI is the authority for the count and for passing. This file claims no pass count.
 
-The `ai-service` is the central intelligence and agent orchestration backbone of the BUILD platform. It provides:
-1. **Authenticated Service Boundary (AI-1A):** HMAC-SHA256 authenticated dispatch, replay protection, and idempotency guarantees.
-2. **Distributed Asynchronous Execution Substrate (AI-1B):** Redis Streams / In-memory task transport, worker lease governance, retries, and dead-letter queues.
-3. **Signed Domain Callback Delivery (AI-1C):** Canonical JSON serialization and HMAC-signed webhook delivery to Backend.
-4. **Model Control Plane & Governance (AI-1D):** Provider-independent Model Gateway with Token Bucket rate limiting, Circuit Breakers, retries, cost/token budgets, and streaming.
-5. **Tool Capability Plane & Sandbox (AI-1E):** Policy-aware Tool Registry, strict schema/tenant validation, byte ceilings, and isolated execution.
-6. **Bounded Agent Orchestration Engine (AI-1F):** Multi-step ReAct reasoning loop with strict ceilings on steps, tokens, model calls, tool calls, runtime, and cost.
-7. **End-to-End Verified Pipeline (AI-1G):** Comprehensive E2E integration covering dispatch $\to$ worker $\to$ agent $\to$ model $\to$ tool $\to$ signed callback.
-8. **CBT intelligence (not delivery):** question generation and adaptive difficulty. Exam delivery, timing, answers and scoring belong to the backend (removed from AI-service in M4).
-9. **Adaptive Tutoring & Memory:** Student mastery tracking (`LearningMemory`), dynamic difficulty calculation, and prompt-driven AI tutoring.
-10. **Knowledge Tree & Curriculum Engine:** Hierarchical topic breakdown, prerequisites tracking, and learning path traversal (DFS/BFS).
+## 1. What the service is
 
----
+The intelligence and retrieval service behind the BUILD backend. It's called only by the backend, with signed requests (BUILD Service Signature v1, `app/core/service_signature_v1.py`), and it signs its responses (`app/core/signed_response.py`). It authenticates services, not users: `app/` has no JWT code, no RBAC, no exam runtime and no WebSocket, and `app/main.py` mounts only the routers listed below.
 
-## 2. System Status (Traffic Light Assessment)
+## 2. What exists on `main`
 
-```
-🟢 GREEN   - AI Runtime Foundation v1.0 (AI-1A..AI-1G: Auth, Worker Engine, Model Gateway, Tool Plane, Agent Runtime, E2E Verification), CBT Engine, Tenant Isolation
-🟡 YELLOW  - Pydantic v2 Deprecations in legacy routes, Single-Node WebSocket State, Vector DB Stubs
-🔵 PLANNED - AI-2 Intelligence Plane (Multi-Tenant pgvector RAG, Production OCR Pipeline, Batch Question Generation Engine, Knowledge Tree Traversal)
-```
+| Capability | Where | State |
+|---|---|---|
+| Service boundary: signature verification, replay protection | `app/core/middleware/service_auth.py`, `app/core/replay_guard.py` (`RedisReplayGuard`) | Built |
+| Model Gateway: one execution boundary for chat, explain, question generation and the CBT generator | `app/core/models/gateway.py`, `resilience.py`, `budget.py`; design `docs/ai-01-model-gateway-design.md` | Built. Providers: `openai`, `deterministic`, `mock` (`app/core/models/providers/`). The legacy `LLMProvider` layer and the `openai` SDK are removed (#63) |
+| Provider approval | `MODEL_PROVIDERS_APPROVED` and `GATEWAY_PROVIDERS` in `app/core/config.py` | Built. Empty by default, so no provider is eligible for student passages. `MODEL_PROVIDER=deterministic` is refused in strict environments |
+| Gemini adapter | #65, open | **Not on main** |
+| Fireworks adapter | None | **Not started**; waits for governance |
+| Task queue and worker | `app/services/tasks/` (`TaskTransport`, `InMemoryTaskTransport`, `RedisStreamTransport` in `transport.py`; `TaskWorker` in `worker.py`), `app/worker.py` | Built |
+| Signed dispatch and stage callbacks | `app/api/v1/ingest.py` (`POST /v1/ingest/dispatch`, `GET /v1/ingest/tasks/{external_task_id}`), `app/core/callbacks/` | Built |
+| Scope assignments | `app/api/v1/scopes.py` (`POST /v1/ingest/scope-assignments`), `app/core/rag/scope.py`, migration `d4a9c1e7f203_asset_scopes.py` | Built |
+| Ingestion pipeline | `ContentIngestionTaskHandler` in `app/services/tasks/handlers.py`; `app/services/ingestion/` (fetch, extraction, normalise, chunking); `app/services/ocr/` (PaddleOCR, OpenVINO, PDF and image parsers) | Built. Extraction, asset fetch and the ONNX embedder use `asyncio.to_thread` (`extraction.py`, `asset_fetcher.py`, `onnx_embedder.py`) |
+| Durable vector index (pgvector) | `app/services/rag/pg_index.py`, `vector_store.py`; migration `c3e81f4a9d27_document_chunks.py`; CI enables the `vector` extension | Built. Not a stub |
+| Retrieval: hybrid vector and lexical, evidence, provenance, scope filter | `app/services/rag/retrieval.py`, `lexical.py`, `evidence.py`, `recorder.py` (`sources_used`), `scopes.py`; `POST /v1/ai/retrieve` | Built |
+| Tutor, explain, question generation, knowledge tree, read path | `app/api/v1/ai/{chat,explain,generate_questions,tree,read}.py`; `app/services/ai/orchestrator.py`, `app/services/generation/`, `app/services/tree/` | Built; capability gaps are in the blueprint's map |
+| CBT exam generator (AI-10) | `app/services/generation/cbt_exam.py`, `cbt_ai_generator.py` (#61, #62) | Structured and grounded; **no route serves it** |
+| Agent runtime and tools | `app/services/agents/executor.py` (`AgentExecutor`, bounded by `max_steps`), `app/core/agents/`, `app/core/tools/{registry,contracts,budget,validator}.py`, `app/services/tools/builtins/{content,curriculum,question}.py` | Built, **not exposed on any route** |
+| Learning Memory | `app/api/v1/ai/memory.py` (`/memory/query`, `/memory/upsert`), `app/services/memory/`; gate in `app/core/learning_memory_gate.py` | Built; **gated off**: `GATE_OPEN` is `False`, and CI checks the gate in the production image (`.github/workflows/ci.yml`, "Check the learning-memory gate") |
+| Observability | `app/core/metrics.py` (Prometheus), worker task metrics, `app/core/safe_log.py` (exceptions logged by type and place only) | Built |
 
-### 🟢 Green (Operational & Verified)
-- ✅ **AI-1A Service Boundary & HMAC Auth:** Signed request validation, nonce tracking, idempotency deduplication (`/v1/ingest/dispatch`).
-- ✅ **AI-1B Task Worker & Execution Substrate:** Asynchronous task queue with `AITask`, `AIExecutionContext`, heartbeat leases, and cooperative cancellation.
-- ✅ **AI-1C Signed Callback Dispatcher:** HMAC-SHA256 signed event delivery with exponential backoff retries.
-- ✅ **AI-1D Model Control Plane:** Provider adapters (OpenAI/Scripted/Mock), CircuitBreakers (`CLOSED`/`OPEN`/`HALF_OPEN`), rate limits, and token budgets.
-- ✅ **AI-1E Tool / Capability Plane:** Policy-aware registry, schema/tenant validation, and sandboxed failure isolation.
-- ✅ **AI-1F Bounded Agent Runtime:** ReAct multi-step orchestration with hard step/token/runtime/cost budgets.
-- ✅ **AI-1G E2E Integration Suite:** Full-stack verification from dispatch to callback delivery with 208 passing tests.
-- ✅ **Tenant Context Isolation:** Tenant and user come only from the verified backend service context (BUILD Service Signature v1); `TenantMiddleware` and the `X-School-ID` header were removed in M3-10.
-- ✅ **No user authentication (M4):** AI-service authenticates services only (BUILD Service Signature v1). Its former JWT login, RBAC and exam runtime (sessions, timers, scoring, websocket) were removed; the backend owns users and the CBT lifecycle.
+**Routes served** (`app/main.py`, `app/api/v1/`): `/api/v1/health`, `/api/v1/system/{health,ready}`; `/v1/ingest/{dispatch,tasks/{id},scope-assignments}`; `/v1/ai/{chat,explain,generate-questions,retrieve,tree/generate,read/start,memory/query,memory/upsert}`.
 
----
+## 3. Quality and evidence
 
-### 🟡 Yellow (Technical Debt & In-Progress Items)
-These items must be resolved before production deployment:
+- **Retrieval quality is not settled.** The PRD records 94.6% hybrid recall@5 on the controlled set and 62.5% (25 of 40) on real first-semester FUTA material, with 1,459 scanned pages still needing OCR (`build-backend` `docs/BUILD_MASTER_PRD.md` §0.6). This file didn't re-measure them.
+- **CI gates** (`.github/workflows/backend.yml`): quality checks (pre-commit and explicit checks), a security scan (pip-audit, bandit), the full suite against PostgreSQL with pgvector and a migration review, real-storage fetch tests, and a retrieval quality gate that must not regress below the committed baseline (`data/retrieval_eval/v1`).
+- Evaluation tooling and results: `docs/p3-5-tier2-evaluation.md`, `docs/p3-2-extraction-baseline.md`.
 
-1. **Pydantic V2 Syntax Deprecations:**
-   - Routes in `app/api/v1/exams.py` use deprecated Pydantic v1 methods: `ExamResponse.from_orm(exam).dict()` instead of `ExamResponse.model_validate(exam).model_dump()`.
-2. **Single-Instance WebSocket Connection Manager:**
-   - `ConnectionManager` in `app/api/v1/ws/exam_ws.py` stores WebSocket connections in an in-memory dictionary. When scaling horizontally behind a load balancer, instances cannot route messages to sockets connected to other pods without a Redis Pub/Sub backplane.
-3. **Stubbed RAG & Vector Retrieval:**
-   - `RetrievalService` (`app/services/rag/retrieval.py`) currently returns a simulated placeholder string (`Tenant {school_id} retrieval placeholder for '{query}'`). It needs connection to a concrete vector database.
-4. **Contract Tests Deferred:**
-   - Contract test suite files in `tests/contracts/` currently call `pytest.skip`. Need real schema contract validation against the client frontend.
-5. **OCR & PDF Parser CPU Blocking:**
-   - `PDFParser` and `TextCleaner` execute synchronously inside async route handlers, which can block the Python event loop under high concurrent uploads.
-6. **Integration Test Environment Guards:**
-   - Integration tests depend on live Postgres/Redis containers without automated mock fallback, causing long connection timeouts when run in standalone dev environments.
+## 4. Gates
 
----
+| Gate | State |
+|---|---|
+| Learning Memory | Closed. `GATE_OPEN = False` (`app/core/learning_memory_gate.py`) |
+| External providers for student passages | No provider approved. `MODEL_PROVIDERS_APPROVED` is empty by default. G-33 isn't approved for any provider (the records are drafts in `build-backend`) |
+| Retrieval of a document | Its scope must be acknowledged and it must not be denied (`app/core/rag/scope.py`) |
 
-### 🔴 Red (Critical Production Gaps)
-High-risk items that must be addressed before treating the system as production-grade:
+## 5. Known gaps (checked, not assumed)
 
-1. **LLM Provider Resilience & Circuit Breaking:**
-   - **Resolved (AI-01):** every model call goes through the model gateway (provider allowlist failing closed, one deadline, retries, per-capability budgets, sanitized errors). `OpenAILLM` and the `openai` SDK are removed; see `docs/ai-01-model-gateway-design.md`.
-2. **Missing Production Vector Database (pgvector / Qdrant):**
-   - The RAG pipeline lacks a live vector store index with embedding generation, chunking, and tenant-scoped similarity search.
-3. **Absence of Asynchronous Task Queue:**
-   - Heavy workloads (OCR extraction, batch question generation, multi-page PDF indexing, bulk exam grading) run within HTTP request cycles instead of being offloaded to a background task worker (e.g., Celery, ARQ, or Redis Streams).
-4. **Database Connection Pool Hardening & Row-Level Security:**
-   - Async SQLAlchemy session manager requires explicit production pooling parameters (`pool_size`, `max_overflow`, `pool_pre_ping`, `pool_recycle`), and defense-in-depth PostgreSQL Row Level Security (RLS) policies.
+1. **Row-level security:** none. No RLS policy or tenant `SET LOCAL` exists in `app/` or `alembic/`; tenant isolation is by scope filter and query predicates. (The only `SET LOCAL` calls tune HNSW search, in `app/services/rag/pg_index.py`.)
+2. **Database pool:** set in `app/db/session.py` (`pool_size=10`, `max_overflow=20`, `pool_pre_ping=True`; no `pool_recycle`).
+3. **Provider portfolio:** only `openai`, `deterministic` and `mock` exist; the Gemini adapter is open.
+4. **AI-10, agents and tools** are built but unrouted.
+5. **Offline AI** has no code on `main`. The offline benchmark runs in its own lane and isn't merged.
+6. **Retrieval quality** on real material, and OCR coverage of scanned pages, remain the main quality work (section 3).
+7. **Conversations** (M3-F's AI side, the tutor-turn route) are not on `main`.
 
----
+## 6. What this file no longer says
 
-## 3. Corrections & Optimizations to be Made
+An earlier version described a service with no vector store and no task queue, a JWT and exam layer, a WebSocket manager, `app/api/v1/exams.py`, placeholder retrieval, 208 passing tests, and a roadmap dated 2026-08 to 2026-12. None of that is true of `main`: the exam and JWT runtime were removed in M4, pgvector and the task worker are built, and the roadmap was overtaken. The history is in git.
 
-| Area | Current Issue | Target Correction / Optimization |
-| :--- | :--- | :--- |
-| **Pydantic Models** | Deprecated `.from_orm()` and `.dict()` calls | Migrate all schema validations to `model_validate()` and `model_dump(mode='json')` with `model_config = ConfigDict(from_attributes=True)`. |
-| **Datetime Handling** | `datetime.utcnow()` used in JWT utilities | Replace with timezone-aware `datetime.now(timezone.utc)` for Python 3.12+ compatibility. |
-| **Database Pool** | Default pool settings in `app/db/session.py` | Add `pool_size=20`, `max_overflow=10`, `pool_pre_ping=True`, `pool_recycle=3600` to prevent stale connection drops. |
-| **WebSocket Scaling** | In-memory `active_connections` dict | Refactor `ConnectionManager` to broadcast events across nodes via Redis Pub/Sub channels keyed by `school_id:session_id`. |
-| **LLM Resilience** | Resolved (AI-01) | Every model call goes through the model gateway: retries, one deadline, budgets and a provider allowlist. `OpenAILLM` is removed. |
-| **Event Loop Offloading** | Synchronous PDF/OCR parsing in async routes | Wrap CPU-heavy OCR and PDF parsing inside `asyncio.to_thread` / `run_in_threadpool` or background worker jobs. |
-| **Error Handling** | Generic exception catches in some service stubs | Define domain-specific exceptions (`ExamSessionExpiredError`, `TenantContextMissingError`, `LLMGenerationError`). |
+## 7. Where the roadmap is
 
----
-
-## 4. Possible Upgrades & Pathways to Better Efficiency
-
-```mermaid
-flowchart TD
-    Client[Student / Teacher Client] -->|HTTP / WebSocket| APIGateway[FastAPI Gateway + Tenant Auth]
-    APIGateway -->|Realtime Events| RedisCluster[(Redis: Session State, Timers, PubSub)]
-    APIGateway -->|Relational + Vector| PostgresDB[(PostgreSQL + pgvector: RLS Tenant Scoped)]
-    APIGateway -->|Async Heavy Jobs| TaskWorker[Background Task Queue: ARQ / Celery]
-    APIGateway -->|Streaming LLM| LLMProxy[LLM Gateway: Fallback, Cache, Token Limiter]
-    LLMProxy --> OpenAI[OpenAI / GPT-4o-mini]
-    LLMProxy --> Gemini[Google Gemini / Anthropic Fallback]
-    TaskWorker --> OCRPipeline[OCR Pipeline: PaddleOCR / OpenVINO]
-```
-
-### 1. Unified Hybrid Storage with PostgreSQL `pgvector`
-- **Pathway:** Instead of maintaining a separate vector database (e.g., standalone FAISS/Pinecone), enable the `pgvector` extension directly in PostgreSQL.
-- **Benefits:**
-  - Single database for relational entities (`exams`, `users`, `schools`) and semantic embeddings (`question_bank_vectors`, `course_content_vectors`).
-  - Native tenant-scoping in SQL queries (`WHERE school_id = :school_id ORDER BY embedding <=> :query_vec LIMIT 5`).
-  - Eliminates dual-write consistency issues and reduces operational overhead.
-
-### 2. Streaming Responses (SSE / Streaming WebSockets)
-- **Pathway:** Implement Server-Sent Events (SSE) for `/api/v1/ai/chat` and `/api/v1/ai/explain`.
-- **Benefits:**
-  - Reduces perceived latency (Time-to-First-Token drops from ~2.5s to <300ms).
-  - Enhances interactive student tutoring experience.
-
-### 3. Redis Semantic Caching & Prompt Optimization
-- **Pathway:** Cache LLM responses for deterministic queries (e.g. syllabus definitions, standard CBT question templates) using Redis with exact-match or semantic similarity hashing.
-- **Benefits:**
-  - Cuts external LLM API costs by 40%–60%.
-  - Delivers sub-10ms response times for repeated tutoring inquiries.
-
-### 4. Asynchronous Task Worker Queue (ARQ / Redis Streams)
-- **Pathway:** Integrate a lightweight async task queue (like `arq` or Celery) backed by Redis for:
-  - Document & textbook ingestion and vector indexing.
-  - Multi-page OCR extraction.
-  - Batch generation of 50+ question CBT exams.
-  - Automated AI essay and rubric evaluation.
-- **Benefits:**
-  - Keeps HTTP API responses fast and under 100ms.
-  - Prevents server timeout crashes during large document uploads.
-
-### 5. Defense-in-Depth Multi-Tenancy via PostgreSQL Row-Level Security (RLS)
-- **Pathway:** Configure PostgreSQL RLS policies where every connection executes `SET LOCAL app.current_school_id = :school_id` upon checkout.
-- **Benefits:**
-  - Guarantees database-level tenant isolation even if an application query accidentally omits the `WHERE school_id = ...` clause.
-
-### 6. Enhanced Adaptive Engine (Item Response Theory - IRT)
-- **Pathway:** Upgrade the rule-based `AdaptiveDifficultyEngine` to a 1PL/2PL Item Response Theory (IRT) or Bayesian Knowledge Tracing (BKT) model.
-- **Benefits:**
-  - Calibrates question difficulty and student mastery mathematically based on historical discrimination indices and response times.
-
-### 7. Full Observability & APM Telemetry
-- **Pathway:** Introduce OpenTelemetry instrumentation with Prometheus metrics:
-  - Latency histograms (P50, P95, P99) for exam submissions, LLM calls, and DB queries.
-  - LLM token consumption and cost tracking per school tenant.
-  - WebSocket connection counts and Redis pub/sub queue lag.
-
----
-
-## 5. Stabilization & Delivery Roadmap
-
-```mermaid
-gantt
-    title AI Service Engineering Roadmap
-    dateFormat  YYYY-MM-DD
-    section Phase 1: Code Health & Pydantic V2
-    Pydantic V2 syntax cleanup           :done, 2026-08-01, 2026-08-15
-    Coverage enhancement (86%)           :done, 2026-08-15, 2026-08-31
-    section Phase 2: Resilience & Workers
-    LLM retry & fallback circuit breaker :active, 2026-09-01, 2026-09-15
-    Async worker queue for OCR/PDF       :2026-09-10, 2026-09-25
-    section Phase 3: RAG & Vector Engine
-    pgvector integration & indexing      :2026-09-20, 2026-10-10
-    Tenant-scoped semantic search        :2026-10-05, 2026-10-20
-    section Phase 4: Distributed Realtime
-    Redis Pub/Sub WebSocket scaling     :2026-10-15, 2026-11-01
-    Client offline-sync & reconnection   :2026-10-25, 2026-11-10
-    section Phase 5: Observability & Release
-    OpenTelemetry & APM metrics          :2026-11-05, 2026-11-20
-    v1.0 Production Release Gate         :2026-11-20, 2026-12-01
-```
-
-1. **Phase 1 — Code Health & Deprecation Cleanup (Immediate):**
-   - Clean up Pydantic V2 methods in `app/api/v1/exams.py`.
-   - Update datetime UTC calls for Python 3.12 compatibility.
-2. **Phase 2 — LLM Gateway Resilience & Worker Queues:**
-   - Implement Tenacity retries, timeout limits, and fallback providers in `app/services/ai/`.
-   - Add async background task worker for OCR and large PDF parsing.
-3. **Phase 3 — Vector Database & Production RAG:**
-   - Connect `pgvector` or managed vector store to replace placeholder retrieval.
-   - Implement embedding pipeline with text chunking and similarity indexing.
-4. **Phase 4 — Distributed Realtime Exam Scaling:**
-   - Multi-pod WebSocket state bridging over Redis Pub/Sub.
-   - Client offline resilience protocol for student exam continuity.
-5. **Phase 5 — Observability & v1.0 Release Gate:**
-   - Prometheus metrics, structured JSON logs with tenant tagging, and full API contract test validation.
+In `build-backend`:
+- `docs/BUILD_IMPLEMENTATION_PLAN.md`: phases, releases and dependencies.
+- `docs/build-master-execution-blueprint.md`: the capability map (AI-01 to AI-14) and the parallel lanes.
+- `docs/milestone-register.md`: the tracker.
