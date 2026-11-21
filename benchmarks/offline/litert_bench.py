@@ -19,6 +19,7 @@ import json
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -29,17 +30,20 @@ import scoring  # noqa: E402
 TASKS = bench.TASKS
 
 
-class SpecTool:
-    """Exposes a tools.json entry to LiteRT-LM without executing anything."""
+def spec_tool_class(lm: Any) -> Any:
+    """A litert_lm.Tool that only exposes a tools.json description (nothing is executed)."""
 
-    def __init__(self, spec: dict[str, Any]) -> None:
-        self.spec = spec
+    class SpecTool(lm.Tool):
+        def __init__(self, spec: dict[str, Any]) -> None:
+            self.spec = spec
 
-    def get_tool_description(self) -> dict[str, Any]:
-        return self.spec
+        def get_tool_description(self) -> dict[str, Any]:
+            return self.spec
 
-    def execute(self, param: Any) -> Any:  # never called: automatic_tool_calling=False
-        return {"error": "not executed in the benchmark"}
+        def execute(self, param: Any) -> Any:  # never called: automatic_tool_calling=False
+            return {"error": "not executed in the benchmark"}
+
+    return SpecTool
 
 
 def message_text(message: Any) -> str:
@@ -76,24 +80,37 @@ def run_one(
         if sampled
         else lm.SamplerConfig(top_k=1, top_p=1.0, temperature=1.0, seed=42)
     )
-    conversation = engine.create_conversation(
-        messages=[messages[0]],
-        tools=[SpecTool(t) for t in tools] if task["type"] == "tool_call" else None,
-        automatic_tool_calling=False,
-        sampler_config=sampler,
-        max_output_tokens=bench.MAX_TOKENS[task["type"]],
-        thinking_config=lm.ThinkingConfig(enable_thinking=False),
-    )
+    constrained = None
     kwargs: dict[str, Any] = {}
-    error = None
     if mode == "schema":
         schema = scoring.GROUNDED_SCHEMA if task["type"] == "grounded" else task["schema"]
         kwargs["response_format"] = lm.ResponseFormat.json(schema)
+        constrained = lm.ConstrainedDecodingConfig(
+            enable=True, provider=lm.LiteRtLmConstraintProviderType.LL_GUIDANCE
+        )
+    error = None
+    conversation = None
+    try:
+        conversation = engine.create_conversation(
+            messages=[messages[0]],
+            tools=(
+                [spec_tool_class(lm)(t) for t in tools] if task["type"] == "tool_call" else None
+            ),
+            automatic_tool_calling=False,
+            sampler_config=sampler,
+            max_output_tokens=bench.MAX_TOKENS[task["type"]],
+            thinking_config=lm.ThinkingConfig(enable_thinking=False),
+            constrained_decoding_config=constrained,
+        )
+    except Exception as exc:  # a runtime refusal is a result, not a crash
+        error = f"{type(exc).__name__}: {exc}"
     started = time.perf_counter()
     first: float | None = None
     text: list[str] = []
     calls: list[dict[str, Any]] = []
     try:
+        if conversation is None:
+            raise RuntimeError(error)
         for chunk in conversation.send_message_async(messages[1]["content"], **kwargs):
             piece = message_text(chunk)
             if (piece or chunk.tool_calls) and first is None:
@@ -104,10 +121,20 @@ def run_one(
                 spec["function"]["arguments"] = json.dumps(spec["function"]["arguments"])
                 calls.append(spec)
     except Exception as exc:  # a runtime refusal is a result, not a crash
-        error = f"{type(exc).__name__}: {exc}"
+        error = error or f"{type(exc).__name__}: {exc}"
     ended = time.perf_counter()
-    info = conversation.get_benchmark_info()
-    conversation.close()
+    info = (
+        conversation.get_benchmark_info()
+        if conversation is not None
+        else SimpleNamespace(
+            last_prefill_token_count=None,
+            last_prefill_tokens_per_second=None,
+            last_decode_token_count=None,
+            last_decode_tokens_per_second=None,
+        )
+    )
+    if conversation is not None:
+        conversation.close()
     reply = {"text": "".join(text), "tool_calls": calls}
     return {
         "id": task["id"],

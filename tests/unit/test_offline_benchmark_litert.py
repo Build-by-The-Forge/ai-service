@@ -14,6 +14,16 @@ FAKE_LITERT = textwrap.dedent('''
     import json
     from types import SimpleNamespace
 
+    class Tool:
+        """Base class: the real runtime only accepts Tool subclasses."""
+
+    class ConstrainedDecodingConfig:
+        def __init__(self, enable=True, provider=None):
+            self.enable, self.provider = enable, provider
+
+    class LiteRtLmConstraintProviderType:
+        LL_GUIDANCE = 1
+
     class SamplerConfig:
         def __init__(self, **kwargs):
             self.kwargs = kwargs
@@ -49,10 +59,13 @@ FAKE_LITERT = textwrap.dedent('''
             self.tool_calls = list(tool_calls)
 
     class Conversation:
-        def __init__(self, tools):
-            self.tools = tools
+        def __init__(self, tools, constrained):
+            self.tools, self.constrained = tools, constrained
 
         def send_message_async(self, text, response_format=None):
+            # The real runtime rejects response_format without this configuration.
+            assert response_format is None or (
+                self.constrained and self.constrained.provider == 1)
             if self.tools:
                 names = [t.get_tool_description()["function"]["name"] for t in self.tools]
                 assert "calculate" in names
@@ -84,7 +97,8 @@ FAKE_LITERT = textwrap.dedent('''
         def create_conversation(self, messages, tools, automatic_tool_calling, **kwargs):
             assert automatic_tool_calling is False
             assert messages[0]["role"] == "system"
-            return Conversation(tools)
+            assert all(isinstance(t, Tool) for t in tools or [])
+            return Conversation(tools, kwargs.get("constrained_decoding_config"))
 ''').lstrip()
 
 
@@ -103,7 +117,8 @@ def test_litert_runner_end_to_end_with_fake_runtime(tmp_path):
     )  # fmt: skip
     result = json.loads(out.read_text(encoding="utf-8"))
     s = result["summary"]
-    assert result["runtime"] == "LiteRT-LM cpu" and result["errors"] == 0
+    assert result["runtime"] == "LiteRT-LM cpu"
+    assert result["errors"] == 0  # schema mode and tools both reached the fake runtime
     assert result["download_bytes"] == 2048
     assert s["free"]["en_abstention_rate"] == 1.0
     assert s["free"]["json_strict_rate"] > 0  # streamed chunks are joined before parsing
