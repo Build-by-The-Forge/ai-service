@@ -14,13 +14,62 @@ count: record it, but tier by physical RAM (`MemTotal` in `/proc/meminfo`).
 
 | Tier | Physical RAM | Typical phones (examples, not a shortlist) | Models to run |
 |---|---|---|---|
-| Low (floor) | 4 GB | Tecno Spark / Infinix Hot / itel / Samsung Galaxy A0x class (MediaTek Helio G or Unisoc) | Qwen3.5 0.8B, Qwen3.5 2B; Gemma 4 E2B only if the desktop peak RSS says it can fit |
+| Low (floor) | 4 GB | **Samsung Galaxy A06 (reference, in hand)**; Tecno Spark / Infinix Hot / itel class (MediaTek Helio G or Unisoc) | Qwen3.5 0.8B, Qwen3.5 2B; Gemma 4 E2B only if the desktop peak RSS says it can fit |
 | Mid | 6 GB | Infinix Note / Tecno Camon / Galaxy A1x-A2x class | + Gemma 4 E2B (llama.cpp and LiteRT-LM), Gemma 3n E2B, Ministral 3 3B |
 | High | 8 GB+ | Galaxy A5x / Pixel / mid-high Snapdragon | + Qwen3.5 4B, Phi-4-mini |
 
 Run every model of a lower tier on the higher tiers too, so each model has a curve
 across devices. Also run the Tabwee T80 tablet if it is available, tiered by its
 physical RAM.
+
+## Minimum-tier reference device: Samsung Galaxy A06
+
+The first real test phone, and the reference for the 4 GB tier: Samsung Galaxy A06,
+4 GB physical RAM, 64 GB storage, connected by USB. Do not trust a marketing page for
+anything below: read it from the phone (the SoC is believed to be a MediaTek Helio G85
+class chip, **unverified** until read).
+
+```bash
+adb shell getprop ro.build.version.release          # Android version (must be 14 or higher)
+adb shell getprop ro.build.version.security_patch
+adb shell getprop ro.soc.model; adb shell getprop ro.board.platform; adb shell getprop ro.hardware
+adb shell "grep -m1 -E 'Hardware|model name' /proc/cpuinfo; grep -c ^processor /proc/cpuinfo"
+adb shell "grep -E 'MemTotal|SwapTotal' /proc/meminfo"
+```
+
+- **RAM Plus.** The A06 offers "RAM Plus" (4 GB of storage-backed virtual memory). It is
+  swap on flash, not RAM. Turn it **off** for every run (Settings > Battery and device
+  care > Memory > RAM Plus, restart) and write the state used in `device.txt`; if it
+  cannot be turned off, say so and treat peak-RAM results as optimistic. `MemTotal`
+  stays the tier, and `SwapTotal` shows whether RAM Plus was really off.
+- **USB and battery.** Over USB the phone charges, which hides drain. Pair once over
+  USB, then run unplugged: `adb tcpip 5555`, unplug, `adb connect <phone-ip>:5555`
+  (phone and PC on the same Wi-Fi). `host_monitor.sh` records `plugged`, and
+  `summarise_device.py` reports no battery figure for a run that was charging.
+- **Shared phone.** The mobile-ui lane also uses this phone. Peak-RAM, thermal and
+  battery runs need it exclusive, with nothing else installed or running, and cool
+  (battery `temperature` at or below 330, i.e. 33.0 C). Agree a time window with that
+  lane first, and record any app left running.
+- **Nothing is installed or run until the owner confirms** the phone is connected and
+  USB debugging is on. `adb` itself is not yet on the PC (see below).
+
+### adb: not installed yet, needs approval first
+
+Google's Android SDK Platform-Tools for Windows: file `platform-tools-latest-windows.zip`,
+from `https://dl.google.com/android/repository/platform-tools-latest-windows.zip`,
+8,188,601 bytes (7.8 MB, last modified 2026-11-19 by the server). It is a zip to extract
+into a user folder; there is no installer and nothing is added to the system PATH
+unless the owner chooses. Do not download it before the owner says yes.
+
+### No-install-on-the-phone path (preferred on the shared A06)
+
+Termux (below) needs an APK installed on the phone. The alternative leaves nothing but
+files in `/data/local/tmp/ai12` (deleted afterwards): cross-compile llama.cpp for
+Android arm64 with the NDK on a hosted runner, `adb push` the binaries and one model,
+start `llama-server` with `adb shell`, forward its port with `adb forward`, and let the
+PC-side harness drive it, reading `/proc/<pid>/status` through adb for memory. The
+adb-driven mode of `bench.py` and the Android CI build are **not built yet**; the
+Termux path below works today.
 
 ## What you need
 

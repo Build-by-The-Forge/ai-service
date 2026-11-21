@@ -82,7 +82,8 @@ machine or enters the repository, and result files redact dataset B outputs.
 
 | Item | Needs |
 |---|---|
-| Device runs (4 GB floor, 6 GB, 8 GB+; Android 14+) | exact phone models and physical RAM from the user; then [device/DEVICE_PROCEDURE.md](device/DEVICE_PROCEDURE.md) |
+| Device runs, minimum tier | **Samsung Galaxy A06**: 4 GB physical RAM (RAM Plus must be off and recorded), 64 GB, USB; Android version and SoC to be read from the device (believed Helio G85 class, unverified). Needs the owner's go-ahead, `adb` (approval requested, not installed) and an exclusive window shared with the mobile-ui lane; [device/DEVICE_PROCEDURE.md](device/DEVICE_PROCEDURE.md) |
+| Device runs, mid and high tiers (6 GB, 8 GB+) | phones not yet named |
 | Battery and thermal | device runs only |
 | Nigerian-language model | name, source, weights and licence, verified before it enters the registry |
 | Nigerian-language quality | native speakers review the Yoruba, Hausa and Igbo prompts, then `runs/desktop/human_review.csv` |
