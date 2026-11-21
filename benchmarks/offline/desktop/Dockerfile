@@ -17,6 +17,7 @@ RUN git clone --depth 1 --branch "${LLAMA_CPP_TAG}" https://github.com/ggml-org/
  && test "$(git -C /src/llama.cpp rev-parse HEAD)" = "${LLAMA_CPP_COMMIT}" \
  && cmake -S /src/llama.cpp -B /src/build -DCMAKE_BUILD_TYPE=Release \
       -DLLAMA_CURL=OFF -DLLAMA_BUILD_TESTS=OFF -DGGML_NATIVE=ON -DBUILD_SHARED_LIBS=OFF \
+      -DLLAMA_USE_PREBUILT_UI=OFF \
  && cmake --build /src/build -j --target llama-server llama-bench llama-cli \
  && mkdir -p /opt/llama \
  && cp -r /src/build/bin /opt/llama/bin \

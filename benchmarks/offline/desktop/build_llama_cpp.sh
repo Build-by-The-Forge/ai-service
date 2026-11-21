@@ -4,6 +4,8 @@
 # Used for the desktop results because Docker Desktop was unavailable on the 8 GB
 # laptop; desktop/Dockerfile is the equivalent containerised build.
 #   bash benchmarks/offline/desktop/build_llama_cpp.sh   -> $AI12_ROOT/build/bin
+# The server's embedded web UI is fetched from a moving remote bundle at build time and is
+# unused here (--no-webui), so it is not fetched: the build is then reproducible offline.
 set -euo pipefail
 ROOT=${AI12_ROOT:-$HOME/ai12}
 mkdir -p "$ROOT"
@@ -17,6 +19,6 @@ if [ ! -d llama.cpp ]; then
 fi
 test "$(git -C llama.cpp rev-parse HEAD)" = b1b770d90d94cad9e9ea5b993bdbc383a522fb28
 cmake -S llama.cpp -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DLLAMA_CURL=OFF \
-  -DLLAMA_BUILD_TESTS=OFF -DGGML_NATIVE=ON -DBUILD_SHARED_LIBS=OFF
+  -DLLAMA_BUILD_TESTS=OFF -DGGML_NATIVE=ON -DBUILD_SHARED_LIBS=OFF -DLLAMA_USE_PREBUILT_UI=OFF
 cmake --build build -j 4 --target llama-server llama-bench llama-cli
 ls -la build/bin
