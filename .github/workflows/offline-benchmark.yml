@@ -80,14 +80,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/ai12/build
-          key: llama-cpp-b1b770d9-${{ runner.os }}-${{ runner.arch }}
+          key: llama-cpp-b1b770d9-portable-avx2-${{ runner.os }}-${{ runner.arch }}
 
       - name: Compile llama.cpp
         if: matrix.runtime == 'llama.cpp' && steps.llama-cache.outputs.cache-hit != 'true'
         shell: bash
         run: |
           sudo apt-get update -q && sudo apt-get install -y -q cmake ninja-build
-          AI12_ROOT=$HOME/ai12 bash benchmarks/offline/desktop/build_llama_cpp.sh
+          AI12_PORTABLE=1 AI12_ROOT=$HOME/ai12 bash benchmarks/offline/desktop/build_llama_cpp.sh
 
       - name: Run the benchmark (llama.cpp)
         if: matrix.runtime == 'llama.cpp'
