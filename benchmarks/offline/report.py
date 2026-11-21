@@ -13,6 +13,8 @@ import json
 from pathlib import Path
 from typing import Any
 
+import bench
+
 
 def pct(value: Any) -> str:
     return "-" if value is None else f"{100 * value:.0f}%"
@@ -34,6 +36,8 @@ def load_runs(folder: Path) -> list[dict[str, Any]]:
     for path in sorted(folder.glob("*.json")):
         data = json.loads(path.read_text(encoding="utf-8"))
         if data.get("schema") == 1:
+            # Recompute from the per-task rows so every run is summarised by the current code.
+            data["summary"] = bench.summarise(data["tasks"])
             runs.append(data)
     return runs
 
@@ -86,8 +90,8 @@ def tables(runs: list[dict[str, Any]]) -> str:
         "",
         "| Model | Mode | Answer correct | Faithful (correct + only supporting citations) | "
         "Citation precision | False abstention | Abstained when unanswerable | "
-        "Hallucinated when unanswerable |",
-        "|---|---|---:|---:|---:|---:|---:|---:|",
+        "Hallucinated when unanswerable | No usable flag when unanswerable |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for r in runs:
         for mode in ("free", "schema", "long", "sampled"):
@@ -96,7 +100,7 @@ def tables(runs: list[dict[str, Any]]) -> str:
                 f"| {r['model_id']} | {mode} | {pct(m.get('en_answer_accuracy'))} | "
                 f"{pct(m.get('en_faithful_rate'))} | {pct(m.get('en_citation_precision'))} | "
                 f"{pct(m.get('en_false_abstention_rate'))} | {pct(m.get('en_abstention_rate'))} | "
-                f"{pct(m.get('en_hallucination_rate'))} |"
+                f"{pct(m.get('en_hallucination_rate'))} | {pct(m.get('en_unscorable_rate'))} |"
             )
     lines += [
         "",

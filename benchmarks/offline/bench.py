@@ -335,6 +335,12 @@ def summarise(all_rows: list[dict[str, Any]]) -> dict[str, Any]:
             ),
             "en_abstention_rate": _share(unanswerable, lambda m: m["correct"]),
             "en_hallucination_rate": _share(unanswerable, lambda m: m.get("hallucinated") is True),
+            # Replies with no usable answerable flag (invalid JSON or the field missing): neither
+            # an abstention nor a hallucination, so the three rates add up to 100%.
+            "en_unscorable_rate": _share(unanswerable, lambda m: m.get("answerable_pred") is None),
+            "en_answerable_unscorable_rate": _share(
+                answerable, lambda m: m.get("answerable_pred") is None
+            ),
         }
         for lang in ("yo", "ha", "ig"):
             lr = [r for r in pick(type="grounded", mode=mode) if r["lang"] == lang]

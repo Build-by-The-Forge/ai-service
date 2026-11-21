@@ -118,6 +118,29 @@ def test_redact_drops_text_but_keeps_scores():
     assert out["metrics"] == {"correct": True}
 
 
+def grounded_row(task_id, pred, answerable, correct):
+    return {
+        "id": task_id, "type": "grounded", "lang": "en", "mode": "free", "dataset": "A",
+        "answerable": answerable, "ttft_s": 1.0, "total_s": 1.0, "prompt_tokens": 10,
+        "decode_tps": 10.0, "prefill_tps": 50.0, "finish_reason": "stop",
+        "metrics": {"json": "strict", "answerable_pred": pred, "correct": correct,
+                    "faithful": correct, "hallucinated": pred is True},
+    }  # fmt: skip
+
+
+def test_summary_separates_unusable_replies_from_abstention_and_hallucination():
+    rows = [
+        grounded_row("A01", False, False, True),  # abstained
+        grounded_row("A02", True, False, False),  # hallucinated
+        grounded_row("A03", None, False, False),  # no usable flag
+        grounded_row("A04", None, False, False),  # no usable flag
+    ]
+    free = bench.summarise(rows)["free"]
+    assert free["en_abstention_rate"] == 0.25
+    assert free["en_hallucination_rate"] == 0.25
+    assert free["en_unscorable_rate"] == 0.5
+
+
 def free_port():
     with socket.socket() as s:
         s.bind(("127.0.0.1", 0))
