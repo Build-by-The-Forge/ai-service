@@ -377,6 +377,14 @@ def _quantile(values: list[float], q: float) -> float:
     return ordered[min(len(ordered) - 1, int(q * len(ordered)))]
 
 
+def load_average() -> list[float] | None:
+    """1, 5 and 15 minute load; a run measured while others use the machine is contended."""
+    try:
+        return [round(x, 2) for x in os.getloadavg()]
+    except (OSError, AttributeError):
+        return None
+
+
 def hardware() -> dict[str, Any]:
     info: dict[str, Any] = {"machine": platform.machine(), "system": platform.system()}
     info["kernel"] = platform.release()
@@ -420,6 +428,11 @@ def start_server(
         str(args.bin_dir / "llama-server"), "-m", str(args.gguf), "-t", str(args.threads),
         "-c", str(args.ctx), "--port", str(args.port), "--host", "127.0.0.1", "-np", "1",
         "--jinja", "--no-webui", "--seed", "42",
+        # llama-server keeps a host-RAM prompt cache (8 GiB by default) and per-slot context
+        # checkpoints. A phone app would not, and on the hybrid Qwen3.5 models it grew the
+        # server to 3.1 GB for a 0.5 GB model and got it OOM-killed. Off, every request
+        # prefills from scratch, which is also the honest TTFT.
+        "--cache-ram", "0", "--ctx-checkpoints", "1",
     ] + args.server_arg  # fmt: skip
     started = time.perf_counter()
     log = open(args.out.with_suffix(log_suffix), "wb")
@@ -474,6 +487,7 @@ def main() -> int:
         tasks += extra_tasks
         passages.update(extra_passages)
 
+    load_before = load_average()
     process, cold_start, process_log = start_server(args)
     sampler = MemorySampler(process.pid)
     sampler.start()
@@ -539,6 +553,7 @@ def main() -> int:
             "peak_rss_sampled_mb": round(sampler.peak_rss_kb / 1024, 1),
             "peak_hwm_mb": round((peak_hwm or 0) / 1024, 1),
         },
+        "load_average": {"before": load_before, "after": load_average()},
         "cold_start_s": round(cold_start, 3),
         "unload_s": round(unload_s, 3),
         "reload_warm_s": round(reload_s, 3) if reload_s is not None else None,
