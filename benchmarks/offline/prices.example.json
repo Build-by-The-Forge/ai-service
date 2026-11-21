@@ -1,0 +1,10 @@
+{
+  "currency": "USD",
+  "verified": false,
+  "source": null,
+  "verified_on": null,
+  "note": "Copy this file OUTSIDE the repository, fill in the provider's published per-million-token prices, then set verified true with the pricing page URL in source and the date in verified_on. A real run is blocked until all three are set. Prices are never hardcoded in the harness.",
+  "models": {
+    "provider/model-name": {"input_per_mtok": null, "output_per_mtok": null}
+  }
+}

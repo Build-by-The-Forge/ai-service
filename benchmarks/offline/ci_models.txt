@@ -1,0 +1,13 @@
+# Models the bench/** push trigger runs (ids from models.json), one per line.
+# Each runs alone on a fresh GitHub-hosted runner. Weights come from Hugging Face at the
+# pinned revision and sha256 and are discarded with the runner.
+qwen3.5-0.8b-q4km
+qwen3-1.7b-q4km
+smollm2-1.7b-q4km
+qwen3.5-2b-q4km
+ministral-3-3b-q4km
+gemma-4-e2b-litertlm
+gemma-3n-e2b-q4km
+qwen3.5-4b-q4km
+phi-4-mini-q4km
+gemma-4-e2b-q4km

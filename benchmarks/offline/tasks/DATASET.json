@@ -1,0 +1,7 @@
+{
+  "name": "AI-12 dataset A",
+  "synthetic": true,
+  "third_party_material": false,
+  "description": "Original course-style passages and tasks written for BUILD. Safe to send to a hosted provider. Dataset B (real course PDFs, benchmarks/offline/local) is never marked synthetic and is refused by hosted_bench.py.",
+  "non_english_review": "Yoruba, Hausa and Igbo tasks are unreviewed by native speakers."
+}
