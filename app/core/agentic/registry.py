@@ -145,6 +145,11 @@ class RunControl:
         remaining = self.remaining()
         return remaining is not None and remaining <= 0
 
+    def binds(self, seconds: float) -> bool:
+        """Whether the run's deadline, not `seconds`, is what will stop a call."""
+        remaining = self.remaining()
+        return remaining is not None and remaining <= seconds
+
     def tighten(self, seconds: float) -> float:
         """The tighter of `seconds` and what remains of the deadline."""
         remaining = self.remaining()
@@ -546,6 +551,7 @@ class ToolRegistry:
             )
 
         timeout = control.tighten(contract.deadline_seconds)
+        run_bound = control.binds(contract.deadline_seconds)
         if timeout <= 0:
             return failed("DEADLINE_EXPIRED", "timeout")
         task = asyncio.ensure_future(entry.handler(call))
@@ -565,6 +571,8 @@ class ToolRegistry:
                 await task
             if control.cancelled:
                 return failed("EXECUTION_CANCELLED", "cancelled", effect_known=False)
+            if run_bound:  # the run's deadline stopped it, not the tool's own
+                return failed("DEADLINE_EXPIRED", "timeout", effect_known=False)
             return failed("TOOL_TIMEOUT", "timeout", effect_known=False)
         try:
             raw = task.result()

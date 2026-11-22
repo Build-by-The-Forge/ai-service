@@ -278,6 +278,12 @@ def test_the_task_digest_follows_its_content():
     assert task().digest() != task(goal="Something else").digest()
 
 
+def test_the_exam_flag_does_not_change_which_task_a_checkpoint_belongs_to():
+    exam = task(context=ctx(official_attempt_active=True))
+    assert exam.digest() == task().digest()
+    assert task(context=ctx(user_id="u2")).digest() != task().digest()
+
+
 def test_task_round_trips_through_json_and_carries_no_sets():
     t = task(
         deadline_epoch=1_900_000_000.0,

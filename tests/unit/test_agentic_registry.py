@@ -283,7 +283,7 @@ async def test_the_runs_deadline_tightens_the_tools():
     control = RunControl(deadline=RunControl().clock() + 0.05)
     started = asyncio.get_running_loop().time()
     out = await run(registry, "echo_tool", {"q": "x"}, control=control)
-    assert out.error_code == "TOOL_TIMEOUT"
+    assert out.error_code == "DEADLINE_EXPIRED" and not out.effect_known
     assert asyncio.get_running_loop().time() - started < 2
 
 

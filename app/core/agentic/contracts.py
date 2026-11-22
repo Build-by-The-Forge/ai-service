@@ -381,7 +381,12 @@ class AgentTask(_Model):
         return self
 
     def digest(self) -> str:
-        return digest(self.model_dump(mode="json"))
+        """Identifies the task a checkpoint belongs to. The exam flag is left out:
+        it can change while a run is paused, and a resume must then be refused as
+        exam mode, not as a different task."""
+        data = self.model_dump(mode="json")
+        del data["context"]["official_attempt_active"]
+        return digest(data)
 
 
 # --- Execution checkpoint ----------------------------------------------------
