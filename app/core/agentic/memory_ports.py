@@ -111,3 +111,37 @@ class InMemoryBackendPort:
 
 def sources_of(passages: tuple[EvidencePassage, ...]) -> tuple[SourceRef, ...]:
     return tuple(sorted({p.source for p in passages}, key=lambda s: s.model_dump_json()))
+
+
+class DeterministicModelPort:
+    """A model door with no model: it cites passage [1] when it was given
+    numbered passages, and drafts questions from passage [1]'s words. The
+    shape of the gateway's offline test model, for the evaluation harness and
+    for a device test without a model."""
+
+    async def complete(self, prompt: str) -> str:
+        digest = hashlib.sha256(prompt.encode("utf-8")).hexdigest()[:12]
+        answer = f"[deterministic answer {digest}]"
+        return answer + " [1]" if "\n[1] (" in prompt else answer
+
+    async def complete_json(self, prompt: str, *, kind: str, **hints: object) -> dict[str, object]:
+        if kind != "questions":
+            return {"answer": await self.complete(prompt)}
+        count = int(hints.get("count", 1))  # type: ignore[call-overload]
+        match = re.search(r"\n\[1\] \([^)]*\) (.*?)(?:\n\n\[2\] |\Z)", prompt, re.S)
+        words = re.findall(r"[^\W\d_]{4,}", match.group(1)) if match else []
+        questions = []
+        for i in range(1, count + 1):
+            stem = " ".join(words[(i - 1) % max(1, len(words)) :][:8]) or f"Question {i}"
+            questions.append(
+                {
+                    "prompt": f"[deterministic question] {stem}",
+                    "options": [
+                        {"text": " ".join(words[8:12]) or "Option A", "is_correct": True},
+                        {"text": "Option B", "is_correct": False},
+                        {"text": "Option C", "is_correct": False},
+                    ],
+                    "sources": [1] if words else [],
+                }
+            )
+        return {"questions": questions}
