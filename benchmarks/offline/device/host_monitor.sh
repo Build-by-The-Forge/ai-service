@@ -8,8 +8,9 @@
 # `adb pair` / `adb connect`): over USB the phone charges and battery drain is meaningless.
 set -euo pipefail
 OUT=$1
-ADB=(adb)
-[ -n "${2:-}" ] && ADB=(adb -s "$2")
+ADB_BIN=${ADB_BIN:-adb}   # set to the full path when adb is not on PATH
+ADB=("$ADB_BIN")
+[ -n "${2:-}" ] && ADB=("$ADB_BIN" -s "$2")
 echo "epoch_s,battery_level_pct,battery_temp_c,plugged,current_now_ua,thermal_status,max_skin_or_cpu_c,mem_available_kb" > "$OUT"
 while true; do
   BAT=$("${ADB[@]}" shell dumpsys battery)

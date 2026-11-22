@@ -53,13 +53,18 @@ adb shell "grep -E 'MemTotal|SwapTotal' /proc/meminfo"
 - **Nothing is installed or run until the owner confirms** the phone is connected and
   USB debugging is on. `adb` itself is not yet on the PC (see below).
 
-### adb: not installed yet, needs approval first
+### adb
 
-Google's Android SDK Platform-Tools for Windows: file `platform-tools-latest-windows.zip`,
-from `https://dl.google.com/android/repository/platform-tools-latest-windows.zip`,
-8,188,601 bytes (7.8 MB, last modified 2026-11-19 by the server). It is a zip to extract
-into a user folder; there is no installer and nothing is added to the system PATH
-unless the owner chooses. Do not download it before the owner says yes.
+Installed with the owner's approval (Android SDK Platform-Tools only, version 37.0.3,
+Google-signed) at `C:\Users\midef\tools\platform-tools\adb.exe`. It is **not on PATH**:
+use the full path, or in Git Bash `export ADB_BIN="/c/Users/midef/tools/platform-tools/adb.exe"`
+and read the `adb` commands in this document as `"$ADB_BIN"` (`host_monitor.sh` honours
+`ADB_BIN`). Nothing else is approved for install.
+
+Start conditions before any slot: the phone is charged, USB debugging is on and the
+authorisation prompt accepted, `"$ADB_BIN" devices -l` shows `device`, the owner has
+confirmed, and `"$ADB_BIN" shell dumpsys battery` shows a temperature at or below 330
+(33.0 C) and a level above 60.
 
 ### No-install-on-the-phone path (preferred on the shared A06)
 
