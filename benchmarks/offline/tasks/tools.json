@@ -1,0 +1,60 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "search_course_pack",
+      "description": "Search the student's downloaded course packs for passages about a topic.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {"type": "string", "description": "What to look for."},
+          "course_code": {"type": "string", "description": "Optional course code such as 'CSC 201'."}
+        },
+        "required": ["query"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_practice_questions",
+      "description": "Fetch offline CBT practice questions for a course and topic.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "course_code": {"type": "string"},
+          "topic": {"type": "string"},
+          "count": {"type": "integer", "minimum": 1, "maximum": 20}
+        },
+        "required": ["course_code", "topic", "count"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "calculate",
+      "description": "Evaluate an arithmetic expression exactly. Use for any calculation.",
+      "parameters": {
+        "type": "object",
+        "properties": {"expression": {"type": "string", "description": "For example '3 * (4 + 5)'."}},
+        "required": ["expression"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "schedule_review",
+      "description": "Schedule a spaced-repetition review reminder on the device.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "topic": {"type": "string"},
+          "days_from_now": {"type": "integer", "minimum": 1}
+        },
+        "required": ["topic", "days_from_now"]
+      }
+    }
+  }
+]

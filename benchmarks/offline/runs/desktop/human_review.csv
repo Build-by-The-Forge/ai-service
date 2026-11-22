@@ -1,0 +1,705 @@
+model_id,task_id,lang,mode,output,fluency_0_3,accuracy_0_3,notes
+gemma-3n-e2b-q4km,NY1,yo,free,"{""answer"": ""Ni STP, mólù kan gáàsì máa ń gbà ní ìdọ́kọ́ 22.4 lítà."", ""citations"": [""P01""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NY1,yo,schema,"{""answer"": ""Ni STP, mólù kan gáàsì máa ń gbà ní ìdọ́kọ́ 22.4 lítà."", ""citations"": [""P01""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NY2,yo,free,"```json
+{
+  ""answer"": ""Ìpíndọ́gba àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13 ni 8."",
+  ""citations"": [""P07""],
+  ""answerable"": true
+}
+```"
+gemma-3n-e2b-q4km,NY2,yo,schema,"{
+  ""answer"": ""Ìpíndọ́gba àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13 ni 8."",
+  ""citations"": [""P07""],
+  ""answerable"": true
+}"
+gemma-3n-e2b-q4km,NY3,yo,free,"{""answer"": ""Passage P05 tólú iṣẹ́ àtẹ̀jáde ọ̀nà Gram staining. Àti ọ̀rọ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́ àti iṣẹ́"
+gemma-3n-e2b-q4km,NY3,yo,schema,"{""answer"": ""Passage P05 tóló pé àtẹ̀jáde Gram ni àwọn àkòkò àwọn àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti à"
+gemma-3n-e2b-q4km,NH1,ha,free,"{""answer"": ""Range on level ground is greatest at a launch angle of 45 degrees."", ""citations"": [""P02""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NH1,ha,schema,"{""answer"": ""Donin a bayyana range mai girma a kan ƙasa mai faɗi, a dole a dade a bayyana angle na haje (theta). A ko a bayyana angle na haje, range ya zama u^2 sin(2 theta) / g.  Sin(2 theta) ya zama babbi sosai a 90 degrees. Don haka, range mai girma a kan ƙasa mai faɗi shine a haje a 90 degrees."", ""citations"": [""P02""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NH2,ha,free,"{""answer"": ""Garin ake yin ta hanyar gura kowane rigo da aka goga a saki a saki a siga a siga don a yi sivi da a yi rogo a siga a rogo.  Ganin da rigo ta yi sivi, linamarase zai iya aiki don a yi amfani da linamarine, kuma rogo zai yi amfani da hydrogen cyanide da ya yi a rigo."", ""citations"": [""P04""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NH2,ha,schema,"{""answer"": ""Garin ake yin ta hanyar gura kowane rigo da aka goga a saki a saki a siga a siga don a yi sivi da a yi rogo. Gura ta yi sivi don da linamarase zai iya aiki akan linamarin, kuma rogo ya yi sance hydrogen cyanide da yawa."", ""citations"": [""P04""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NH3,ha,free,"{""answer"": ""Passage P08 बताता है कि मांग嘅 elasticity का मापन यह है कि मात्रा की मांग में परिवर्तन की मात्रा, मूल्य परिवर्तन में परिवर्तन की मात्रा से कितनी विभाजित होती है। मांग elastic है जब निरपेक्ष मान 1 से अधिक होता है, inelastic जब यह 1 से कम होता है, और unit elastic जब यह 1 के बराबर होता है। उदाहरण के लिए, यदि चावल की कीमत 10 प्रतिशत बढ़ जाती है और मात्रा की मांग 25 प्रतिशत घट जाती है, तो elasticity -2.5 होगी, इसलिए मांग elastic है। जब मांग elastic होती है, तो मूल्य में वृद्धि कुल राजस्व को कम करती है।"", ""citations"": [""P08""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NH3,ha,schema,"{""answer"": ""Passage P08 ya bayyana yadda ake hake da price elasticity of demand, inda ake hake da percentage change a quantity demanded da percentage change a price don samun percentage change a quantity demanded.  A ko idan price ya yi canin 10% kuma quantity ya yi canin 25%, elasticity tana zama -2.5, inda 'yan jariri sun ce demand tana zama elastic."", ""citations"": [""P08""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NI1,ig,free,"{""answer"": ""Na Gram staining, safranin na-eji dị ka counterstain. Ọ na-eji maka gram-negative cells, na-eji ha echeta pink ma ọ bụ red n'oge a na-echeta na gram-positive cells na-ekite purple."", ""citations"": [""P05""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NI1,ig,schema,"{""answer"": ""Na Gram staining, safranin na-eji dị ka counterstain. Ọ na-eji maka gram-negative cells, na-eji ha tute pink ma ọ bụ red n'oge a na-eji microscope, wijl gram-positive cells na-ekpo purple."", ""citations"": [""P05""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NI2,ig,free,"{""answer"": ""N'ọkọnụ ọmụmụ a, oge kachị nta e ji agwọ concrete bụ жетị ụgbu a, nke bụ жетị ụgbu a. Nke a aụsị na minimum curing period for ordinary Portland cement concrete is seven days. (P06)"", ""citations"": [""P06""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NI2,ig,schema,"{""answer"": ""N'ọmụmụ a, oge kachị nta e ji agwọ concrete bụ жетị ụgbu a, nke bụ жетị ụgbu a. Nke a aụsị na minimum curing period for ordinary Portland cement concrete is seven days. (P06)"", ""citations"": [""P06""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NI3,ig,free,"{""answer"": ""Merge sort na-ahụta oge kachie ugwu (worst-case time complexity) dị ka O(n log n)."", ""citations"": [""P03""], ""answerable"": true}"
+gemma-3n-e2b-q4km,NI3,ig,schema,"{""answer"": ""Merge sort na-ahụta oge kachị ugwu (worst-case time complexity) dị ka O(n log n)."", ""citations"": [""P03""], ""answerable"": true}"
+gemma-3n-e2b-q4km,T06,yo,free,"Okay, I can help with that! To best assist you with your CSC 305 normalization, I need to know what you're looking for.  
+
+Could you please tell me:
+
+* **What specific normalization technique are you working with?** (e.g., Min-Max, Z-score, Robust Scaling)
+* **What is the dataset you are using?** (e.g., a specific CSV file, a general description of the data)
+* **What are you trying to achieve with the normalization?** (e.g., to prevent outliers, to ensure all features have a similar scale, to improve model performance)
+* **What have you tried so far?** (e.g., any code you've written, any results you've obtained)
+
+Once I have this information, I can guide you through the process and potentially call a tool like Python's `scikit-learn` library to perform the normalization.
+
+
+
+"
+gemma-3n-e2b-q4km,E01,en,free,"Based on the passage, gram-negative cells appear pink because they have a thin peptidoglycan layer and an outer membrane. During the Gram staining process, the crystal violet-iodine complex is not retained by the outer membrane of gram-negative bacteria. Consequently, they lose the purple stain and are counterstained with safranin. Safranin then stains the outer membrane, resulting in the pink or red appearance of gram-negative cells under the microscope. 
+
+The key is the outer membrane, which prevents the purple complex from being retained, leading to the pink coloration.
+
+
+
+"
+gemma-3n-e2b-q4km,E02,en,free,"The passage explains that price elasticity of demand measures how much the quantity demanded changes in response to a price change. 
+
+In the rice example, the demand is elastic because the quantity demanded fell by 25% when the price rose by 10%. This means the change in quantity demanded is relatively large compared to the change in price. 
+
+Elastic demand means that a price increase will lead to a larger decrease in total revenue for the seller. Essentially, consumers are very responsive to price changes for rice.
+
+
+
+"
+gemma-3n-e2b-q4km,E03,en,free,"According to the passage, cassava must be processed to reduce the risk of cyanide poisoning. Cassava roots contain cyanogenic glucosides, primarily linamarin, which release hydrogen cyanide when the plant tissue is damaged. This hydrogen cyanide is toxic.
+
+Processing methods like grating (to allow enzyme linamarase to break down linamarin), fermentation (to remove water and further break down compounds), and roasting (to drive off remaining cyanide) are used to significantly reduce the cyanide content. 
+
+The passage states that a total cyanide content of 10 mg per kg in the finished flour is the safety limit. Poorly processed cassava can lead to konzo, a paralytic disease. Therefore, processing is crucial for safety.
+
+
+
+"
+gemma-3n-e2b-q4km,EY1,yo,free,"Okay, ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà tí a ṣe àwọn ìṣàkọ̀ nínú èdè Yorùbá nígbà"
+gemma-3n-e2b-q4km,EH1,ha,free,"Toh, nan akwai bayani a Hausa game da matsakaici na maki 4, 7, 7, 9, da 13, kamar haka:
+
+Matsakaici na maki sun yi taimacewar bayyana a cikin bayyanin kayye ta hanyar bayyana wani yanar gano mai ban yi. Matsakaici na aritmeti shine axyar kayye da suka yi, don yayin da median shine yanar gano mai ban yi a cikin kayye da suka yi a takwayi, don yayin da mode shine yanar gano mai ban yi da ya yi gasar da kayye da suka yi.
+
+Don maki 4, 7, 7, 9, da 13, matsakaici na aritmeti shine 8 (40/5). Median shine 7, saboda a takwayi, yanar gano mai ban yi shine 7. Mode shine 7, saboda ya yi gasar da 7.
+
+Akwai wani muhimman abu da ake kama shi ne cewa matsakaici na aritmeti yana iya zama mai hunun yawa idan kayye da suka yi suna da yanar gano mai ban yi mai yawa, don yayin da median yana iya bayyana yanar gano mai ban yi mai yawa a yamma.
+"
+gemma-3n-e2b-q4km,EI1,ig,free,"## Ihe E Mere N'Asụsụ: Ihe E Mere N'Ebe Kachasị Anya
+
+Na asụsụ a, ọ dị mkpa ịmara na projectile na-agba naanị n'i nguzọ nke ọghọ, na-agba n'ebe anya n'agba ọghọ. Ọghọ na-agba n'ebe anya n'agba ọghọ, na-agba n'ebe anya n'agba ọghọ.
+
+N'ebe kachasị anya, ọghọ na-agba n'ebe anya n'agba ọghọ, na-agba n'ebe anya n'agba ọghọ. Ọ dị ka ọ na-agba n'ebe anya n'agba ọghọ, na-agba n'ebe anya n'agba ọghọ. 
+
+Ebe kachasị anya bụ n'oge a na-agba 45 degrees. E mere ya n'i nguzọ nke ọghọ, na-agba n'ebe anya n'agba ọghọ. Ọ dị ka ọ na-agba n'ebe anya n'agba ọghọ, na-agba n'ebe anya n'agba ọghọ. 
+
+E mere ya n'i nguzọ nke ọghọ, na-agba n'ebe anya n'agba ọghọ. Ọ dị ka ọ na-agba n'ebe anya n'agba ọghọ, na-agba n'ebe anya n'agba ọghọ. 
+
+E mere ya n'i nguzọ nke ọghọ, na-agba n'ebe anya n'agba ọghọ. "
+gemma-4-e2b-litertlm,NY1,yo,free,"```json
+{
+""answer"": ""Mólù kan gáàsì máa ń gbà ní STP ni ó ṣe ń gbọ́ 22.4 L."",
+""citations"": [
+""P01""
+],
+""answerable"": true
+}
+```"
+gemma-4-e2b-litertlm,NY1,yo,schema,"{""answer"":
+""Mólù kan gáàsì máa ń gbà ní STP ni 22.4 L."",
+""citations"":
+[""P01""]
+,
+""answerable"":
+true
+}"
+gemma-4-e2b-litertlm,NY2,yo,free,"```json
+{
+""answer"": ""Ìgbàgbọ́ (mean) ni ìṣọ̀rọ̀sọ̀rọ̀ àwọn ìwé: 4, 7, 7, 9, àti 13. Ìgbàgbọ́ ni ìṣọ̀rọ̀sọ̀rọ̀ àwọn ìwé ni wọ́n ṣe ń ṣe: 40 / 5 = 8."",
+""citations"": [
+""P07""
+],
+""answerable"": true
+}
+```"
+gemma-4-e2b-litertlm,NY2,yo,schema,"{""answer"":
+""Ìgbàgbọ́ (mean) ni ìṣọ́nà àwọn ìwé: ìṣọ́nà àwọn ìwé ni ìṣọ́nà àwọn ìwé (sum) tí ó jẹ́ ìgbàgbọ́ tí ó jẹ́ ìwé tí ó jẹ́ ìṣọ́nà àwọn ìwé (number of values). Lògbónì, ìṣọ́nà àwọn ìwé ni 8."",
+""citations"":
+[""P07""]
+,
+""answerable"":
+true
+}"
+gemma-4-e2b-litertlm,NY3,yo,free,"```json
+{
+""answer"": ""Gram staining yóò fi iṣẹ́ ti omo cell wall ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti o ṣe òṣùn ti"
+gemma-4-e2b-litertlm,NY3,yo,schema,"{""answer"":
+""Ọdún wo ni wọ́n kọ́kọ́ ṣe àtẹ̀jáde ọ̀nà Gram staining ni: 1. Ìgbà tí ìwọ̀rọ̀ (heat-fixed smear) yá ní crystal violet, ìṣọ̀rọ̀ ìgbà tí iodine jẹ́ mọ́ (mordant), tí ó ṣe ìṣọ̀rọ̀ crystal violet-iodine complex níbi àwọn cell. 2. Ìgbà tí ìwọ̀rọ̀ yá ní alcohol tàbí acetone, tí ó jẹ́ decolouriser. 3. Ìgbà tí safranin yá nípa, tí ó jẹ́ counterstain, kí àwọn cell gram-negative yá mú kí ó sì fi rọ̀ (pink or red) lórí àwọn mikroskóp, bí àwọn cell gram-positive tó sì ní ìgbà tí ó sì nípa púrpú."",
+""citations"":
+[""P05""]
+,
+""answerable"":
+true
+}"
+gemma-4-e2b-litertlm,NH1,ha,free,"```json
+{
+""answer"": ""Range a kan ƙasa mai faɗi ya yi girma mafi yawan da ya yi a wanci da yawa da yawa (45 daraja), saboda sin(2 theta) ya yi girma mafi yawan a wanci da yawa da yawa (P02)."",
+""citations"": [
+""P02""
+],
+""answerable"": true
+}
+```"
+gemma-4-e2b-litertlm,NH1,ha,schema,"{""answer"":
+""Wannan suyi daɗin daɗi ne a wani wurin mai faɗi, kuma yana da rashin bayani a cikin bayanan da aka ba da. Ana buɗe da hanyar da aka bayyana a kan wani abu da aka fi sani, wanda ya kasance shi ne da yadda ake kira 'range' a cikin bayanan da aka ba da. Wannan yana da rashin bayani game da wani abu da aka fi sani a kan wani abu da aka fi sani, kuma ba su da bayani game da yadda ake kira 'range' a cikin bayanan da aka ba da."",
+""citations"":
+[
+""P02""
+]
+,
+""answerable"":
+true
+}"
+gemma-4-e2b-litertlm,NH2,ha,free,"```json
+{
+""answer"": ""Garri a yi da kuma yin garri yana buɗe cell-lilin da ke da shi domin linamarase ya iya yin aiki a linamarin, kuma yin gishiri yana sa gishirin da ake yi ya yi zafi ya sa yanzu da yawa ya fito."",
+""citations"": [
+""P04""
+],
+""answerable"": true
+}
+```"
+gemma-4-e2b-litertlm,NH2,ha,schema,"{""answer"":
+""Garri a yi da shi ne ya yi tsami lokacin da ya yi fito da shi, kuma ana ya yi masa da shi zuwa tsawon irin ɗaya ko tsawon irin ɗaya, kuma ana ya yi masa da shi zuwa tsawon irin ɗaya ko tsawon irin ɗaya, kuma ana ya yi masa da shi zuwa tsawon irin ɗaya ko tsawon irin ɗaya."",
+""citations"":[""P04""],
+""answerable"":true}"
+gemma-4-e2b-litertlm,NH3,ha,free,"```json
+{
+""answer"": ""Ba a bayyana ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa a cikin bayanan da aka ba da. Bayanan da aka ba da ke kyakkyawan daidai game da price elasticity of demand, measures of central tendency, da spaced repetition."",
+""citations"": [
+],
+""answerable"": false
+}
+```"
+gemma-4-e2b-litertlm,NH3,ha,schema,"{""answer"":
+""Ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) ba shi da bayani a cikin wannan bayani. Wannan bayani ya yi magana game da price elasticity of demand, wanda ya bayyana yadda ake amsa da ci gaba ce da ci gaba ce da kuɗi da a yi da shi, kuma yayi bayani game da elasticity na amfani da kuɗi ba shi da bayani a cikin bayani na bayana."",
+""citations"":[""P08""],
+""answerable"":true}"
+gemma-4-e2b-litertlm,NI1,ig,free,"```json
+{
+""answer"": ""Safranin bụ ihe a na-eji na-eme counterstain, nke na-eme gram-negative cells na-ekwu pink na red under the microscope, n'ime gram-positive cells na-ekwu purple."",
+""citations"": [
+""P05""
+],
+""answerable"": true
+}
+```"
+gemma-4-e2b-litertlm,NI1,ig,schema,"{""answer"":"": ""
+
+,""citations"":[""P05""],
+""answerable"":true}"
+gemma-4-e2b-litertlm,NI2,ig,free,"```json
+{
+""answer"": ""Concrete na-eji agwọ (cure) n'usoro ọmụmụ, bụrụ na e jọrọ n'eji mma n'eji cement gị gị (hydrate)."",
+""citations"": [
+""P06""
+],
+""answerable"": true
+}
+```"
+gemma-4-e2b-litertlm,NI2,ig,schema,"{""answer"":	""Concrete bụ ihe dị n'ụto n'ụto (curing) bụ ihe dị mma n'ụto n'ụto (concrete) n'usoro ọmụmụ, nke a bụ ihe dị mma n'ụto n'ụto (concrete) n'usoro ọmụmụ."",	""citations"":[""P06""],	""answerable"":true}"
+gemma-4-e2b-litertlm,NI3,ig,free,"```json
+{
+""answer"": ""Merge sort-a na-akụkọ na-akụkọ (binary search) na-akụkọ (O(log n))."",
+""citations"": [
+""P03""
+],
+""answerable"": true
+}
+```"
+gemma-4-e2b-litertlm,NI3,ig,schema,"{""answer"":
+""Merge sort-a na O(log n) time complexity, ma ọ bụrụ na ọ bụrụ na ọ bụla na-e-sorta."",
+""citations"":
+[
+""P03""
+]
+,
+""answerable"":
+true
+}"
+gemma-4-e2b-litertlm,T06,yo,free,
+gemma-4-e2b-litertlm,E01,en,free,"Gram-negative cells appear pink or red at the end of Gram staining because of the counterstain, safranin. After the initial steps, Gram-negative cells lose the crystal violet-iodine complex because they have a thin peptidoglycan layer and an outer membrane. Finally, safranin is applied as the counterstain, which stains these cells pink or red under the microscope."
+gemma-4-e2b-litertlm,E02,en,free,"Demand for rice is elastic because the quantity demanded falls by a larger percentage (25%) than the price increase (10%). This results in an elasticity coefficient of -2.5. When demand is elastic, a price increase will actually lower the total revenue for the seller."
+gemma-4-e2b-litertlm,E03,en,free,"Cassava must be processed to reduce the hazard of hydrogen cyanide, which is released when the plant tissue is damaged. Processing, such as grating the roots for garri, breaks the cells so that the enzyme linamarase can act on linamarin. Furthermore, roasting the mash drives off much of the remaining hydrogen cyanide. Sun-drying thin chips also lowers the cyanide content. This processing is necessary because poorly processed cassava has been linked to konzo, a paralytic disease."
+gemma-4-e2b-litertlm,EY1,yo,free,"Ìdí tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́ (cassava) dáadáa kí a tó jẹ ẹ́ jẹ́ pé, àkò sílẹ̀ (cassava) sí iṣẹ́ tí ó le ṣe. Ìwé yìí sọ pé, àkò sílẹ̀ sí iṣẹ́ tí ó le ṣe nínú ìṣọfò sí iṣẹ́ tí ó le ṣe.
+
+Pẹ̀lú ìṣọfò sí iṣẹ́, àkò sílẹ̀ sí iṣẹ́ tí ó le ṣe nínú ìṣọfò sí iṣẹ́ tí ó le ṣe. Ìwé yìí sọ pé, àkò sílẹ̀ sí iṣẹ́ tí ó le ṣe nínú ìṣọfò sí iṣẹ́ tí ó le ṣe."
+gemma-4-e2b-litertlm,EH1,ha,free,"Asaliyan gaskiya (mean) na lissafa matsakaici na 4, 7, 7, 9 da 13 shi ne sa'a da sa'a da aka ƙara, kuma shi ne sa'a da aka yi a ƙarshe.
+
+Akwai daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi daɗi da aka yi"
+gemma-4-e2b-litertlm,EI1,ig,free,Projectile bụ ihe anyị na-eme na-agbọ na-agbọ anyi na-agbọ na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agbọ anyi na-agb
+gemma-4-e2b-q4km,NY1,yo,free,"```json
+{
+""answer"": ""Ní STP, mólù kan gáàsì máa ń gbà ní 22.4 L."",
+""citations"": [
+""P01""
+]
+}
+```"
+gemma-4-e2b-q4km,NY1,yo,schema,"{
+""answer"": ""Ní STP, mólù kan gáàsì máa ń gbà ní 22.4 L."",
+""citations"": [
+""P01""
+],""answerable"": true
+}"
+gemma-4-e2b-q4km,NY2,yo,free,"```json
+{
+""answer"": ""Ìpíndọ́gba (mean) ni 8."",
+""citations"": [
+""P07""
+]
+}
+```"
+gemma-4-e2b-q4km,NY2,yo,schema,"{
+""answer"": ""Ìpíndọ́gba (mean) ni 8."",
+""citations"": [
+""P07""
+],""answerable"": true
+}"
+gemma-4-e2b-q4km,NY3,yo,free,"```json
+{
+  ""answer"": ""Gram staining ṣe àtẹ̀jáde ọ̀nà lori ọrọ ìwọ̀n ìwàlẹ̀ ìwàlẹ̀ cell."",
+  ""citations"": [
+    ""P05""
+  ],
+  ""answerable"": true
+}
+```"
+gemma-4-e2b-q4km,NY3,yo,schema,"{
+  ""answer"": ""Gram staining ṣe àtẹ̀jáde ọ̀nà lori ọrùn ìwàlẹ̀ wọn."",
+  ""citations"": [
+    ""P05""
+  ],
+  ""answerable"": true
+}"
+gemma-4-e2b-q4km,NH1,ha,free,"```json
+{
+  ""answer"": ""Wurin kusurwa (range) a kan ƙasa mai faɗi yana da girma a lokacin wucewar zama a ƙarƙashin ƙaramin zama (launch angle) na 45 daraja."",
+  ""citations"": [
+    ""P02""
+  ],
+  ""answerable"": true
+}
+```"
+gemma-4-e2b-q4km,NH1,ha,schema,"{
+  ""answer"": ""Wurin kusurwa (range) a kan ƙasa mai faɗi yana da girma a lokacin da an fara da ƙaramin zama (launch angle) na 45 daraja."",
+  ""citations"": [
+    ""P02""
+  ],
+  ""answerable"": true
+}"
+gemma-4-e2b-q4km,NH2,ha,free,"```json
+{
+""answer"": ""Yin garri lokacin yin tsami yana sanya wuri don ya rage haɗarin cyanide. Guda daɗaya, gina tsami yana sanya wuri don ya rage haɗarin cyanide."",
+""citations"": [
+""P04""
+]
+}
+```"
+gemma-4-e2b-q4km,NH2,ha,schema,"{
+  ""answer"": ""Yin garri lokacin yin tsami yana sanya wuri da aka yi tsami a cikin tsarin da aka yi da shi. Wannan yana taimakawa wajen rage haɗarin cyanide da ke cikin tsirringi."",
+  ""citations"": [
+    ""P04""
+  ],
+  ""answerable"": true
+}"
+gemma-4-e2b-q4km,NH3,ha,free,"{""answer"": ""Ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) ba a bayyana a cikin rubutun da aka bayar a nan ba."", ""citations"": [], ""answerable"": false}"
+gemma-4-e2b-q4km,NH3,ha,schema,"{
+""answer"": ""Ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) ba ana ambatawa a cikin rubutun da aka bayar. Rubutun da aka bayar na iya magana kan sassaucin buƙata na farashin (price elasticity of demand), na tsakanin ma'aunin tsakanin tsakanin (mean, median, mode), da kuma hanyoyin koyo kamar sake maimaitawa da waɗanda suke da alaƙa da daɗin daɗin da ake samu (spaced repetition)."",
+""citations"": [],
+""answerable"": false
+}"
+gemma-4-e2b-q4km,NI1,ig,free,"```json
+{
+  ""answer"": ""Safranin a na-eji dị ka counterstain na Gram staining, karịsịta ndị gram-negative na-eme ka ha na-agba nkịtị na tím."",
+  ""citations"": [
+    ""P05""
+  ],
+  ""answerable"": true
+}
+```"
+gemma-4-e2b-q4km,NI1,ig,schema,"{
+  ""answer"": ""Safranin a na-eji dị ka counterstain na Gram staining, karịsịta ndị gram-negative na-eme ka ha na-agba aji pink ma ọ bụ red a ọsọ."",
+  ""citations"": [
+    ""P05""
+  ],
+  ""answerable"": true
+}"
+gemma-4-e2b-q4km,NI2,ig,free,"```json
+{
+""answer"": ""Ọ bụrụ na concrete a anọghị anya, ọ ga-e jiri nkwado na ọ dị n'ụsọ (moist) na n'ụzọ dị mma nke, ọ na-eme ka cement na-ahụ n'ụzọ."",
+""citations"": [
+""P06""
+]
+}
+```"
+gemma-4-e2b-q4km,NI2,ig,schema,"{
+  ""answer"": ""Ọ bụrụ na concrete anaghịkọta, ọ ga-e jiri ihe dị asoro na n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'ụzọ dị mma, ọ ga-e jiri ihe dị n'"
+gemma-4-e2b-q4km,NI3,ig,free,"{""answer"": ""Binary search na-eme ka ọdịiche (worst-case time complexity) O(log n)."", ""citations"": [""P03""], ""answerable"": true}"
+gemma-4-e2b-q4km,NI3,ig,schema,"{
+""answer"": ""Binary search na-eme kaarọpụta (worst-case time complexity) bụ O(log n)."",
+""citations"": [
+""P03""
+],""answerable"": true
+}"
+gemma-4-e2b-q4km,T06,yo,free,
+gemma-4-e2b-q4km,E01,en,free,"Gram-negative cells appear pink or red at the end of Gram staining because they lose the crystal violet-iodine complex during the decolorization step. This is because gram-negative cells have a thin peptidoglycan layer and an outer membrane. After the complex is washed out, safranin, which is the counterstain, is applied. Safranin stains the decolorized gram-negative cells pink or red under the microscope."
+gemma-4-e2b-q4km,E02,en,free,"Demand for rice is elastic when the absolute value of the price elasticity of demand is greater than 1. In the example, the elasticity is -2.5. This means that a 10 percent increase in the price of rice leads to a 25 percent decrease in the quantity demanded. When demand is elastic, a price increase will cause total revenue to decrease."
+gemma-4-e2b-q4km,E03,en,free,"Processing cassava is necessary because it contains cyanogenic glucosides, primarily linamarin, which release hydrogen cyanide when the plant tissue is damaged. Processing reduces this hazard. Grating breaks the cells, allowing the enzyme linamarase to act on linamarin. Additionally, roasting drives off much of the remaining hydrogen cyanide. Sun-drying thin chips also lowers the cyanide content, although this is a slower process."
+gemma-4-e2b-q4km,EY1,yo,free,"Lati jẹ ẹ́ cassava dáadáa, ó gbọdọ̀ ṣe ẹ̀gẹ́ nípa ọ̀nà mìíràn. Nígbà tí a ṣe garri, ó fi gbóná àwọn ẹyà cassava tí a ti fi kọjá sílẹ̀ láti fi gbóná sí i, ó sì fi gbóná sí i láti fi gbóná sí i. Gẹ́gẹ́ bíi èyí, ìgbẹ́kẹ̀lé òwò náà lè ṣe ìgbẹ́kẹ̀lé sí i, tí ó máa jẹ́ kí ìṣe ìgbẹ́kẹ̀lé linamarase ṣe dára. Lẹ́yìn náà, ìgbẹ́kẹ̀lé sí i (roasting) jẹ́ kí ọ̀pọ̀lọpọ̀ hydrogen cyanide tí ó wà níbẹ̀ fi wá lọ. Ìgbẹ́kẹ̀lé nígbà tí a fi ẹyà tí ó ti fi kọjá sílẹ̀ sílẹ̀, ó sì lè fi gbẹ́kẹ̀lé sí i láti fi kọjá sí i. Ìgbẹ́kẹ̀lé nígbà tí a fi ẹyà tí ó ti fi kọjá sílẹ̀ sílẹ̀ sílẹ̀ sì lè fi kọjá sí i láti fi kọjá sí i, ṣùgbọ́n ó máa ṣe ìgbẹ́kẹ̀lé tó dára."
+gemma-4-e2b-q4km,EH1,ha,free,"Matsakaicin (mean) na maki 4, 7, 7, 9 da 13 ana samun ta hanyar ciki (sum) da raba ta da lamba na maki. Ciki na waɗannan maki-maki shi ne 40. Lamba na maki kuma an raba ta da lamba 4. Don haka, matsakaicin shi ne 8."
+gemma-4-e2b-q4km,EI1,ig,free,"Ihe mere projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees bụ ihe a na-ekwurịsire n'ihe gbasara a. Ọ bụrụ na projectile a na-ata n'ụlọ, ọ bụrụ na ọ na-ata n'ọkụ (level ground), ọ bụrụ na ọ na-ata n'ọkụ n'ọkụ (angle) $\theta$ abụọ, a na-eji ihe a:
+
+N'ụlọ, nchekwa na ọ bụghị ada n'ụlọ, ọ bụrụ na ọ na-ata n'ọkụ $\theta$ abụọ, ọ bụrụ na ọ na-ata n'ọkụ n'ọkụ (level ground), ọ bụrụ na ọ na-ata n'ọkụ $\theta$ abụọ, ọ bụrụ na ọ na-ata n'ọkụ n'ọkụ (level ground), ọ bụrụ na ọ na-ata n'ọkụ $\theta$ abụọ, ọ bụrụ na ọ na-ata n'ọkụ n'ọkụ (level ground), ọ bụrụ na ọ na-ata n'ọkụ $\theta$ abụọ, ọ bụrụ na ọ na-ata n'ọkụ n'ọkụ (level ground), ọ bụrụ na ọ na-ata n'ọkụ $\theta$ abụọ, ọ bụrụ na ọ na-ata n'ọkụ n'ọkụ (level ground), ọ bụrụ na ọ na-ata n'ọkụ $\theta$ abụọ, ọ bụrụ na ọ na-ata n'ọkụ n'ọkụ (level ground), ọ bụrụ na ọ na-ata n'ọkụ"
+ministral-3-3b-q4km,NY1,yo,free,"```json
+{
+  ""answer"": ""Mólù kan gáàsì àwọn àyọkà bí àwọn àyọkà sọ sẹ́kẹ́ sẹ́kẹ́ ni 22.4 lítà, bí STP (273.15 K, 101.325 kPa)."",
+  ""citations"": [""P01""],
+  ""answerable"": true
+}
+```"
+ministral-3-3b-q4km,NY1,yo,schema,"{
+  ""answer"": ""Àwọn àyọkà àgààni àwọn mólù kan gáàsì máa ń gbà ní STP, àwọn mólù àgààni àwọn àyọkà àwọ̀kàn 22.4 lítà."",
+  ""citations"": [""P01""],
+  ""answerable"": true
+}"
+ministral-3-3b-q4km,NY2,yo,free,"```json
+{
+  ""answer"": ""Ìpíndọ́gba (mean) àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13 ni 8"",
+  ""citations"": [""P07""],
+  ""answerable"": true
+}
+```"
+ministral-3-3b-q4km,NY2,yo,schema,"{
+  ""answer"": ""Ìpíndọ́gba (mean) àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13 ni 8"",
+  ""citations"": [""P07""],
+  ""answerable"": true
+}"
+ministral-3-3b-q4km,NY3,yo,free,"```json
+{
+  ""answer"": ""Gram staining ni àdẹ̀jáde ọ̀nà kọ́kọ́ ṣe àdẹ̀jáde ọ̀nà ẹ̀kọ́kọ́ ẹ̀nìgbẹ̀n ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà ọ̀nà"
+ministral-3-3b-q4km,NY3,yo,schema,"{
+  ""answer"": ""Gram staining ni àdẹ̀jáde ọ̀nà kọ́kọ́ ṣe àdẹ̀jáde ọ̀nà ẹ̀kọ́nà ọ̀nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ́nà ẹ̀kọ"
+ministral-3-3b-q4km,NH1,ha,free,"```json
+{
+  ""answer"": ""Kan ƙasa mai faɗi, a wane kusurwa ne nisan jifa (range) yake mafi girma a kan 45 dafi, ba mafi sin(2θ) mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi"
+ministral-3-3b-q4km,NH1,ha,schema,"{
+  ""answer"": ""Kan ƙasa mai faɗi, a wane kusurwa ne nisan jifa (range) yake mafi girma a kan 45 dafi, ba mafi sin(2θ) mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi mafi"
+ministral-3-3b-q4km,NH2,ha,free,"```json
+{
+  ""answer"": ""Kwanaki nawa ake barin rogo da aka goga ya yi tsami lokacin yin garri, **10 miligramme per kilo** (10 mg/kg) da yi tsami lokacin yin garri nawa ake."",
+  ""citations"": [""P04""],
+  ""answerable"": true
+}
+```"
+ministral-3-3b-q4km,NH2,ha,schema,"{
+  ""answer"": ""Kwanaki nawa ake barin rogo da aka goga ya yi tsami lokacin yin garri, **10 miligramme per kilo** (10 mg/kg) nawa da yin safari ya gariya, nawa da yin safari ya gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya da yin gariya"
+ministral-3-3b-q4km,NH3,ha,free,"```json
+{
+  ""answer"": ""Kan da kuma ne ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa, da kuma ne ma'aunin da kuma ne fuskar samun kuɗi da kuma ne kufaɓa na kuma ne kufaɓa na kuma ne kufaɓa na kuma ne kufaɓa na kuma ne kufaɓa da kuma ne kufaɓa na kuma ne kufaɓa na kuma ne kufaɓa na kuma ne kufaɓa na kuma ne kufaɓa da kuma ne kufaɓa na kuma ne kufaɓa na kuma ne kufaɓa na kuma ne kufaɓa na kuma ne kufaɓa da kuma ne kufaɓa na kuma ne kufaɓa na kuma ne kufaɓa na kuma ne kufaɓa na"
+ministral-3-3b-q4km,NH3,ha,schema,"{
+  ""answer"": ""Kan da kuma ne ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa, da kuma ne ma'aunin da kuma ne fuskar samun kuɗi da kuma ne kama da kama ne kama da kuma ne kama da kama ne kama da kuma ne kama da kama ne kama da kama ne kama da kama ne kama da kama ne kama da kama ne kama da kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne kuma ne k"
+ministral-3-3b-q4km,NI1,ig,free,"```json
+{
+  ""answer"": ""Ndi a si kwuo ihe na-eji dị ka counterstain na Gram staining, **safranin**"",
+  ""citations"": [""P05""],
+  ""answerable"": true
+}
+```"
+ministral-3-3b-q4km,NI1,ig,schema,"{
+  ""answer"": ""Ndi a si kwuo ihe na-eji dị ka counterstain na Gram staining, **safranin**"",
+  ""citations"": [""P05""],
+  ""answerable"": true
+}"
+ministral-3-3b-q4km,NI2,ig,free,"```json
+{
+  ""answer"": ""Ụbọchị ole bụ oge kacha nta e ji agwọ (cure) concrete n'usoro ọmụmụ a n'ọrụ 7 n'ọrụ ọchọ (7 days) eji n'ọrụ 28 n'ọrụ ọchọ (28 days) eji n'ọrụ 28 n'ọrụ ọchọ (28 days) n'ịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịrịr"
+ministral-3-3b-q4km,NI2,ig,schema,"{
+  ""answer"": ""Ụbọchị ole bụ oge kacha nta e ji agwọ (cure) concrete n'usoro ọmụmụ a n'ọrụ 7 n'ọrụ ọmụmụ, ọrụ ịrị ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụmụ ụmụm"
+ministral-3-3b-q4km,NI3,ig,free,"```json
+{
+  ""answer"": ""Kedu oke oge nke merge sort, **O(n log n)**"",
+  ""citations"": [],
+  ""answerable"": false
+}
+```"
+ministral-3-3b-q4km,NI3,ig,schema,"{
+  ""answer"": ""Kedu oke oge nke merge sort, **O(n log n)**"",
+  ""citations"": [],
+  ""answerable"": false
+}"
+ministral-3-3b-q4km,T06,yo,free,
+ministral-3-3b-q4km,E01,en,free,"In Gram staining, gram-negative bacteria appear pink because after crystal violet and iodine are applied, the thick peptidoglycan layer in gram-positive cells retains the stain. When alcohol or acetone is added, it dissolves the outer membrane and thin peptidoglycan layer of gram-negative cells, washing out the crystal violet-iodine complex. Safranin, the counterstain, then stains the gram-negative cells pink, while gram-positive cells remain purple. This difference highlights their distinct cell wall structures."
+ministral-3-3b-q4km,E02,en,free,"In the example, when rice prices **rose by 10%**, people bought **much less** (a **25% drop**) because they had fewer substitutes. This means demand is **elastic**—meaning buyers are highly sensitive to price changes. Since demand is elastic, raising the price led to **less total revenue** for sellers."
+ministral-3-3b-q4km,E03,en,free,"Cassava must be processed before eating because its roots contain **cyanogenic glucosides** (like linamarin), which release **hydrogen cyanide** when damaged. Processing reduces this hazard by:
+
+1. **Grating** – Breaks cell walls, allowing the enzyme **linamarase** to convert linamarin into less toxic compounds.
+2. **Fermentation** – Removes some cyanide as the mash ferments.
+3. **Sieving & roasting** – Drives off remaining cyanide, lowering toxicity.
+4. **Sun-drying** – Gradually reduces cyanide content (though slower than roasting).
+
+Unprocessed cassava poses risks like **konzo**, a paralytic disease from excessive cyanide intake. The goal is to ensure the final product meets a **safety limit of 10 mg cyanide per kg**."
+ministral-3-3b-q4km,EY1,yo,free,"**Àdààrẹ̀ ní àdààrẹ̀ BUILD:**
+
+Cassava (dáadáa) àdààrẹ̀ kí àkí àdààrẹ̀ **linamarase** tí àdààrẹ̀ **linamarin** tí jẹ̀ **àkí àdààrẹ̀** (àdààrẹ̀ **àkí àdààrẹ̀** tí jẹ̀ **àkí àdààrẹ̀** tí jẹ̀ **àkí àdààrẹ̀** tí jẹ̀ **àkí àdààrẹ̀** tí jẹ̀ **àkí àdààrẹ̀** tí jẹ̀ **àkí àdààrẹ̀** tí jẹ̀ **àkí àdààrẹ̀** tí jẹ̀ **àkí àdààrẹ̀**).
+
+Garri tí jẹ̀ àdààrẹ̀ tí àdààrẹ̀ **àdààrẹ̀** tí jẹ̀ **àdààrẹ̀** tí jẹ̀ **àdààrẹ̀** tí jẹ̀ **àdààrẹ̀** tí jẹ̀ **àdààrẹ̀** tí jẹ̀ **àdààrẹ̀** tí jẹ̀ **àdààrẹ̀** tí jẹ̀ **àdààrẹ̀** tí jẹ̀ **àdààrẹ̀** tí jẹ̀ **àdà"
+ministral-3-3b-q4km,EH1,ha,free,"**Hausa:**
+
+**Mean (Arithmetic Mean):**
+Tawa 4, 7, 7, 9, 13 **da** sumu 40. **Mean** ake **40 ÷ 5 = 8**.
+
+**Median:**
+Tawa **arrange** da **7** (sana **4, 7, 7, 9, 13**), **middle** ake **7**.
+
+**Mode:**
+**7** ake **most frequent** value.
+
+**Kan da** **outliers** (extreme values), **median** **ke da** **mean** **sensitive** **towards** **extreme** values."
+ministral-3-3b-q4km,EI1,ig,free,"Nnọrị n’ọrị, **projectile** ji achaa na **gravity** naa naa n’ọrị, **air resistance** ji achaa naa. **g** (acceleration due to gravity) ji 9.81 m/s², naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa naa na"
+phi-4-mini-q4km,NY1,yo,free,"{""answer"": ""Ní STP, mólù kan gáàsì ń ń gbà sí 22.4 L"", ""citations"": [""P01""]}"
+phi-4-mini-q4km,NY1,yo,schema,"{""answer"": ""Ní STP, mólù kan gáàsì máa ń gbà ní 22.4 L"", ""citations"": [""P01""],""answerable"": true}"
+phi-4-mini-q4km,NY2,yo,free,"{""answer"": ""Ìpíndọ́gba (mean) àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13 ni 8."", ""citations"": [""P07""]}"
+phi-4-mini-q4km,NY2,yo,schema,"{""answer"": ""Ìpíndọ́gba (mean) àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13 ni 8."", ""citations"": [""P07""],""answerable"": true}"
+phi-4-mini-q4km,NY3,yo,free,"{""answer"": ""Ọdún Gram staining ni wọ́n kọ́kọ́ ṣe àtẹ̀jáde ọ̀nà peptidoglycan, pe peptidoglycan ni Gram-positive cells ni ọ̀nà ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti ti pe ni ti"
+phi-4-mini-q4km,NY3,yo,schema,"{""answer"": ""Ọdún Gram staining ni wọ́n kọ́kọ́ ṣe àtẹ̀jáde ọ̀nà peptidoglycan, pe peptidoglycan ni Gram-positive cells ni ọ̀nà ti peptidoglycan ti ti wa ni ọ̀nà ti peptidoglycan ti ti wa ni Gram-negative cells. Ijọba pe peptidoglycan ti wa ni Gram-positive cells ni ọ̀nà ti peptidoglycan ti wa ni Gram-negative cells, pe peptidoglycan ti wa ni Gram-negative cells ni ọ̀nà peptidoglycan ti wa ni Gram-positive cells."", ""citations"": [""P05""],""answerable"": true}"
+phi-4-mini-q4km,NH1,ha,free,"{""answer"": ""A, ba da jifa mai girma (range) da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima da ke da jima"
+phi-4-mini-q4km,NH1,ha,schema,"{""answer"": ""A, ba da jifa mai girma (range) da ke da jima da ke da girma, yana da jima da ke da girma. A da jima da ke da girma, yana da jima da ke da girma. A da jima da ke da girma, yana da jima da ke da girma. A da jima da ke da girma, yana da jima da ke da girma. A da jima da ke da girma, yana da jima da ke da girma. A da jima da ke da girma, yana da jima da ke da girma. A da jima da ke da girma, yana da jima da ke da girma. A da jima da ke da girma, yana da jima da ke da girma. A da jima da ke da girma, yana da jima da ke da girma. A da jima da ke da girma, yana da jima da ke da girma. A da jima da ke da girma, yana da jima da ke da girma. A da jima da ke da girma, yana da jima da ke da girma"
+phi-4-mini-q4km,NH2,ha,free,"{""answer"": ""Aye, barin da aka goga ya yi tsami wajen garri, ya bar da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da"
+phi-4-mini-q4km,NH2,ha,schema,"{""answer"": ""Aye, barin da aka goga ya yi tsami wajen garri, ya bar da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da aka barin da"
+phi-4-mini-q4km,NH3,ha,free,"{""answer"": ""Ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa na da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shinkafa da ke da shinkafa ta shink"
+phi-4-mini-q4km,NH3,ha,schema,"{""answer"": ""Ma'aunin sassaucin ta fuskar samun kuɗi (income elasticity) na shinkafa ta hanyar da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da ke da shinkafa da"
+phi-4-mini-q4km,NI1,ig,free,"{""answer"": ""Safranin"", ""citations"": [""P05""]}"
+phi-4-mini-q4km,NI1,ig,schema,"{""answer"": ""Safranin"", ""citations"": [""P05""],""answerable"": true}"
+phi-4-mini-q4km,NI2,ig,free,"{""answer"": ""Ụtụtụ na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na"
+phi-4-mini-q4km,NI2,ig,schema,"{""answer"": ""Ụtụtụ na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na-eme ka na"
+phi-4-mini-q4km,NI3,ig,free,"{""answer"": ""O(n log n)"", ""citations"": [""P03""]}"
+phi-4-mini-q4km,NI3,ig,schema,"{""answer"": ""O(n log n)"", ""citations"": [""P03""],""answerable"": true}"
+phi-4-mini-q4km,T06,yo,free,"To assist you with normalization for CSC 305, I can provide you with a brief explanation of what normalization is and why it's important in the context of database design. Normalization is a process used to organize a database into tables and columns to reduce data redundancy and improve data integrity. The main goals of normalization are to eliminate redundant data, ensure data dependencies make sense, and simplify the database structure.
+
+There are several normal forms that databases can be normalized to, with the first normal form (1NF) being the most basic. Subsequent normal forms (2NF, 3NF, BCNF, etc.) build upon the previous ones with additional rules to further reduce redundancy and improve the structure.
+
+If you need more detailed information or specific examples related to CSC 305, let me know, and I can call the appropriate tool to provide you with the resources you need."
+phi-4-mini-q4km,E01,en,free,"In Gram staining, gram-negative cells appear pink because they lose the crystal violet-iodine complex during the decolourisation step. This is due to their thin peptidoglycan layer and outer membrane. After decolourisation, the counterstain, safranin, is applied. Safranin stains the gram-negative cells pink or red, making them visible under the microscope. In contrast, gram-positive cells retain the purple color from the crystal violet-iodine complex."
+phi-4-mini-q4km,E02,en,free,"If the demand for rice is elastic, it means that when the price of rice goes up, people buy much less rice. In the example, a 10% price increase led to a 25% drop in how much rice people wanted to buy. This big drop in demand means that the total money made from selling rice decreases when prices go up. So, elastic demand shows that people are sensitive to price changes and will buy significantly less if prices rise."
+phi-4-mini-q4km,E03,en,free,"Cassava must be processed before consumption to reduce the risk of cyanide poisoning. The roots contain cyanogenic glucosides, mainly linamarin, which release hydrogen cyanide when damaged. Processing methods like fermentation, grating, roasting, and sun-drying break cells, activate enzymes, and remove cyanide, lowering the cyanide content to safe levels. Without proper processing, cassava can cause konzo, a paralytic disease, especially in communities relying on it during food shortages."
+phi-4-mini-q4km,EY1,yo,free,"Cassava roots contain cyanogenic glucosides, mainly linamarin, which release hydrogen cyanide when damaged. Processing reduces this hazard. To make garri, peeled roots are grated, packed into sacks, and left to ferment for two to four days while water is pressed out; the mash is sieved and roasted. Grating breaks the cells so that the enzyme linamarase can act on linamarin, and roasting drives off much of the remaining hydrogen cyanide. Sun-drying thin chips also lowers cyanide content, but more slowly. For this course, a total cyanide content of 10 mg per kg in the finished flour is the reference safety limit. Poorly processed cassava has been linked to konzo, a paralytic disease, in communities that depend heavily on cassava during food shortages."
+phi-4-mini-q4km,EH1,ha,free,"A cikin harshen Hausa, matsakaici (mean) na maki 4, 7, 7, 9 da 13 yana da sum da 40. A cikin harshen, matsakaici (mean) na 40 ya haifar da 8. A cikin harshen, matsakaici (median) na 7. A cikin harshen, matsakaici (mode) na 7. A harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen harshen"
+phi-4-mini-q4km,EI1,ig,free,N'elu na-eme ka projectile ji aga ebe ị bụmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchịmuchị
+qwen3-1.7b-q4km,NY1,yo,free,"{""answer"": ""Gẹ́gẹ́ bí àwọn àyọkà náà ṣe sọ, lítà mélòó ni mólù kan gáàsì máa ń gbà ní STP?"", ""citations"": [""P01""], ""answerable"": true}"
+qwen3-1.7b-q4km,NY1,yo,schema,"{""answer"": ""Gẹ́gẹ́ bí àwọn àyọkà náà ṣe sọ, lítà mélòó ni mólù kan gáàsì máa ń gbà ní STP?"", ""citations"": [""P01""], ""answerable"": true}"
+qwen3-1.7b-q4km,NY2,yo,free,"{""answer"": ""O ìpíndọ́gba (mean) àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13 ìdánwò 8"", ""citations"": [""P07""], ""answerable"": true}"
+qwen3-1.7b-q4km,NY2,yo,schema,"{""answer"": ""O ìpíndọ́gba (mean) àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13 è 8"", ""citations"": [""P07""], ""answerable"": true}"
+qwen3-1.7b-q4km,NY3,yo,free,"{""answer"": ""Ọdún wo ni wọ́n kọ́kọ́ ṣe àtẹ̀jáde ọ̀nà Gram staining?"", ""citations"": [""P05""], ""answerable"": true}"
+qwen3-1.7b-q4km,NY3,yo,schema,"{""answer"": ""Ọdún wo ni wọ́n kọ́kọ́ ṣe àtẹ̀jáde ọ̀nà Gram staining?"", ""citations"": [""P05""], ""answerable"": true}"
+qwen3-1.7b-q4km,NH1,ha,free,"{""answer"": ""Bisa ga bayanan, a wane kusurwa ne nisan jifa (range) yake mafi girma a kan ƙasa mai faɗi?"", ""citations"": [""P02""], ""answerable"": true}"
+qwen3-1.7b-q4km,NH1,ha,schema,"{""answer"": ""Bisa ga bayanan, a wane kusurwa ne nisan jifa (range) yake mafi girma a kan ƙasa mai faɗi?"", ""citations"": [""P02""], ""answerable"": true}"
+qwen3-1.7b-q4km,NH2,ha,free,"{""answer"": ""Kwanaki nawa ake barin rogo da aka goga ya yi tsami lokacin yin garri?"", ""citations"": [""P04""], ""answerable"": true}"
+qwen3-1.7b-q4km,NH2,ha,schema,"{""answer"": ""Kwanaki nawa ake barin rogo da aka goga ya yi tsami lokacin yin garri?"", ""citations"": [""P04""], ""answerable"": true}"
+qwen3-1.7b-q4km,NH3,ha,free,"{""answer"": ""Mene ne ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa?"", ""citations"": [""P08""], ""answerable"": true}"
+qwen3-1.7b-q4km,NH3,ha,schema,"{""answer"": ""Mene ne ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa?"", ""citations"": [""P08""], ""answerable"": true}"
+qwen3-1.7b-q4km,NI1,ig,free,"{""answer"": ""Dịka ederede ndị a si kwuo, kedu ihe a na-eji dị ka counterstain na Gram staining?"", ""citations"": [""P05""], ""answerable"": true}"
+qwen3-1.7b-q4km,NI1,ig,schema,"{""answer"": ""Dịka ederede ndị a si kwuo, kedu ihe a na-eji dị ka counterstain na Gram staining?"", ""citations"": [""P05""], ""answerable"": true}"
+qwen3-1.7b-q4km,NI2,ig,free,"{""answer"": ""Ụbọchị ole bụ oge kacha nta e ji agwọ (cure) concrete n'usoro ọmụmụ a?"", ""citations"": [""P06""], ""answerable"": true}"
+qwen3-1.7b-q4km,NI2,ig,schema,"{""answer"": ""Ụbọchị ole bụ oge kacha nta e ji agwọ (cure) concrete n'usoro ọmụmụ a?"", ""citations"": [""P06""], ""answerable"": true}"
+qwen3-1.7b-q4km,NI3,ig,free,"{""answer"": ""Kedu oke oge (worst-case time complexity) nke merge sort? O(n log n)"", ""citations"": [""P03""], ""answerable"": true}"
+qwen3-1.7b-q4km,NI3,ig,schema,"{""answer"": ""Kedu oke oge (worst-case time complexity) nke merge sort? O(n log n)"", ""citations"": [""P03""], ""answerable"": true}"
+qwen3-1.7b-q4km,T06,yo,free,"The term ""normalisation"" in the context of CSC 305 likely refers to the normalization of data or database structures. To assist you, I will search for passages about normalization in the course pack for CSC 305.
+
+"
+qwen3-1.7b-q4km,E01,en,free,"Gram-negative cells appear pink because they lose the crystal violet-iodine complex during decolorization. This happens due to their thin peptidoglycan layer and outer membrane, which allow the dye to be washed away. The remaining cells are stained with safranin, giving them a pink color. This distinction helps identify bacteria as either gram-positive or gram-negative."
+qwen3-1.7b-q4km,E02,en,free,"In the example, the demand for rice is elastic because a 10% price increase leads to a 25% decrease in quantity demanded. Elastic demand means that a small change in price causes a large change in quantity demanded. When prices rise, total revenue falls, which is why demand is elastic."
+qwen3-1.7b-q4km,E03,en,free,"Cassava must be processed before it is eaten because it contains cyanogenic glucosides, such as linamarin, which release hydrogen cyanide when the plant tissue is damaged. These compounds are toxic and can cause health issues if consumed without proper processing. Processing, such as grating and roasting, breaks down the cells and reduces the cyanide content, making the cassava safe to eat."
+qwen3-1.7b-q4km,EY1,yo,free,"Ṣàlàyé ní èdè Yorùbá ìdí tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́ (cassava) dáadáa kí a tó jẹ ẹ́. Cassava roots contain cyanogenic glucosides, mainly linamarin, which release hydrogen cyanide when the plant tissue is damaged. Processing reduces this hazard. To make garri, peeled roots are grated, packed into sacks and left to ferment for two to four days while water is pressed out; the mash is then sieved and roasted. Grating breaks the cells so that the enzyme linamarase can act on linamarin, and roasting drives off much of the remaining hydrogen cyanide. Sun-drying of thin chips also lowers cyanide content, but more slowly. For this course, a total cyanide content of 10 mg per kg in the finished flour is the reference safety limit. Poorly processed cassava has been linked to konzo, a paralytic disease, in communities that depend heavily on cassava during food shortages."
+qwen3-1.7b-q4km,EH1,ha,free,"Ka bayyana a cikin harshen Hausa yadda ake lissafa matsakaici (mean) na maki 4, 7, 7, 9 da 13.  
+Suma a kaka 4 + 7 + 7 + 9 + 13 = 36.  
+Nume a kaka 5.  
+Mean a kaka 36 ÷ 5 = 7.2.  
+Maki 7.2, kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+Maki 7.2 a kaka 7.2.  
+M"
+qwen3-1.7b-q4km,EI1,ig,free,Kọwaa n'asụsụ Igbo ihe mere projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees. Kọwaa n'asụsụ Igbo ihe mere projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees.
+qwen3.5-0.8b-q4km,NY1,yo,free,"{""answer"": ""Mólù kan gáàsì máa ń gbà ní STP, nítorí ọ̀pọ̀lò tí ó wáyì nítorí ọ̀pọ̀lò àwọn àyọkà náà (Boyle's law, Charles's law, Avogadro's principle, àti ideal gas equation). Ọ̀pọ̀lò àwọn àyọkà náà ṣe sọ, nítorí ọ̀pọ̀lò àwọn àyọkà náà (Boyle's law, Charles's law, Avogadro's principle, àti ideal gas equation)."", ""citations"": [""[P01]"", ""[P07]"", ""[P02]""], ""answerable"": true}"
+qwen3.5-0.8b-q4km,NY1,yo,schema,"{""answer"": ""Mólù kan gáàsì máa ń gbà ní STP, nítorí ọ̀pọ̀lò tí ó wáyì nítorí ọ̀pọ̀lò àwọn àyọkà náà (Boyle's law, Charles's law, Avogadro's principle, àti ideal gas equation). Ọ̀pọ̀lò àwọn àyọkà náà ṣe sọ, nítorí ọ̀pọ̀lò àwọn àyọkà náà (Boyle's law, Charles's law, Avogadro's principle, àti ideal gas equation)."", ""citations"": [""[P01]"", ""[P07]"", ""[P02]""], ""answerable"": true}"
+qwen3.5-0.8b-q4km,NY2,yo,free,"{""answer"": ""Ojúkọ tí a bá ìpíndọ́gba (mean) àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13, ọdọ 40, ọdọ 8, ọdọ 7. Ojúkọ tí a bá ìpíndọ́gba àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13, ọdọ 40, ọdọ 8, ọdọ 7."", ""citations"": [""[P07]""], ""answerable"": true}"
+qwen3.5-0.8b-q4km,NY2,yo,schema,"{""answer"": ""Ojúkọ tí a bá ìpíndọ́gba (mean) àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13, ọdọ 40, ọdọ 8, ọdọ 7. Ojúkọ tí a bá ìpíndọ́gba àwọn máàkì ìdánwò 4, 7, 7, 9 àti 13, ọdọ 40, ọdọ 8, ọdọ 7."", ""citations"": [""[P07]""], ""answerable"": true}"
+qwen3.5-0.8b-q4km,NY3,yo,free,"{""answer"": ""Ọdún wo ni wọ́n kọ́kọ́ ṣe àtẹ̀jáde ọ̀nà Gram staining, àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti à"
+qwen3.5-0.8b-q4km,NY3,yo,schema,"{""answer"": ""Ọdún wo ni wọ́n kọ́kọ́ ṣe àtẹ̀jáde ọ̀nà Gram staining, àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti àti à"
+qwen3.5-0.8b-q4km,NH1,ha,free,"{""answer"": ""Wane kusurwa ne nisan jifa (range) yake mafi girma a kan ƙasa mai faɗi, wanda ke ƙirƙira ƙasa mai faɗi (45°) a kan ƙasa mai faɗi (2θ = 90°)."", ""citations"": [""[P02]""], ""answerable"": true}"
+qwen3.5-0.8b-q4km,NH1,ha,schema,"{""answer"": ""Wane kusurwa ne nisan jifa (range) yake mafi girma a kan ƙasa mai faɗi, wanda ke ƙirƙira ƙasa mai faɗi (45°) a kan ƙasa mai faɗi (2θ = 90°)."", ""citations"": [""[P02]""], ""answerable"": true}"
+qwen3.5-0.8b-q4km,NH2,ha,free,"{""answer"": ""Garri ni garri ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma n"
+qwen3.5-0.8b-q4km,NH2,ha,schema,"{""answer"": ""Garri ni garri ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma nini ya gaba, kuma n"
+qwen3.5-0.8b-q4km,NH3,ha,free,"{""answer"": ""Mene ne ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa ko 1.0. Taƙaice P08 taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice ta"
+qwen3.5-0.8b-q4km,NH3,ha,schema,"{""answer"": ""Mene ne ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa ko 1.0. Taƙaice P08 taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice taƙaice ta"
+qwen3.5-0.8b-q4km,NI1,ig,free,"{""answer"": ""Safranin"", ""citations"": [""[P05]""], ""answerable"": true}"
+qwen3.5-0.8b-q4km,NI1,ig,schema,"{""answer"": ""Safranin"", ""citations"": [""[P05]""], ""answerable"": true}"
+qwen3.5-0.8b-q4km,NI2,ig,free,"{""answer"": ""Ọmụmụ a bụ concrete (concrete mix) nke a na-akọwa na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụr"
+qwen3.5-0.8b-q4km,NI2,ig,schema,"{""answer"": ""Ọmụmụ a bụ concrete (concrete mix) nke a na-akọwa na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụrụ na ọ bụr"
+qwen3.5-0.8b-q4km,NI3,ig,free,"{""answer"": ""Oke oge oge (worst-case time complexity) nke merge sort?"", ""citations"": [""[P03]""], ""answerable"": true}"
+qwen3.5-0.8b-q4km,NI3,ig,schema,"{""answer"": ""Oke oge oge (worst-case time complexity) nke merge sort?"", ""citations"": [""[P03]""], ""answerable"": true}"
+qwen3.5-0.8b-q4km,T06,yo,free,"Nígbà tí wọ̀n wọ̀n, wọ̀n wọ̀n, wọ̀n wọ̀n.
+
+Nígbà tí wọ̀n wọ̀n, wọ̀n wọ̀n, wọ̀n wọ̀n.
+
+Nígbà tí wọ̀n wọ̀n, wọ̀n wọ̀n, wọ̀n wọ̀n.
+
+Nígbà tí wọ̀n wọ̀n, wọ̀n wọ̀n, wọ̀n wọ̀n.
+
+Nígbà tí wọ̀n wọ̀n, wọ̀n wọ̀n, wọ̀n wọ̀n.
+
+Nígbà tí wọ̀n wọ̀n, wọ̀n wọ̀n, wọ̀n wọ̀n.
+
+Nígbà tí wọ̀n wọ̀n, wọ̀n wọ̀n, wọ̀n wọ̀n.
+
+Nígbà tí wọ̀n wọ̀n, wọ̀n wọ̀n, wọ"
+qwen3.5-0.8b-q4km,E01,en,free,"Gram-negative bacteria lose the purple crystal violet-iodine complex because their cell walls lack the thick peptidoglycan layer found in gram-positive cells. Instead, they possess a thin peptidoglycan layer and an outer membrane. When decolourised with alcohol, this outer membrane dissolves, allowing the counterstain safranin to penetrate and color the cells pink or red. This distinction is crucial for identifying the two main groups: gram-positive cells retain the purple complex, while gram-negative cells lose it and appear pink."
+qwen3.5-0.8b-q4km,E02,en,free,"The demand for rice is elastic because a 10% price hike causes a 25% drop in quantity sold. Since the percentage change in price is larger than the percentage change in quantity demanded, the demand is elastic. This means that a small increase in price leads to a disproportionately large decrease in sales volume. Consequently, a price increase lowers total revenue."
+qwen3.5-0.8b-q4km,E03,en,free,"Cassava must be processed before consumption because raw roots contain cyanogenic glucosides, primarily linamarin, which release hydrogen cyanide when damaged. Processing breaks down these compounds through enzymatic action (grating) and thermal treatment (roasting), significantly reducing the hazard. Additionally, sun-drying lowers cyanide content more slowly than roasting. The course specifies a safety limit of 10 mg per kg in finished flour, and poorly processed cassava is linked to paralytic diseases like konzo in communities relying on cassava during food shortages. Therefore, processing is essential to meet safety standards and prevent health risks."
+qwen3.5-0.8b-q4km,EY1,yo,free,"Ṣàlàyé ní èdè Yorùbá ìdí tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́ (cassava) dáadáa kí a tó jẹ ẹ́.
+
+Ṣàlàyé ní èdè Yorùbá ìdí tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́ (cassava) dáadáa kí a tó jẹ ẹ́.
+
+Ṣàlàyé ní èdè Yorùbá ìdí tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́ (cassava) dáadáa kí a tó jẹ ẹ́.
+
+Ṣàlàyé ní èdè Yorùbá ìdí tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́ (cassava) dáadáa kí a tó jẹ ẹ́.
+
+Ṣàlàyé ní èdè Yorùbá ìdí tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́ (cassava) dáadáa kí a tó jẹ ẹ́.
+
+Ṣàlàyé ní èdè Yorùbá ìdí tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́ (cassava) dáadáa kí a tó jẹ ẹ́.
+
+Ṣàlàyé ní èdè Yorùbá ìdí tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́ (cassava) dáadáa kí a tó jẹ ẹ́.
+
+Ṣàlàyé ní"
+qwen3.5-0.8b-q4km,EH1,ha,free,"Ka bayyana a cikin harshen Hausa yadda ake lissafa matsakaici (mean) na maki 4, 7, 7, 9 da 13. Maki 4, 7, 7, 9 da 13 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 40 ko 40. Maki 4"
+qwen3.5-0.8b-q4km,EI1,ig,free,Nke a na-achọrọ nke projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees. Ihe ndị a na-achọrọ: ọ bụgha nke projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees. Ihe ndị a na-achọrọ: ọ bụgha nke projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees. Ihe ndị a na-achọrọ: ọ bụgha nke projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees. Ihe ndị a na-achọrọ: ọ bụgha nke projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees. Ihe ndị a na-achọrọ: ọ bụgha nke projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees. Ihe ndị a na-achọrọ: ọ bụgha nke projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees. Ihe ndị a na-achọrọ: ọ bụgha nke projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees. Ihe ndị a na-achọrọ: ọ bụgha nke projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees. Ihe ndị a na-achọrọ: ọ bụgha nke projectile ji aga ebe kachasị anya mg
+qwen3.5-2b-q4km,NY1,yo,free,"{""answer"": ""Ní STP, lítà mélòó ni mólù kan gáàsì máa ń gbà jẹ́ 22.4 L."", ""citations"": [""P01""], ""answerable"": true}"
+qwen3.5-2b-q4km,NY1,yo,schema,"{""answer"": ""Ní STP, lítà mélòó ni mólù kan gáàsì máa ń gbà jẹ́ 22.4 L."", ""citations"": [""P01""], ""answerable"": true}"
+qwen3.5-2b-q4km,NY2,yo,free,"{""answer"": ""8"", ""citations"": [""[P07]""], ""answerable"": true}"
+qwen3.5-2b-q4km,NY2,yo,schema,"{""answer"": ""8"", ""citations"": [""[P07]""], ""answerable"": true}"
+qwen3.5-2b-q4km,NY3,yo,free,"{
+""answer"": ""Ọdún wo ni wọ́n kọ́kọ́ ṣe àtẹ̀jáde ọ̀nà Gram staining? Ọ̀nà àtẹ̀jáde ọ̀nà Gram staining kọ́kọ́ jẹ́ àtẹ̀jáde àkọ́kọ́ tí ó ṣe àtẹ̀jáde àwọn ìyàtọ̀ àkọ́kọ́ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàt"
+qwen3.5-2b-q4km,NY3,yo,schema,"{
+""answer"": ""Ọdún wo ni wọ́n kọ́kọ́ ṣe àtẹ̀jáde ọ̀nà Gram staining? Ọ̀nà àtẹ̀jáde ọ̀nà Gram staining kọ́kọ́ jẹ́ àtẹ̀jáde àkọ́kọ́ tí ó ṣe àtẹ̀jáde àwọn ìyàtọ̀ àkọ́kọ́ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàtọ̀ àwọn ìyàt"
+qwen3.5-2b-q4km,NH1,ha,free,"{""answer"": ""A wane kusurwa ne nisan jifa (range) yake mafi girma a kan ƙasa mai faɗi shine 45°, saboda a cikin lissafi na ƙasa mai faɗi, juna musamman a ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙash"
+qwen3.5-2b-q4km,NH1,ha,schema,"{""answer"": ""A wane kusurwa ne nisan jifa (range) yake mafi girma a kan ƙasa mai faɗi shine 45°, saboda a cikin lissafi na ƙasa mai faɗi, juna musamman a ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙashin ƙarƙash"
+qwen3.5-2b-q4km,NH2,ha,free,"{
+""answer"": ""Ake goga ba da sauran barin rogo da aka goga ya yi tsami lokacin yin garri, amma ba ake goga ba da sauran barin rogo da aka goga ya yi tsami lokacin yin garri ba ne, saboda babu amsa a cikin pasu. Amsar yana da ƙarfi ne a cikin ƙa'idar da ke nufin ƙarfi, amma babu amsa a cikin pasu."",
+""citations"": []
+}"
+qwen3.5-2b-q4km,NH2,ha,schema,"{
+""answer"": ""Ake goga ba da sauran barin rogo da aka goga ya yi tsami lokacin yin garri, amma ba ake goga ba da sauran barin rogo da aka goga ya yi tsami lokacin yin garri ba ne, saboda babu amsa a cikin pasu. Amsar yana da ƙarfi ne a cikin ƙa'idar da ke nufin ƙarfi, amma babu amsa a cikin pasu."",
+""citations"": [],""answerable"": false}"
+qwen3.5-2b-q4km,NH3,ha,free,"{""answer"": ""Mene ne ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa? Amsa: Ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa yana nuna yadda takardar shinkafa ta hanyar samun kuɗi (income) ta hanyar ƙara ƙarfin shinkafa. Idan ma'aunin shinkafa ya ƙara kuɗin (income elasticity) ya kasance ɗaya, wanda ke da ƙarfi, yana nuna cewa shinkafa ta ƙara kuɗin da ke da ƙarfi. Idan ma'aunin shinkafa ya ƙara kuɗin da ke da ƙarfi, wanda ke da ƙarfi, yana nuna cewa shinkafa ta ƙara kuɗin da ke da ƙarfi. Idan ma'aunin shinkafa ya ƙara kuɗin da"
+qwen3.5-2b-q4km,NH3,ha,schema,"{""answer"": ""Mene ne ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa? Amsa: Ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa yana nuna yadda takardar shinkafa ta hanyar samun kuɗi (income) ta hanyar ƙara ƙarfin shinkafa. Idan ma'aunin shinkafa ya ƙara kuɗin (income elasticity) ya kasance ɗaya, wanda ke da ƙarfi, yana nuna cewa shinkafa ta ƙara kuɗin da ke da ƙarfi. Idan ma'aunin shinkafa ya ƙara kuɗin da ke da ƙarfi, wanda ke da ƙarfi, yana nuna cewa shinkafa ta ƙara kuɗin da ke da ƙarfi. Idan ma'aunin shinkafa ya ƙara kuɗin da"
+qwen3.5-2b-q4km,NI1,ig,free,"{""answer"": ""Counterstain na Gram staining bụ safranin."", ""citations"": [""[P05]""], ""answerable"": true}"
+qwen3.5-2b-q4km,NI1,ig,schema,"{""answer"": ""Counterstain na Gram staining bụ safranin."", ""citations"": [""[P05]""], ""answerable"": true}"
+qwen3.5-2b-q4km,NI2,ig,free,"{""answer"": ""Oge kacha nta e ji agwọ (cure) concrete n'usoro ọmụmụ a bụ ụbọchị 7."", ""citations"": [""P06""], ""answerable"": true}"
+qwen3.5-2b-q4km,NI2,ig,schema,"{""answer"": ""Oge kacha nta e ji agwọ (cure) concrete n'usoro ọmụmụ a bụ ụbọchị 7."", ""citations"": [""P06""], ""answerable"": true}"
+qwen3.5-2b-q4km,NI3,ig,free,"{
+""answer"": ""Merge sort na-achịkwa nke ọ bụghị binary search, ya mere ọ bụghị nke a na-achịkwa nke ọma. Ọ bụrụ na ị na-achịkwa nke ọma, ọ ga-achịkwa nke ọma nke ọma nke ọ bụghị nke ọ bụla. Ọ bụrụ na ị na-achịkwa nke ọma, ọ ga-achịkwa nke ọma nke ọ bụghị nke ọ bụla. Ọ bụrụ na ị na-achịkwa nke ọma, ọ ga-achịkwa nke ọma nke ọ bụghị nke ọ bụla."",
+""citations"": [],
+""answerable"": false
+}"
+qwen3.5-2b-q4km,NI3,ig,schema,"{
+""answer"": ""Merge sort na-achịkwa nke ọ bụghị binary search, ya mere ọ bụghị nke a na-achịkwa nke ọma. Ọ bụrụ na ị na-achịkwa nke ọma, ọ ga-achịkwa nke ọma nke ọma nke ọ bụghị nke ọ bụla. Ọ bụrụ na ị na-achịkwa nke ọma, ọ ga-achịkwa nke ọma nke ọ bụghị nke ọ bụla. Ọ bụrụ na ị na-achịkwa nke ọma, ọ ga-achịkwa nke ọma nke ọ bụghị nke ọ bụla."",
+""citations"": [],
+""answerable"": false
+}"
+qwen3.5-2b-q4km,T06,yo,free,
+qwen3.5-2b-q4km,E01,en,free,"Gram-negative cells appear pink because the decolouriser removed the purple crystal violet-iodine complex. Unlike Gram-positive cells, they have a thin peptidoglycan layer and an outer membrane that cannot retain the dye. When safranin (the counterstain) is applied, it binds to the cell walls of these cells, giving them a pink or red color."
+qwen3.5-2b-q4km,E02,en,free,"In the example, demand is elastic because the percentage drop in quantity demanded (25%) is much larger than the percentage rise in price (10%). This means consumers are very sensitive to price changes. When the price of rice goes up, people buy significantly less of it. As a result, selling more rice at the higher price would actually lower the total money the company makes."
+qwen3.5-2b-q4km,E03,en,free,"Cassava must be processed to prevent the release of hydrogen cyanide. Raw roots contain cyanogenic glucosides, specifically linamarin, which release cyanide when damaged. Processing breaks cell walls, allowing the enzyme linamarase to act on linamarin, and roasting drives off remaining cyanide. Without this treatment, poor processing can cause konzo, a paralytic disease. Additionally, sun-drying thin chips further lowers cyanide content, though it is slower than processing."
+qwen3.5-2b-q4km,EY1,yo,free,"Ṣàlàyé ní èdè Yorùbá:
+
+A fi gbọ́dọ̀ ṣe ẹ̀gẹ́ (cassava) dáadáa nítorí pé a máa ń ṣe ẹ̀gẹ́ lórí ẹ̀gẹ́ tí ó ní cyanide. Nígbà tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́, a máa ń ṣe ẹ̀gẹ́ lórí ẹ̀gẹ́ tí ó ní cyanide. Nígbà tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́, a máa ń ṣe ẹ̀gẹ́ lórí ẹ̀gẹ́ tí ó ní cyanide. Nígbà tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́, a máa ń ṣe ẹ̀gẹ́ lórí ẹ̀gẹ́ tí ó ní cyanide. Nígbà tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́, a máa ń ṣe ẹ̀gẹ́ lórí ẹ̀gẹ́ tí ó ní cyanide."
+qwen3.5-2b-q4km,EH1,ha,free,"A cikin harshen P07, ake bayyana matsakaici (mean) na maki 4, 7, 7, 9 da 13 ta hanyar lissafa jimlar maki 40, sannan a yi daidai da jimlar da kuma nisa maki 5. Wannan yana nufin 40 / 5 = 8.
+
+Ga haka, a matsayin Hausa:
+1.  **Jimlar maki**: 4 + 7 + 7 + 9 + 13 = 40.
+2.  **Nisa maki**: 5 (saboda 5 maki).
+3.  **Matsakaici**: 40 / 5 = 8.
+
+Don haka, matsakaici (mean) na wannan maki shine 8."
+qwen3.5-2b-q4km,EI1,ig,free,"N'asụsụ Igbo, projectile ga-aga ebe kachasị anya mgbe a tụrụ ya na 45 degrees n'ihi na nke a bụ ihe dị mkpa.
+
+N'ime ọbụna, ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị ihe dị mkpa na ọ bụghị i"
+qwen3.5-4b-q4km,NY1,yo,free,"{""answer"": ""22.4 lítà"", ""citations"": [""P01""], ""answerable"": true}"
+qwen3.5-4b-q4km,NY1,yo,schema,"{""answer"": ""22.4 lítà"", ""citations"": [""P01""], ""answerable"": true}"
+qwen3.5-4b-q4km,NY2,yo,free,"{""answer"": ""8"", ""citations"": [""P07""], ""answerable"": true}"
+qwen3.5-4b-q4km,NY2,yo,schema,"{""answer"": ""8"", ""citations"": [""P07""], ""answerable"": true}"
+qwen3.5-4b-q4km,NY3,yo,free,"{""answer"": """", ""citations"": [""P05""], ""answerable"": false}"
+qwen3.5-4b-q4km,NY3,yo,schema,"{""answer"": """", ""citations"": [""P05""], ""answerable"": false}"
+qwen3.5-4b-q4km,NH1,ha,free,"{""answer"": ""A kusurwar 45 daraja."", ""citations"": [""P02""], ""answerable"": true}"
+qwen3.5-4b-q4km,NH1,ha,schema,"{""answer"": ""A kusurwar 45 daraja."", ""citations"": [""P02""], ""answerable"": true}"
+qwen3.5-4b-q4km,NH2,ha,free,"{""answer"": ""Ake barin rogo da aka goga ya yi tsami (mash) lokacin yin garri bayan an gogara da kuma barin sauran ruwa daga cikin rogo ɗin kafin an sara shi (sieve) da kuma saukar shi (roast)."", ""citations"": [""P04""], ""answerable"": true}"
+qwen3.5-4b-q4km,NH2,ha,schema,"{""answer"": ""Ake barin rogo da aka goga ya yi tsami (mash) lokacin yin garri bayan an gogara da kuma barin sauran ruwa daga cikin rogo ɗin kafin an sara shi (sieve) da kuma saukar shi (roast)."", ""citations"": [""P04""], ""answerable"": true}"
+qwen3.5-4b-q4km,NH3,ha,free,"{""answer"": """", ""citations"": [], ""answerable"": false}"
+qwen3.5-4b-q4km,NH3,ha,schema,"{""answer"": """", ""citations"": [], ""answerable"": false}"
+qwen3.5-4b-q4km,NI1,ig,free,"{""answer"": ""Safranin bụ ihe a na-eji dị ka counterstain na Gram staining."", ""citations"": [""P05""], ""answerable"": true}"
+qwen3.5-4b-q4km,NI1,ig,schema,"{""answer"": ""Safranin bụ ihe a na-eji dị ka counterstain na Gram staining."", ""citations"": [""P05""], ""answerable"": true}"
+qwen3.5-4b-q4km,NI2,ig,free,"{""answer"": ""Ihe nọkọrọ anọ (seven days)"", ""citations"": [""P06""], ""answerable"": true}"
+qwen3.5-4b-q4km,NI2,ig,schema,"{""answer"": ""Ihe nọkọrọ anọ (seven days)"", ""citations"": [""P06""], ""answerable"": true}"
+qwen3.5-4b-q4km,NI3,ig,free,"{""answer"": """", ""citations"": [], ""answerable"": false}"
+qwen3.5-4b-q4km,NI3,ig,schema,"{""answer"": """", ""citations"": [], ""answerable"": false}"
+qwen3.5-4b-q4km,T06,yo,free,
+qwen3.5-4b-q4km,E01,en,free,"Gram-negative cells appear pink because their cell walls differ structurally from those of Gram-positive bacteria. While both types initially take up the purple crystal violet stain, the key difference lies in their peptidoglycan layers and outer membranes. Gram-negative cells have a thin peptidoglycan layer and an outer membrane. When alcohol or acetone is applied as a decolouriser, this structure allows the purple crystal violet-iodine complex to wash out of the cell.
+
+Once the purple stain is removed, a counterstain called safranin is applied. This pink dye enters the now-colorless Gram-negative cells, making them appear pink or red under the microscope. In contrast, Gram-positive cells retain their thick peptidoglycan layer, which traps the purple complex even after decolourising, so they remain purple."
+qwen3.5-4b-q4km,E02,en,free,"In the example, demand for rice is elastic because the percentage drop in quantity sold (25%) is much larger than the percentage rise in price (10%). This means consumers are very sensitive to price changes; they quickly stop buying rice when it gets more expensive. Because the drop in sales volume is so significant compared to the price hike, the total money made by sellers actually goes down. In simple terms, ""elastic"" here means buyers have many alternatives or can easily delay purchases, so a small price increase causes a big loss in sales volume."
+qwen3.5-4b-q4km,E03,en,free,"Cassava must be processed because its raw roots contain cyanogenic glucosides, primarily linamarin. When plant tissue is damaged, these compounds release hydrogen cyanide, a toxic substance. Processing methods like grating, fermenting, sieving, and roasting are essential to mitigate this hazard. Grating breaks the plant cells, allowing the enzyme linamarase to convert linamarin into hydrogen cyanide. Subsequent steps, particularly roasting and sun-drying, drive off or reduce the remaining cyanide levels. Without proper processing, the cyanide content remains dangerously high, potentially exceeding the safety limit of 10 mg per kg. Consuming poorly processed cassava can lead to severe health issues, including konzo, a paralytic disease, especially in communities relying heavily on cassava during food shortages."
+qwen3.5-4b-q4km,EY1,yo,free,"Èyí ni àwọn ìdí tí a fi gbọ́dọ̀ ṣe ẹ̀gẹ́ (cassava) dáadáa kí a tó jẹ́:
+
+1. **Ìdínkù Ẹ̀yà Ẹ̀rọ́ (Cyanide):** Ẹ̀gẹ́ ni ẹ̀yà ẹ̀rọ́ tí ó wà nínú ẹ̀gẹ́, tí ó sì máa ń tẹ̀lé nígbà tí ẹ̀yà ẹ̀gẹ́ bá yípadà. Ìṣírò ẹ̀gẹ́ (grating, fermenting, roasting) máa ń jẹ́ kí ẹ̀yà yìí dínkù sí ìwọ̀n tí ó tọ́nà.
+2. **Ìyọ̀ Ẹ̀yà Ẹ̀rọ́:** Ẹ̀gẹ́ tí a kò ṣe dáadáa máa ń fa ẹ̀yà ẹ̀rọ́ tí ó pọ̀, tí ó sì máa ń fa ìbàjẹ́ sí àwọn ọmọ̀.
+3. **Ìyọ̀ Ìbàjẹ́ Ìmọ́lẹ̀ (Konzo):** Ẹ̀gẹ́ tí a kò ṣe dáadáa máa ń fa ìbàjẹ́ tí a mọ̀ sí Konzo, tí ó sì máa ń fa ìbàjẹ́ ìmọ́lẹ̀ (paralytic disease) sí àwọn ọmọ̀ tí wọ́n ń jẹ́ ẹ̀g"
+qwen3.5-4b-q4km,EH1,ha,free,"Don lissafa matsakaici (mean) na maki 4, 7, 7, 9, da 13, muna buƙatar ƙara dukkanin lambobi biyu biyu. Idan muka ƙara su, samu 4 + 7 + 7 + 9 + 13 = 40. Wannan jimlar ita ce ƙimar da ake amfani da ita.
+
+Bayan haka, dole ne mu raba wannan jimlar da adadin maki. A nan maki suna 5 (4, 7, 7, 9, 13). Don haka, muna raba 40 da 5. Idan muka yi lissafin 40 ÷ 5, ake samun 8.
+
+Saboda haka, matsakaici (mean) na waɗannan maki shine 8."
+qwen3.5-4b-q4km,EI1,ig,free,"N'ime akwụkwọ a, ihe a na-akpọ ""projectile"" na-aga n'ihu site na ike gravity naanị. Ọ bụrụ na a tụọ ya na 45 degrees, nke a pụtara na 2θ bụ 90 degrees. N'ihi na sin(2θ) na-abawanye ruo mgbe 2θ bụ 90 degrees, ọ bụrụ na anyị tụọ ya na 45 degrees, ọ ga-eme ka ọ bụrụ ihe kachasị elu n'etiti sin(2θ). Nke a pụtara na ọ ga-eme ka ""horizontal range"" (ọsọ na-aga n'akụkụ) dịkwuo elu. Ya mere, mgbe a tụbara ya na 45 degrees, ihe ahụ ga-aga n'akụkụ kachasị anya n'elu ala."
+smollm2-1.7b-q4km,NY1,yo,free,"{""answer"": ""Ẹ̀gbẹ̀rẹ̀"", ""citations"": [""[P01] (CHM 101: The ideal gas equation)""], ""answerable"": true}"
+smollm2-1.7b-q4km,NY1,yo,schema,"{""answer"": ""Ẹ̀gbẹ̀rẹ̀"", ""citations"": [""[P01] (CHM 101: The ideal gas equation)""], ""answerable"": true}"
+smollm2-1.7b-q4km,NY2,yo,free,"{""answer"": ""4"", ""citations"": [""P07""], ""answerable"": true}"
+smollm2-1.7b-q4km,NY2,yo,schema,"{""answer"": ""4"", ""citations"": [""P07""], ""answerable"": true}"
+smollm2-1.7b-q4km,NY3,yo,free,"{""answer"": ""Ọdún wo ni wọ́n kọ́kọ́ ṣe àtẹ̀jáde ọ̀nà Gram staining"", ""citations"": [""[P05] (MCB 201: Gram staining)""], ""answerable"": true}"
+smollm2-1.7b-q4km,NY3,yo,schema,"{""answer"": ""Ọdún wo ni wọ́n kọ́kọ́ ṣe àtẹ̀jáde ọ̀nà Gram staining"", ""citations"": [""P05""],""answerable"": true}"
+smollm2-1.7b-q4km,NH1,ha,free,"{""answer"": ""A wane kusurwa ne nisan jifa (range) yake mafi girma a kan ƙasa mai faɗi"", ""citations"": [""P02""], ""answerable"": true}"
+smollm2-1.7b-q4km,NH1,ha,schema,"{""answer"": ""A wane kusurwa ne nisan jifa (range) yake mafi girma a kan ƙasa mai faɗi, akan 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a 1:2:4 mai kuwa a"
+smollm2-1.7b-q4km,NH2,ha,free,"{""answer"": ""Agar, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara, gara,"
+smollm2-1.7b-q4km,NH2,ha,schema,"{""answer"": ""Agar,"", ""citations"": [""[P04] (AGR 203: Cassava processing and cyanide)""], ""answerable"": true}"
+smollm2-1.7b-q4km,NH3,ha,free,"{""answer"": ""Mene ne ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa"", ""citations"": [""[P08] (ECO 101: Price elasticity of demand)""], ""answerable"": true}"
+smollm2-1.7b-q4km,NH3,ha,schema,"{""answer"": ""Mene ne ma'aunin sassaucin buƙata ta fuskar samun kuɗi (income elasticity) na shinkafa"", ""citations"": [""P08""], ""answerable"": true}"
+smollm2-1.7b-q4km,NI1,ig,free,"{""answer"": ""Awụrụ na dịka ederede ndị a si kwuo, kedu ihe a na-eji dị ka counterstain na Gram staining, na ihe a na-eji dị ka safranin na safranin na-eji dị ka counterstain na Gram staining, na ihe a na-eji dị ka safranin na safranin na-eji dị ka counterstain na Gram staining, na ihe a na-eji dị ka safranin na safranin na-eji dị ka counterstain na Gram staining, na ihe a na-eji dị ka safranin na safranin na-eji dị ka counterstain na Gram staining, na ihe a na-eji dị ka safranin na safranin na-eji dị ka counterstain na Gram staining, na ihe a na-eji dị ka safranin na safranin na-eji dị ka counterstain na Gram staining, na ihe a na"
+smollm2-1.7b-q4km,NI1,ig,schema,"{""answer"": ""Agarụrụ na-eji dị ka counterstain na Gram staining, dịka ederede ndị a si kwuo, kedu ihe a na-eji dị ka counterstain na Gram staining."", ""citations"": [""[P05] (MCB 201: Gram staining)""], ""answerable"": true}"
+smollm2-1.7b-q4km,NI2,ig,free,"{""answer"": ""Ụbọchị ole bụ oge kacha nta e ji agwọ (cure) concrete n'usoro ọmụmụ a"", ""citations"": [""[P06] (CVE 1: Concrete mix and curing)""], ""answerable"": true}"
+smollm2-1.7b-q4km,NI2,ig,schema,"{""answer"": ""Ụbọchị ole bụ oge kacha nta e ji agwọ (cure) concrete n'usoro ọmụmụ a"", ""citations"": [""[P06] (CVE 1: Concrete mix and curing)""], ""answerable"": true}"
+smollm2-1.7b-q4km,NI3,ig,free,"{""answer"": ""O(n log n)"", ""citations"": [""P03""], ""answerable"": true}"
+smollm2-1.7b-q4km,NI3,ig,schema,"{""answer"": ""O(log n)"", ""citations"": [""P03""], ""answerable"": true}"
+smollm2-1.7b-q4km,T06,yo,free,"Awọn, CSC 305 ọrọ́ níní ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ́ ọgọ́rọ"
+smollm2-1.7b-q4km,E01,en,free,"First-year students, Gram-negative cells appear pink at the end of Gram staining because they lose the purple crystal violet-iodine complex. During the decolourising process, gram-negative cells have a thin peptidoglycan layer and an outer membrane, which allows the alcohol or acetone to penetrate and remove the purple complex. As a result, the cells appear pink or red under the microscope."
+smollm2-1.7b-q4km,E02,en,free,"When the demand for rice is elastic, it means that a small price increase can lead to a big drop in the quantity demanded. In the example, a 10 percent increase in the price of rice led to a 25 percent drop in the quantity demanded. This shows that consumers are very sensitive to price changes and will quickly switch to alternative products if the price of rice goes up too much. As a result, the revenue from selling rice will decrease when the price increases."
+smollm2-1.7b-q4km,E03,en,free,"Cassava must be processed before it is eaten to reduce the hazard of hydrogen cyanide, which is released when the plant tissue is damaged. This hazard is due to the presence of cyanogenic glucosides, mainly linamarin, in the roots. When the roots are grated, packed into sacks, and left to ferment, the enzyme linamarase can act on linamarin, and the hydrogen cyanide is driven off. Proper processing, such as grating, fermenting, and roasting, helps to minimize the risk of konzo, a paralytic disease, by lowering the cyanide content in the finished flour to a safe reference limit of 10 mg per kg."
+smollm2-1.7b-q4km,EY1,yo,free,"[P04] (AGR 203: Cassava processing and cyanide)
+Cassava roots contain cyanogenic glucosides, mainly linamarin, which release hydrogen cyanide when the plant tissue is damaged. Processing reduces this hazard. To make garri, peeled roots are grated, packed into sacks and left to ferment for two to four days while water is pressed out; the mash is then sieved and roasted. Grating breaks the cells so that the enzyme linamarase can act on linamarin, and roasting drives off much of the remaining hydrogen cyanide. Sun-drying of thin chips also lowers cyanide content, but more slowly. For this course, a total cyanide content of 10 mg per kg in the finished flour is the reference safety limit. Poorly processed cassava has been linked to konzo, a paralytic disease, in communities that depend heavily on cassava during food shortages."
+smollm2-1.7b-q4km,EH1,ha,free,"[P07] (STA 111: Mean, median and mode)
+Measures of central tendency summarise a data set with a single typical value. The arithmetic mean is the sum of the values divided by the number of values. The median is the middle value when the data are arranged in order; with an even number of values it is the average of the two middle values. The mode is the value that occurs most often, and a data set may have more than one mode or none. For the quiz scores 4, 7, 7, 9 and 13, the sum is 40, so the mean is 8; the median is 7; and the mode is 7. The mean is sensitive to extreme values, so when a data set contains outliers the median often gives a better picture of a typical value."
+smollm2-1.7b-q4km,EI1,ig,free,Kọwaa n'asụsụ Igbo ihe mere projectile ji aga ebe kachasị anya mgbe a tụbara ya na 45 degrees.

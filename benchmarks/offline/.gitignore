@@ -1,0 +1,7 @@
+# Model weights and local-only evaluation data never belong in the repository.
+*.gguf
+*.litertlm
+*.task
+*.part
+*.server.log
+local/
