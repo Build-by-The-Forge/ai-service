@@ -1,0 +1,1461 @@
+{
+ "version": 1,
+ "name": "agent-eval-synthetic-v1",
+ "note": "Original synthetic course-style tasks. No real course material or student data.",
+ "corpus": [
+  {
+   "chunk_id": "c-fluid-1",
+   "document_id": "doc-fluid",
+   "page": 2,
+   "text": "Pressure in a static fluid increases with depth because the weight of the fluid above presses on the layer below. The increase equals density times gravity times depth."
+  },
+  {
+   "chunk_id": "c-fluid-2",
+   "document_id": "doc-fluid",
+   "page": 3,
+   "text": "Pascal's principle says a pressure change applied to an enclosed fluid is passed on undiminished to every part of the fluid and to the container walls."
+  },
+  {
+   "chunk_id": "c-fluid-3",
+   "document_id": "doc-fluid",
+   "page": 5,
+   "text": "Buoyant force on a submerged object equals the weight of the fluid the object displaces. An object floats when its average density is lower than the fluid's density."
+  },
+  {
+   "chunk_id": "c-fluid-4",
+   "document_id": "doc-fluid",
+   "page": 7,
+   "text": "A manometer measures pressure by comparing the height of a liquid column with a reference. Gauge pressure ignores the atmosphere while absolute pressure includes it."
+  },
+  {
+   "chunk_id": "c-gene-1",
+   "document_id": "doc-genetics",
+   "page": 1,
+   "text": "A gene is a stretch of DNA that carries the instructions for building one protein. Alleles are the different versions of a gene found in a population."
+  },
+  {
+   "chunk_id": "c-gene-2",
+   "document_id": "doc-genetics",
+   "page": 4,
+   "text": "In a monohybrid cross between two heterozygous parents the expected phenotype ratio of offspring is three dominant to one recessive."
+  },
+  {
+   "chunk_id": "c-gene-3",
+   "document_id": "doc-genetics",
+   "page": 6,
+   "text": "Mitosis produces two identical body cells, while meiosis produces four different sex cells with half the number of chromosomes."
+  },
+  {
+   "chunk_id": "c-study-1",
+   "document_id": "doc-study",
+   "page": 1,
+   "text": "Spaced practice means reviewing a topic several times over days instead of once in a long session. It helps long term recall."
+  },
+  {
+   "chunk_id": "c-study-2",
+   "document_id": "doc-study",
+   "page": 2,
+   "text": "Retrieval practice means testing yourself from memory rather than rereading notes. Short quizzes after a lesson improve retention."
+  }
+ ],
+ "tasks": [
+  {
+   "id": "sel-01",
+   "category": "tool_selection",
+   "goal": "Explain why pressure rises with depth in water.",
+   "allowed_tools": [
+    "search_course_material",
+    "explain_concept"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "explain_concept",
+     "arguments": {
+      "concept": "pressure increases with depth in a static fluid"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "Pressure rises with depth because the fluid above presses down.",
+     "citations": [
+      "c-fluid-1"
+     ],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "completed",
+    "code": null,
+    "tools": [
+     "explain_concept"
+    ],
+    "cited": [
+     "c-fluid-1"
+    ],
+    "max_steps": 2,
+    "forbidden_tools": [
+     "generate_practice"
+    ]
+   }
+  },
+  {
+   "id": "sel-02",
+   "category": "tool_selection",
+   "goal": "Find where my notes discuss buoyancy.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "buoyant force displaced fluid"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "Buoyancy is covered in your fluids notes.",
+     "citations": [
+      "c-fluid-3"
+     ],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "completed",
+    "code": null,
+    "tools": [
+     "search_course_material"
+    ],
+    "cited": [
+     "c-fluid-3"
+    ],
+    "max_steps": 2
+   }
+  },
+  {
+   "id": "sel-03",
+   "category": "tool_selection",
+   "goal": "Draft two practice questions on Pascal's principle.",
+   "allowed_tools": [
+    "search_course_material",
+    "generate_practice"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "generate_practice",
+     "arguments": {
+      "concept": "Pascal principle enclosed fluid pressure",
+      "count": 2
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "I drafted two practice questions from your notes.",
+     "citations": [
+      "c-fluid-2"
+     ],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "completed",
+    "code": null,
+    "tools": [
+     "generate_practice"
+    ],
+    "cited": [
+     "c-fluid-2"
+    ],
+    "max_steps": 2
+   }
+  },
+  {
+   "id": "arg-01",
+   "category": "argument_accuracy",
+   "goal": "Look up how a manometer shows gauge pressure, two passages at most.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "manometer gauge pressure",
+      "max_passages": 2
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "A manometer compares a liquid column with a reference.",
+     "citations": [
+      "c-fluid-4"
+     ],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "completed",
+    "code": null,
+    "tools": [
+     "search_course_material"
+    ],
+    "args": [
+     {
+      "tool": "search_course_material",
+      "subset": {
+       "max_passages": 2
+      }
+     }
+    ],
+    "cited": [
+     "c-fluid-4"
+    ],
+    "max_steps": 2
+   }
+  },
+  {
+   "id": "arg-02",
+   "category": "argument_accuracy",
+   "goal": "Plan five days of buoyancy revision, 45 minutes a day.",
+   "allowed_tools": [
+    "identify_knowledge_gaps",
+    "create_study_plan"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "identify_knowledge_gaps",
+     "arguments": {},
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "create_study_plan",
+     "arguments": {
+      "topics": [
+       {
+        "topic_id": "buoyancy"
+       }
+      ],
+      "horizon_days": 5,
+      "minutes_per_day": 45
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "Here is a five day buoyancy plan for you to approve.",
+     "citations": [],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "completed",
+    "code": null,
+    "tools": [
+     "identify_knowledge_gaps",
+     "create_study_plan"
+    ],
+    "args": [
+     {
+      "tool": "create_study_plan",
+      "subset": {
+       "horizon_days": 5,
+       "minutes_per_day": 45
+      }
+     }
+    ],
+    "max_steps": 3
+   },
+   "task_type": "study_plan",
+   "supplied": {
+    "topics": [
+     {
+      "topic_id": "fluid-pressure",
+      "title": "Pressure in fluids"
+     },
+     {
+      "topic_id": "buoyancy",
+      "title": "Buoyancy"
+     },
+     {
+      "topic_id": "genetic-crosses",
+      "title": "Genetic crosses"
+     }
+    ],
+    "practice_evidence": [
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 0.0,
+      "attempt_ref": "buoyancy-a0"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 86400.0,
+      "attempt_ref": "buoyancy-a1"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 172800.0,
+      "attempt_ref": "buoyancy-a2"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 864000.0,
+      "attempt_ref": "fluid-pressure-a10"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 950400.0,
+      "attempt_ref": "fluid-pressure-a11"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": false,
+      "answered_at": 1036800.0,
+      "attempt_ref": "fluid-pressure-a12"
+     }
+    ],
+    "plan": [],
+    "today_epoch_day": 200
+   },
+   "evidence": {
+    "require_sources": false,
+    "min_sources": 0
+   },
+   "completion": {
+    "required_tools": [
+     "create_study_plan"
+    ]
+   }
+  },
+  {
+   "id": "arg-03",
+   "category": "argument_accuracy",
+   "goal": "Record that I took the buoyancy practice.",
+   "allowed_tools": [
+    "update_learning_progress"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "update_learning_progress",
+     "arguments": {
+      "change": {
+       "kind": "practice_taken",
+       "subject_id": "buoyancy",
+       "evidence_refs": [
+        "buoyancy-a0"
+       ]
+      }
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "I proposed the update for approval.",
+     "citations": [],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "completed",
+    "code": null,
+    "tools": [
+     "update_learning_progress"
+    ],
+    "proposals": 1,
+    "max_steps": 2,
+    "args": [
+     {
+      "tool": "update_learning_progress",
+      "subset": {
+       "change": {
+        "kind": "practice_taken",
+        "subject_id": "buoyancy",
+        "evidence_refs": [
+         "buoyancy-a0"
+        ]
+       }
+      }
+     }
+    ]
+   },
+   "task_type": "progress_review",
+   "supplied": {
+    "topics": [
+     {
+      "topic_id": "fluid-pressure",
+      "title": "Pressure in fluids"
+     },
+     {
+      "topic_id": "buoyancy",
+      "title": "Buoyancy"
+     },
+     {
+      "topic_id": "genetic-crosses",
+      "title": "Genetic crosses"
+     }
+    ],
+    "practice_evidence": [
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 0.0,
+      "attempt_ref": "buoyancy-a0"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 86400.0,
+      "attempt_ref": "buoyancy-a1"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 172800.0,
+      "attempt_ref": "buoyancy-a2"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 864000.0,
+      "attempt_ref": "fluid-pressure-a10"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 950400.0,
+      "attempt_ref": "fluid-pressure-a11"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": false,
+      "answered_at": 1036800.0,
+      "attempt_ref": "fluid-pressure-a12"
+     }
+    ],
+    "plan": [],
+    "today_epoch_day": 200
+   },
+   "evidence": {
+    "require_sources": false,
+    "min_sources": 0
+   }
+  },
+  {
+   "id": "loop-01",
+   "category": "loop_detection",
+   "goal": "Explain gauge pressure.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "gauge pressure"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "gauge pressure"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "gauge pressure"
+     },
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "loop_detected",
+    "code": "DOOM_LOOP",
+    "tools": [
+     "search_course_material",
+     "search_course_material"
+    ],
+    "max_steps": 3
+   }
+  },
+  {
+   "id": "loop-02",
+   "category": "loop_detection",
+   "goal": "Explain the genetics of coat colour.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "coat colour zzz0 unknown0"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "coat colour zzz1 unknown1"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "coat colour zzz2 unknown2"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "coat colour zzz3 unknown3"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "coat colour zzz4 unknown4"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "coat colour zzz5 unknown5"
+     },
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "loop_detected",
+    "code": "NO_PROGRESS",
+    "tools": [
+     "search_course_material",
+     "search_course_material",
+     "search_course_material",
+     "search_course_material"
+    ],
+    "max_steps": 5
+   }
+  },
+  {
+   "id": "loop-03",
+   "category": "loop_detection",
+   "goal": "Explain the buoyant force.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "buoyant force"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "buoyant force"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "buoyant force"
+     },
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "loop_detected",
+    "code": "DOOM_LOOP",
+    "tools": [
+     "search_course_material"
+    ],
+    "max_steps": 2
+   },
+   "policy": {
+    "doom_loop_repeat_limit": 2
+   }
+  },
+  {
+   "id": "abs-01",
+   "category": "abstention",
+   "goal": "Explain how a transistor amplifies a signal.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "transistor amplify signal"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "I could not find this in your notes.",
+     "citations": [],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "abstained",
+    "code": "INSUFFICIENT_EVIDENCE",
+    "tools": [
+     "search_course_material"
+    ],
+    "max_steps": 2
+   }
+  },
+  {
+   "id": "abs-02",
+   "category": "abstention",
+   "goal": "Compare what two of my sources say about pressure.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "pressure fluid depth gauge"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "Both notes agree that pressure matters.",
+     "citations": [
+      "c-fluid-1"
+     ],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "abstained",
+    "code": "INSUFFICIENT_EVIDENCE",
+    "tools": [
+     "search_course_material"
+    ],
+    "max_steps": 2
+   },
+   "evidence": {
+    "min_sources": 2
+   }
+  },
+  {
+   "id": "abs-03",
+   "category": "abstention",
+   "goal": "Explain the buoyant force.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "buoyant force displaced fluid"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "Buoyancy is the weight of displaced fluid.",
+     "citations": [],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "abstained",
+    "code": "INSUFFICIENT_EVIDENCE",
+    "tools": [
+     "search_course_material"
+    ],
+    "max_steps": 2
+   },
+   "denied_assets": [
+    "doc-fluid"
+   ]
+  },
+  {
+   "id": "bud-01",
+   "category": "budget_exhaustion",
+   "goal": "Survey the fluid notes.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "fluid pressure depth"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "buoyant force displaced"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "manometer gauge"
+     },
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "budget_exhausted",
+    "code": "STEP_BUDGET",
+    "tools": [
+     "search_course_material",
+     "search_course_material"
+    ],
+    "max_steps": 2
+   },
+   "budget": {
+    "max_steps": 2
+   }
+  },
+  {
+   "id": "bud-02",
+   "category": "budget_exhaustion",
+   "goal": "Survey the fluid notes.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "fluid pressure depth"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "buoyant force displaced"
+     },
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "budget_exhausted",
+    "code": "ITERATION_BUDGET",
+    "tools": [
+     "search_course_material"
+    ],
+    "max_steps": 2
+   },
+   "budget": {
+    "max_iterations": 1
+   }
+  },
+  {
+   "id": "bud-03",
+   "category": "budget_exhaustion",
+   "goal": "Survey the fluid notes.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "fluid pressure depth"
+     },
+     "tokens": 20
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "buoyant force displaced"
+     },
+     "tokens": 20
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "manometer gauge"
+     },
+     "tokens": 20
+    }
+   ],
+   "expect": {
+    "state": "budget_exhausted",
+    "code": "TOKEN_BUDGET",
+    "tools": [
+     "search_course_material",
+     "search_course_material"
+    ],
+    "max_steps": 2
+   },
+   "budget": {
+    "max_tokens": 25
+   }
+  },
+  {
+   "id": "can-01",
+   "category": "cancellation",
+   "goal": "Explain Pascal's principle.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "Pascal principle enclosed fluid"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "Pressure passes through an enclosed fluid.",
+     "citations": [
+      "c-fluid-2"
+     ],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "cancelled",
+    "code": "CANCELLED",
+    "tools": [
+     "search_course_material"
+    ],
+    "max_steps": 2
+   },
+   "inject": {
+    "cancel_at_step": 2
+   }
+  },
+  {
+   "id": "can-02",
+   "category": "cancellation",
+   "goal": "Explain Pascal's principle.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "Pascal principle enclosed fluid"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "Pressure passes through an enclosed fluid.",
+     "citations": [
+      "c-fluid-2"
+     ],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "cancelled",
+    "code": "CANCELLED",
+    "tools": [],
+    "max_steps": 1
+   },
+   "inject": {
+    "cancel_at_step": 1
+   }
+  },
+  {
+   "id": "can-03",
+   "category": "cancellation",
+   "goal": "Survey the fluid notes.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "fluid pressure depth"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "buoyant force displaced"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "manometer gauge"
+     },
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "cancelled",
+    "code": "CANCELLED",
+    "tools": [
+     "search_course_material",
+     "search_course_material"
+    ],
+    "max_steps": 3
+   },
+   "inject": {
+    "cancel_at_step": 3
+   }
+  },
+  {
+   "id": "perm-01",
+   "category": "permission_denial",
+   "goal": "Explain Pascal's principle.",
+   "allowed_tools": [
+    "search_course_material",
+    "update_learning_progress"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "update_learning_progress",
+     "arguments": {
+      "change": {
+       "kind": "practice_taken",
+       "subject_id": "buoyancy",
+       "evidence_refs": [
+        "buoyancy-a0"
+       ]
+      }
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "Pascal principle enclosed fluid"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "Pressure passes through an enclosed fluid.",
+     "citations": [
+      "c-fluid-2"
+     ],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "completed",
+    "code": null,
+    "tools": [
+     "update_learning_progress",
+     "search_course_material"
+    ],
+    "cited": [
+     "c-fluid-2"
+    ],
+    "max_steps": 3
+   },
+   "permissions": [
+    "content:read"
+   ],
+   "supplied": {
+    "topics": [
+     {
+      "topic_id": "fluid-pressure",
+      "title": "Pressure in fluids"
+     },
+     {
+      "topic_id": "buoyancy",
+      "title": "Buoyancy"
+     },
+     {
+      "topic_id": "genetic-crosses",
+      "title": "Genetic crosses"
+     }
+    ],
+    "practice_evidence": [
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 0.0,
+      "attempt_ref": "buoyancy-a0"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 86400.0,
+      "attempt_ref": "buoyancy-a1"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 172800.0,
+      "attempt_ref": "buoyancy-a2"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 864000.0,
+      "attempt_ref": "fluid-pressure-a10"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 950400.0,
+      "attempt_ref": "fluid-pressure-a11"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": false,
+      "answered_at": 1036800.0,
+      "attempt_ref": "fluid-pressure-a12"
+     }
+    ],
+    "plan": [],
+    "today_epoch_day": 200
+   }
+  },
+  {
+   "id": "perm-02",
+   "category": "permission_denial",
+   "goal": "Explain Pascal's principle during my exam.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "Pascal principle"
+     },
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "refused",
+    "code": "EXAM_MODE_ACTIVE",
+    "tools": [],
+    "max_steps": 0
+   },
+   "official_attempt_active": true
+  },
+  {
+   "id": "perm-03",
+   "category": "permission_denial",
+   "goal": "Plan my revision.",
+   "allowed_tools": [
+    "create_study_plan"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "create_study_plan",
+     "arguments": {
+      "topics": [
+       {
+        "topic_id": "buoyancy"
+       }
+      ]
+     },
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "refused",
+    "code": "PERMISSION_DENIED",
+    "tools": [],
+    "max_steps": 0
+   },
+   "permissions": [
+    "content:read"
+   ],
+   "task_type": "study_plan",
+   "supplied": {
+    "topics": [
+     {
+      "topic_id": "fluid-pressure",
+      "title": "Pressure in fluids"
+     },
+     {
+      "topic_id": "buoyancy",
+      "title": "Buoyancy"
+     },
+     {
+      "topic_id": "genetic-crosses",
+      "title": "Genetic crosses"
+     }
+    ],
+    "practice_evidence": [
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 0.0,
+      "attempt_ref": "buoyancy-a0"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 86400.0,
+      "attempt_ref": "buoyancy-a1"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 172800.0,
+      "attempt_ref": "buoyancy-a2"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 864000.0,
+      "attempt_ref": "fluid-pressure-a10"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 950400.0,
+      "attempt_ref": "fluid-pressure-a11"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": false,
+      "answered_at": 1036800.0,
+      "attempt_ref": "fluid-pressure-a12"
+     }
+    ],
+    "plan": [],
+    "today_epoch_day": 200
+   },
+   "evidence": {
+    "require_sources": false,
+    "min_sources": 0
+   },
+   "completion": {
+    "required_tools": [
+     "create_study_plan"
+    ]
+   }
+  },
+  {
+   "id": "rep-01",
+   "category": "replay_idempotency",
+   "goal": "Record that I took the buoyancy practice.",
+   "allowed_tools": [
+    "update_learning_progress"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "update_learning_progress",
+     "arguments": {
+      "change": {
+       "kind": "practice_taken",
+       "subject_id": "buoyancy",
+       "evidence_refs": [
+        "buoyancy-a0"
+       ]
+      }
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "tool",
+     "tool": "update_learning_progress",
+     "arguments": {
+      "change": {
+       "kind": "practice_taken",
+       "subject_id": "buoyancy",
+       "evidence_refs": [
+        "buoyancy-a0"
+       ]
+      }
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "I proposed the update once.",
+     "citations": [],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "completed",
+    "code": null,
+    "tools": [
+     "update_learning_progress",
+     "update_learning_progress"
+    ],
+    "proposals": 1,
+    "max_steps": 3
+   },
+   "task_type": "progress_review",
+   "supplied": {
+    "topics": [
+     {
+      "topic_id": "fluid-pressure",
+      "title": "Pressure in fluids"
+     },
+     {
+      "topic_id": "buoyancy",
+      "title": "Buoyancy"
+     },
+     {
+      "topic_id": "genetic-crosses",
+      "title": "Genetic crosses"
+     }
+    ],
+    "practice_evidence": [
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 0.0,
+      "attempt_ref": "buoyancy-a0"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 86400.0,
+      "attempt_ref": "buoyancy-a1"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 172800.0,
+      "attempt_ref": "buoyancy-a2"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 864000.0,
+      "attempt_ref": "fluid-pressure-a10"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 950400.0,
+      "attempt_ref": "fluid-pressure-a11"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": false,
+      "answered_at": 1036800.0,
+      "attempt_ref": "fluid-pressure-a12"
+     }
+    ],
+    "plan": [],
+    "today_epoch_day": 200
+   },
+   "evidence": {
+    "require_sources": false,
+    "min_sources": 0
+   }
+  },
+  {
+   "id": "rep-02",
+   "category": "replay_idempotency",
+   "goal": "Explain Pascal's principle.",
+   "allowed_tools": [
+    "search_course_material"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "search_course_material",
+     "arguments": {
+      "query": "Pascal principle enclosed fluid"
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "Pressure passes through an enclosed fluid.",
+     "citations": [
+      "c-fluid-2"
+     ],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "completed",
+    "code": null,
+    "tools": [
+     "search_course_material"
+    ],
+    "cited": [
+     "c-fluid-2"
+    ],
+    "max_steps": 2
+   },
+   "inject": {
+    "crash_after_saves": 4
+   }
+  },
+  {
+   "id": "rep-03",
+   "category": "replay_idempotency",
+   "goal": "Record that I took the buoyancy practice.",
+   "allowed_tools": [
+    "update_learning_progress"
+   ],
+   "script": [
+    {
+     "kind": "tool",
+     "tool": "update_learning_progress",
+     "arguments": {
+      "change": {
+       "kind": "practice_taken",
+       "subject_id": "buoyancy",
+       "evidence_refs": [
+        "buoyancy-a0"
+       ]
+      }
+     },
+     "tokens": 10
+    },
+    {
+     "kind": "final",
+     "answer": "I proposed the update once.",
+     "citations": [],
+     "tokens": 10
+    }
+   ],
+   "expect": {
+    "state": "completed",
+    "code": null,
+    "tools": [
+     "update_learning_progress"
+    ],
+    "proposals": 1,
+    "max_steps": 2
+   },
+   "task_type": "progress_review",
+   "supplied": {
+    "topics": [
+     {
+      "topic_id": "fluid-pressure",
+      "title": "Pressure in fluids"
+     },
+     {
+      "topic_id": "buoyancy",
+      "title": "Buoyancy"
+     },
+     {
+      "topic_id": "genetic-crosses",
+      "title": "Genetic crosses"
+     }
+    ],
+    "practice_evidence": [
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 0.0,
+      "attempt_ref": "buoyancy-a0"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 86400.0,
+      "attempt_ref": "buoyancy-a1"
+     },
+     {
+      "topic_id": "buoyancy",
+      "correct": false,
+      "answered_at": 172800.0,
+      "attempt_ref": "buoyancy-a2"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 864000.0,
+      "attempt_ref": "fluid-pressure-a10"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": true,
+      "answered_at": 950400.0,
+      "attempt_ref": "fluid-pressure-a11"
+     },
+     {
+      "topic_id": "fluid-pressure",
+      "correct": false,
+      "answered_at": 1036800.0,
+      "attempt_ref": "fluid-pressure-a12"
+     }
+    ],
+    "plan": [],
+    "today_epoch_day": 200
+   },
+   "evidence": {
+    "require_sources": false,
+    "min_sources": 0
+   },
+   "inject": {
+    "crash_after_saves": 3
+   }
+  }
+ ]
+}
