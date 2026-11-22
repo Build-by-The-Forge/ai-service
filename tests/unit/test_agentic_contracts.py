@@ -179,6 +179,10 @@ def test_evidence_comes_from_the_retrieval_boundary():
     assert contract(produces_evidence=True, boundaries=(Boundary.RETRIEVAL,)).produces_evidence
 
 
+def test_there_is_no_database_boundary_and_mcp_is_one_of_four():
+    assert {b.value for b in Boundary} == {"retrieval", "backend", "model", "mcp"}
+
+
 def test_deadline_and_sizes_are_bounded():
     for bad in (0, -1, 121):
         with pytest.raises(ValidationError):

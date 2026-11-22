@@ -102,6 +102,7 @@ class Boundary(StrEnum):
     RETRIEVAL = "retrieval"  # the retrieval engine, with the caller's scope and denied documents
     BACKEND = "backend"  # the signed backend client's authorised operations
     MODEL = "model"  # the model interface (the gateway, or a local model)
+    MCP = "mcp"  # an external MCP server, only through app/core/agentic/mcp.py
 
 
 class RetryPolicy(_Model):
