@@ -104,9 +104,12 @@ async def test_same_idempotency_key_is_a_duplicate_within_a_tenant(guard):
 @real_redis
 async def test_idempotency_is_scoped_by_the_context_tenant(guard):
     app, recorder = build(guard)
-    body = dispatch_body()
-    a = await post(app, body, signed_headers(body, context=user_context(TENANT_A)))
-    b = await post(app, body, signed_headers(body, context=user_context(TENANT_B)))
+    # The same key and job, each tenant on its own asset: an asset belongs to
+    # one tenant (M3-D PR 7), so two tenants never name the same one.
+    body_a = dispatch_body(asset_id="asset-of-a")
+    body_b = dispatch_body(asset_id="asset-of-b")
+    a = await post(app, body_a, signed_headers(body_a, context=user_context(TENANT_A)))
+    b = await post(app, body_b, signed_headers(body_b, context=user_context(TENANT_B)))
     assert a.json()["status"] == b.json()["status"] == "ACCEPTED"
     assert a.json()["external_task_id"] != b.json()["external_task_id"]
     assert [t["tenant_id"] for t in recorder.tasks] == [TENANT_A, TENANT_B]
@@ -667,3 +670,79 @@ async def test_dispatch_fails_closed_when_the_scope_store_is_unavailable(
     assert response.status_code == 503
     assert recorder.tasks == []
     assert in_memory_index_fence.fences == {}
+
+
+# --- M3-D PR 7: an asset another tenant holds is refused at every version ------------
+
+OWNED = "asset-owned-by-b"
+
+
+def refused_by_the_fix(test):
+    """Fails on the code before the ownership fix (strictly); the fix commit
+    makes this the identity."""
+    return pytest.mark.xfail(strict=True, reason="fails before the ownership fix")(test)
+
+
+@real_redis
+@refused_by_the_fix
+async def test_version_zero_for_an_asset_another_tenant_scopes_is_refused(guard, in_memory_scopes):
+    in_memory_scopes.rows[(TENANT_B, OWNED)] = (KnowledgeScope.PERSONAL, 3)
+    app, recorder = build(guard)
+    body = dispatch_body(asset_id=OWNED)  # unknown at version 0
+    response = await post(app, body, signed_headers(body))
+
+    assert response.status_code == 403, response.text
+    assert recorder.tasks == []
+    assert (TENANT_A, OWNED) not in in_memory_scopes.rows
+
+
+@real_redis
+@refused_by_the_fix
+async def test_version_zero_for_an_asset_another_tenant_fences_is_refused_and_no_fence_moves(
+    guard, in_memory_index_fence
+):
+    in_memory_index_fence.fences[(TENANT_B, OWNED)] = (2, 1)
+    app, recorder = build(guard)
+    body = dispatch_body(asset_id=OWNED)
+    response = await post(app, body, signed_headers(body))
+
+    assert response.status_code == 403, response.text
+    assert recorder.tasks == []
+    assert in_memory_index_fence.fences == {(TENANT_B, OWNED): (2, 1)}
+
+
+@real_redis
+@pytest.mark.parametrize("version, scope", [(1, "personal"), (5, "institutional")])
+async def test_a_stated_scope_for_an_asset_another_tenant_fences_is_refused_and_no_fence_moves(
+    guard, in_memory_index_fence, in_memory_scopes, version, scope
+):
+    in_memory_index_fence.fences[(TENANT_B, OWNED)] = (2, 1)
+    in_memory_scopes.rows[(TENANT_B, OWNED)] = (KnowledgeScope.UNKNOWN, 1)
+    app, recorder = build(guard)
+    body = dispatch_body(asset_id=OWNED, scope=scope, scope_version=version)
+    response = await post(app, body, signed_headers(body))
+
+    assert response.status_code == 403, response.text
+    assert recorder.tasks == []
+    assert in_memory_index_fence.fences == {(TENANT_B, OWNED): (2, 1)}
+    assert in_memory_scopes.rows == {(TENANT_B, OWNED): (KnowledgeScope.UNKNOWN, 1)}
+
+
+@real_redis
+@refused_by_the_fix
+async def test_a_fence_taken_between_the_scope_step_and_the_fence_is_refused_and_the_claim_released(
+    guard, in_memory_index_fence
+):
+    """The other tenant's fence appears after the scope step passed (the
+    in-memory scope store can't see fences): the fence step itself refuses,
+    nothing is queued, and the key can be used again."""
+    in_memory_index_fence.fences[(TENANT_B, OWNED)] = (1, 1)
+    app, recorder = build(guard)
+    body = dispatch_body(asset_id=OWNED)
+    assert (await post(app, body, signed_headers(body))).status_code == 403
+
+    in_memory_index_fence.fences.clear()  # B's hold is gone (a test-only reset)
+    again = await post(app, body, signed_headers(body))
+    assert again.status_code == 202, again.text  # not DUPLICATE and not 503: the claim was released
+    assert again.json()["status"] == "ACCEPTED"
+    assert len(recorder.tasks) == 1
