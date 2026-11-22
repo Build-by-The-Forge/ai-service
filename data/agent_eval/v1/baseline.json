@@ -1,0 +1,69 @@
+{
+ "suite_sha256": "0baffc95fb98754151894f3bcb59c2e74c7c64ff9c0e3b1ba8d45cad05931f85",
+ "policies": [
+  {
+   "policy": "looping",
+   "pass_rate": 0.375,
+   "mean": 0.6758,
+   "by_category": {
+    "abstention": 0.5625,
+    "argument_accuracy": 0.3542,
+    "budget_exhaustion": 0.875,
+    "cancellation": 1.0,
+    "loop_detection": 0.9375,
+    "permission_denial": 0.8437,
+    "replay_idempotency": 0.4375,
+    "tool_selection": 0.3958
+   },
+   "report_digest": "0b2e51009a7442ab0ea25e2259cbf63fe1ef14d19b47700550210a85f212a82b"
+  },
+  {
+   "policy": "naive",
+   "pass_rate": 0.125,
+   "mean": 0.6406,
+   "by_category": {
+    "abstention": 0.875,
+    "argument_accuracy": 0.4167,
+    "budget_exhaustion": 0.625,
+    "cancellation": 0.75,
+    "loop_detection": 0.625,
+    "permission_denial": 0.8333,
+    "replay_idempotency": 0.5,
+    "tool_selection": 0.5
+   },
+   "report_digest": "1f056d7129d1939f4114ff3ab89026db39caab2839fa5f3179f5a1a991b0cafc"
+  },
+  {
+   "policy": "overreach",
+   "pass_rate": 0.125,
+   "mean": 0.6341,
+   "by_category": {
+    "abstention": 0.625,
+    "argument_accuracy": 0.4583,
+    "budget_exhaustion": 0.625,
+    "cancellation": 0.8333,
+    "loop_detection": 0.625,
+    "permission_denial": 0.8437,
+    "replay_idempotency": 0.5625,
+    "tool_selection": 0.5
+   },
+   "report_digest": "53e176192ee064b142c23438c7e4ae2a66a8349cd7dd361a66deb709dd5bab16"
+  },
+  {
+   "policy": "reference",
+   "pass_rate": 1.0,
+   "mean": 1.0,
+   "by_category": {
+    "abstention": 1.0,
+    "argument_accuracy": 1.0,
+    "budget_exhaustion": 1.0,
+    "cancellation": 1.0,
+    "loop_detection": 1.0,
+    "permission_denial": 1.0,
+    "replay_idempotency": 1.0,
+    "tool_selection": 1.0
+   },
+   "report_digest": "9272db057900cc702e40a7bf46c543f9b1c6c640bd75339c37741a84b698c70b"
+  }
+ ]
+}

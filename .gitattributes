@@ -1,2 +1,5 @@
 # Shell scripts run in Linux containers and CI: always LF.
 *.sh text eol=lf
+
+# The agent evaluation suite is pinned by the digest of its bytes: never rewrite line endings.
+data/agent_eval/** -text
