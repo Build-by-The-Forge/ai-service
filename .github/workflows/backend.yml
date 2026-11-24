@@ -177,7 +177,8 @@ jobs:
 
   retrieval:
     # P3-5: retrieval quality must not regress below the committed baseline
-    # (data/retrieval_eval/v1). The production path runs for real: the
+    # (data/retrieval_eval/v1), nor AI-10's topic-coverage check below its
+    # own (data/topic_coverage/v1). The production path runs for real: the
     # verified embedding model, Postgres with pgvector, the chunker. The test
     # is required: missing configuration is a collection error, and a skip
     # fails the job. The report is kept as an artifact.
@@ -223,14 +224,15 @@ jobs:
         run: |
           PGPASSWORD=postgres psql -h localhost -U postgres -d build_ai -v ON_ERROR_STOP=1 \
             -c "CREATE EXTENSION IF NOT EXISTS vector"
-      - name: Retrieval quality against the baseline (required, none skipped)
+      - name: Retrieval quality and topic coverage against their baselines (required, none skipped)
         # pipefail: pytest's exit code must survive the pipe into tee.
         shell: bash
         env:
           RETRIEVAL_QUALITY_REQUIRED: '1'
           RETRIEVAL_QUALITY_REPORT: retrieval-report.json
+          TOPIC_COVERAGE_REPORT: topic-coverage-report.json
         run: |
-          pytest tests/integration/test_retrieval_quality.py -q -rA -p no:cacheprovider | tee retrieval-tests.log
+          pytest tests/integration/test_retrieval_quality.py tests/integration/test_topic_coverage_quality.py -q -rA -p no:cacheprovider | tee retrieval-tests.log
           if grep -qE '(^SKIPPED|[0-9]+ skipped)' retrieval-tests.log; then
             echo "::error::the retrieval quality gate was skipped; it is required in this job"
             exit 1
@@ -240,7 +242,9 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: retrieval-report
-          path: retrieval-report.json
+          path: |
+            retrieval-report.json
+            topic-coverage-report.json
           if-no-files-found: ignore
 
   docker:
