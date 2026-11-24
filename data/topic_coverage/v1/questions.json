@@ -1,0 +1,2849 @@
+{
+  "version": "v1",
+  "status": "unreviewed",
+  "review": "Drafted by Claude for the purpose; no label has had human review yet. The same author wrote the labels and the candidate checks, so the held-out test split guards against tuning, not against the author's blind spots.",
+  "description": "Labelled (topic, question) pairs for AI-10's question-relevance check (after generation). Every question is a four-option MCQ that passes the support and exam checks against the page it cites, so each off-topic pair is supported by its passage but not about the requested topic.",
+  "labelling_rule": "on_topic: topics (all covered) the question is about; off_topic: topics it is not about, chosen from the same document, a same-course near miss and an out-of-corpus subject. A pair never mixes splits.",
+  "questions": [
+    {
+      "id": "q-mts-01",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "mts102-limits",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "When do we write lim(x→a) f(x) = L?",
+        "options": [
+          {
+            "text": "When x equals a",
+            "is_correct": false
+          },
+          {
+            "text": "When f(x) can be made as close to L as we like by taking x sufficiently close to a",
+            "is_correct": true
+          },
+          {
+            "text": "Only when f(a) = L",
+            "is_correct": false
+          },
+          {
+            "text": "When f is defined at a",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The limit is L when f(x) can be made as close to L as we like by taking x close to a, but not equal to a.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c01"
+      ],
+      "off_topic": [
+        "mts-c03",
+        "mts-n07",
+        "ooc-03"
+      ]
+    },
+    {
+      "id": "q-mts-02",
+      "split": "test",
+      "passages": [
+        {
+          "document": "mts102-limits",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "For f(x) = |x|/x, what is the right-hand limit at 0?",
+        "options": [
+          {
+            "text": "1",
+            "is_correct": true
+          },
+          {
+            "text": "−1",
+            "is_correct": false
+          },
+          {
+            "text": "0",
+            "is_correct": false
+          },
+          {
+            "text": "It does not exist",
+            "is_correct": false
+          }
+        ],
+        "explanation": "For f(x) = |x|/x the right-hand limit at 0 is 1 and the left-hand limit is −1.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c02",
+        "mts-p04"
+      ],
+      "off_topic": [
+        "mts-c12",
+        "mts-n08",
+        "ooc-04"
+      ]
+    },
+    {
+      "id": "q-mts-03",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "mts102-limits",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is lim(x→2) (x² − 4)/(x − 2)?",
+        "options": [
+          {
+            "text": "2",
+            "is_correct": false
+          },
+          {
+            "text": "10",
+            "is_correct": false
+          },
+          {
+            "text": "4",
+            "is_correct": true
+          },
+          {
+            "text": "0",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Factorise and cancel: lim(x→2) (x² − 4)/(x − 2) = lim(x→2) (x + 2) = 4.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c03",
+        "mts-b01"
+      ],
+      "off_topic": [
+        "mts-c11",
+        "mts-n01",
+        "ooc-05"
+      ]
+    },
+    {
+      "id": "q-mts-04",
+      "split": "test",
+      "passages": [
+        {
+          "document": "mts102-limits",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Which theorem proves that lim(x→0) x² sin(1/x) = 0?",
+        "options": [
+          {
+            "text": "Hess's law",
+            "is_correct": false
+          },
+          {
+            "text": "The squeeze theorem",
+            "is_correct": true
+          },
+          {
+            "text": "The Intermediate Value Theorem",
+            "is_correct": false
+          },
+          {
+            "text": "The power rule",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The squeeze theorem is how we prove that lim(x→0) x² sin(1/x) = 0.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c04"
+      ],
+      "off_topic": [
+        "mts-c14",
+        "mts-n02",
+        "ooc-06"
+      ]
+    },
+    {
+      "id": "q-mts-05",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "mts102-limits",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is lim(x→∞) (3x² + 1)/(2x² − 5)?",
+        "options": [
+          {
+            "text": "0",
+            "is_correct": false
+          },
+          {
+            "text": "1",
+            "is_correct": false
+          },
+          {
+            "text": "−1/5",
+            "is_correct": false
+          },
+          {
+            "text": "3/2",
+            "is_correct": true
+          }
+        ],
+        "explanation": "If the degrees are equal, the limit as x→∞ is the ratio of the leading coefficients: 3/2.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c05",
+        "mts-b01"
+      ],
+      "off_topic": [
+        "mts-c09",
+        "mts-n09",
+        "ooc-07"
+      ]
+    },
+    {
+      "id": "q-mts-06",
+      "split": "test",
+      "passages": [
+        {
+          "document": "mts102-limits",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Which condition is required for f to be continuous at a?",
+        "options": [
+          {
+            "text": "The limit of f at a exists and equals f(a)",
+            "is_correct": true
+          },
+          {
+            "text": "f′(a) = 0",
+            "is_correct": false
+          },
+          {
+            "text": "f has a jump at a",
+            "is_correct": false
+          },
+          {
+            "text": "f(a) is undefined",
+            "is_correct": false
+          }
+        ],
+        "explanation": "A function f is continuous at a when f(a) is defined, lim(x→a) f(x) exists, and the limit equals f(a).",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c06"
+      ],
+      "off_topic": [
+        "mts-c16",
+        "mts-n04",
+        "ooc-08"
+      ]
+    },
+    {
+      "id": "q-mts-07",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "mts102-limits",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is a removable discontinuity?",
+        "options": [
+          {
+            "text": "A vertical asymptote",
+            "is_correct": false
+          },
+          {
+            "text": "A corner in the graph",
+            "is_correct": false
+          },
+          {
+            "text": "A hole that can be filled by redefining one value",
+            "is_correct": true
+          },
+          {
+            "text": "A jump with unequal one-sided limits",
+            "is_correct": false
+          }
+        ],
+        "explanation": "A removable discontinuity is a hole that can be filled by redefining one value.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c07",
+        "mts-b01"
+      ],
+      "off_topic": [
+        "mts-c13",
+        "mts-n05",
+        "ooc-09"
+      ]
+    },
+    {
+      "id": "q-mts-08",
+      "split": "test",
+      "passages": [
+        {
+          "document": "mts102-limits",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Which theorem is used to show that an equation has a root in an interval?",
+        "options": [
+          {
+            "text": "The squeeze theorem",
+            "is_correct": false
+          },
+          {
+            "text": "The quotient rule",
+            "is_correct": false
+          },
+          {
+            "text": "Ohm's law",
+            "is_correct": false
+          },
+          {
+            "text": "The Intermediate Value Theorem",
+            "is_correct": true
+          }
+        ],
+        "explanation": "The Intermediate Value Theorem is often used to show that an equation has a root in an interval.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c08"
+      ],
+      "off_topic": [
+        "mts-c14",
+        "mts-n12",
+        "ooc-10"
+      ]
+    },
+    {
+      "id": "q-mts-09",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "mts102-differentiation",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Which limit defines the derivative of f at x from first principles?",
+        "options": [
+          {
+            "text": "lim(h→∞) f(x + h)",
+            "is_correct": false
+          },
+          {
+            "text": "lim(h→0) [f(x + h) − f(x)]/h",
+            "is_correct": true
+          },
+          {
+            "text": "lim(h→0) [f(x + h) + f(x)]/h",
+            "is_correct": false
+          },
+          {
+            "text": "lim(x→∞) f(x)/x",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The derivative of f at x is f′(x) = lim(h→0) [f(x + h) − f(x)]/h.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c09",
+        "mts-p01"
+      ],
+      "off_topic": [
+        "mts-c05",
+        "mts-n11",
+        "ooc-11"
+      ]
+    },
+    {
+      "id": "q-mts-10",
+      "split": "test",
+      "passages": [
+        {
+          "document": "mts102-differentiation",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Why does |x| have no derivative at 0?",
+        "options": [
+          {
+            "text": "It is not continuous at 0",
+            "is_correct": false
+          },
+          {
+            "text": "It is not defined at 0",
+            "is_correct": false
+          },
+          {
+            "text": "Its limit at 0 is infinite",
+            "is_correct": false
+          },
+          {
+            "text": "It is continuous at 0 but has a corner there",
+            "is_correct": true
+          }
+        ],
+        "explanation": "|x| is continuous at 0 yet has a corner, so it has no derivative at 0.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c10",
+        "mts-b02"
+      ],
+      "off_topic": [
+        "mts-c02",
+        "mts-n04",
+        "ooc-12"
+      ]
+    },
+    {
+      "id": "q-mts-11",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "mts102-differentiation",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Using the product rule, what is d/dx (eˣ sin x)?",
+        "options": [
+          {
+            "text": "eˣ sin x + eˣ cos x",
+            "is_correct": true
+          },
+          {
+            "text": "eˣ cos x",
+            "is_correct": false
+          },
+          {
+            "text": "eˣ sin x − eˣ cos x",
+            "is_correct": false
+          },
+          {
+            "text": "eˣ cos x sin x",
+            "is_correct": false
+          }
+        ],
+        "explanation": "By the product rule, d/dx (eˣ sin x) = eˣ sin x + eˣ cos x.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c11"
+      ],
+      "off_topic": [
+        "mts-c15",
+        "mts-n03",
+        "ooc-13"
+      ]
+    },
+    {
+      "id": "q-mts-12",
+      "split": "test",
+      "passages": [
+        {
+          "document": "mts102-differentiation",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Where is the quotient rule (f/g)′ = (f′g − fg′)/g² valid?",
+        "options": [
+          {
+            "text": "Wherever f ≠ 0",
+            "is_correct": false
+          },
+          {
+            "text": "Only where g = 1",
+            "is_correct": false
+          },
+          {
+            "text": "Wherever f′ = 0",
+            "is_correct": false
+          },
+          {
+            "text": "Wherever g ≠ 0",
+            "is_correct": true
+          }
+        ],
+        "explanation": "The quotient rule (f/g)′ = (f′g − fg′)/g² is valid wherever g ≠ 0.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c12",
+        "mts-b02"
+      ],
+      "off_topic": [
+        "mts-c06",
+        "mts-n10",
+        "ooc-14"
+      ]
+    },
+    {
+      "id": "q-mts-13",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "mts102-differentiation",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Using the chain rule, what is d/dx (sin 3x)?",
+        "options": [
+          {
+            "text": "3 cos 3x",
+            "is_correct": true
+          },
+          {
+            "text": "cos 3x",
+            "is_correct": false
+          },
+          {
+            "text": "−3 cos 3x",
+            "is_correct": false
+          },
+          {
+            "text": "3 sin 3x",
+            "is_correct": false
+          }
+        ],
+        "explanation": "By the chain rule, differentiate the outside function, keep the inside, then multiply by the derivative of the inside: d/dx (sin 3x) = 3 cos 3x.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c13"
+      ],
+      "off_topic": [
+        "mts-c03",
+        "mts-n11",
+        "ooc-15"
+      ]
+    },
+    {
+      "id": "q-mts-14",
+      "split": "test",
+      "passages": [
+        {
+          "document": "mts102-differentiation",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "According to the power rule, what is d/dx (xⁿ)?",
+        "options": [
+          {
+            "text": "xⁿ⁻¹",
+            "is_correct": false
+          },
+          {
+            "text": "n xⁿ⁻¹",
+            "is_correct": true
+          },
+          {
+            "text": "xⁿ⁺¹",
+            "is_correct": false
+          },
+          {
+            "text": "n xⁿ",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Power rule: d/dx (xⁿ) = n xⁿ⁻¹ for any real n.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c14",
+        "mts-b02"
+      ],
+      "off_topic": [
+        "mts-c08",
+        "mts-n06",
+        "ooc-16"
+      ]
+    },
+    {
+      "id": "q-mts-15",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "mts102-differentiation",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "If y is defined implicitly by x² + y² = 25, what is dy/dx?",
+        "options": [
+          {
+            "text": "−y/x",
+            "is_correct": false
+          },
+          {
+            "text": "2x + 2y",
+            "is_correct": false
+          },
+          {
+            "text": "−x/y",
+            "is_correct": true
+          },
+          {
+            "text": "x/y",
+            "is_correct": false
+          }
+        ],
+        "explanation": "From x² + y² = 25 we get 2x + 2y dy/dx = 0, so dy/dx = −x/y.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c15"
+      ],
+      "off_topic": [
+        "mts-c07",
+        "mts-n09",
+        "ooc-17"
+      ]
+    },
+    {
+      "id": "q-mts-16",
+      "split": "test",
+      "passages": [
+        {
+          "document": "mts102-differentiation",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "If f″(x) > 0 at a stationary point, what is the point?",
+        "options": [
+          {
+            "text": "A removable discontinuity",
+            "is_correct": false
+          },
+          {
+            "text": "A root",
+            "is_correct": false
+          },
+          {
+            "text": "A local minimum",
+            "is_correct": true
+          },
+          {
+            "text": "A local maximum",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The second derivative test classifies stationary points: if f″(x) > 0 the point is a local minimum.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-c16",
+        "mts-p02",
+        "mts-b02"
+      ],
+      "off_topic": [
+        "mts-c04",
+        "mts-n10",
+        "ooc-18"
+      ]
+    },
+    {
+      "id": "q-mts-17",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "mts102-differentiation",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "A spherical balloon's radius grows at 2 cm/s. Which expression gives dV/dt?",
+        "options": [
+          {
+            "text": "4πr · dr/dt",
+            "is_correct": false
+          },
+          {
+            "text": "4πr² · dr/dt",
+            "is_correct": true
+          },
+          {
+            "text": "(4/3)πr³",
+            "is_correct": false
+          },
+          {
+            "text": "2πr · dr/dt",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Its volume V = (4/3)πr³ changes at dV/dt = 4πr² · dr/dt.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "mts-p03"
+      ],
+      "off_topic": [
+        "mts-c13",
+        "mts-n07",
+        "ooc-19"
+      ]
+    },
+    {
+      "id": "q-phy-01",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "phy102-electrostatics",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What happens between like charges?",
+        "options": [
+          {
+            "text": "They cancel",
+            "is_correct": false
+          },
+          {
+            "text": "They merge",
+            "is_correct": false
+          },
+          {
+            "text": "They repel",
+            "is_correct": true
+          },
+          {
+            "text": "They attract",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Charge comes in two kinds; like charges repel and unlike charges attract.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c01",
+        "phy-b01"
+      ],
+      "off_topic": [
+        "phy-c09",
+        "phy-n07",
+        "ooc-21"
+      ]
+    },
+    {
+      "id": "q-phy-02",
+      "split": "test",
+      "passages": [
+        {
+          "document": "phy102-electrostatics",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "When a glass rod is rubbed with silk, why does the rod become positively charged?",
+        "options": [
+          {
+            "text": "Protons move from the silk to the glass",
+            "is_correct": false
+          },
+          {
+            "text": "Electrons move from the silk to the glass",
+            "is_correct": false
+          },
+          {
+            "text": "The silk creates new charge",
+            "is_correct": false
+          },
+          {
+            "text": "Electrons move from the glass to the silk",
+            "is_correct": true
+          }
+        ],
+        "explanation": "When a glass rod is rubbed with silk, electrons move from the glass to the silk, leaving the rod positively charged.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c02"
+      ],
+      "off_topic": [
+        "phy-c08",
+        "phy-n12",
+        "ooc-20"
+      ]
+    },
+    {
+      "id": "q-phy-03",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "phy102-electrostatics",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "In Millikan's oil-drop experiment, what was balanced against the electric force?",
+        "options": [
+          {
+            "text": "The weight of tiny charged oil drops",
+            "is_correct": true
+          },
+          {
+            "text": "The magnetic force on the drops",
+            "is_correct": false
+          },
+          {
+            "text": "The current through the drops",
+            "is_correct": false
+          },
+          {
+            "text": "The pressure of the air",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Robert Millikan measured e by balancing the weight of tiny charged oil drops against an electric force.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c03"
+      ],
+      "off_topic": [
+        "phy-c11",
+        "phy-n05",
+        "ooc-23"
+      ]
+    },
+    {
+      "id": "q-phy-04",
+      "split": "test",
+      "passages": [
+        {
+          "document": "phy102-electrostatics",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Under Coulomb's law, what happens to the force between two point charges when their separation is doubled?",
+        "options": [
+          {
+            "text": "It doubles",
+            "is_correct": false
+          },
+          {
+            "text": "It becomes four times larger",
+            "is_correct": false
+          },
+          {
+            "text": "One quarter of its value",
+            "is_correct": true
+          },
+          {
+            "text": "It halves",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Because of the inverse-square dependence F = k q₁q₂ / r², doubling the separation reduces the force to one quarter of its value.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c04"
+      ],
+      "off_topic": [
+        "phy-c14",
+        "phy-n02",
+        "ooc-22"
+      ]
+    },
+    {
+      "id": "q-phy-05",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "phy102-electrostatics",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Why does copper conduct electricity well?",
+        "options": [
+          {
+            "text": "Its electrons are bound to their atoms",
+            "is_correct": false
+          },
+          {
+            "text": "It has no electrons",
+            "is_correct": false
+          },
+          {
+            "text": "It is an insulator",
+            "is_correct": false
+          },
+          {
+            "text": "Its outer electrons are free to move through the material",
+            "is_correct": true
+          }
+        ],
+        "explanation": "In a conductor such as copper, outer electrons are free to move through the material.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c05",
+        "phy-b01"
+      ],
+      "off_topic": [
+        "phy-c13",
+        "phy-n09",
+        "ooc-25"
+      ]
+    },
+    {
+      "id": "q-phy-06",
+      "split": "test",
+      "passages": [
+        {
+          "document": "phy102-electrostatics",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is the electric field at a point?",
+        "options": [
+          {
+            "text": "The rate of flow of charge",
+            "is_correct": false
+          },
+          {
+            "text": "The charge per unit area",
+            "is_correct": false
+          },
+          {
+            "text": "The force per unit positive test charge",
+            "is_correct": true
+          },
+          {
+            "text": "The work done per unit charge",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The electric field at a point is the force per unit positive test charge, E = F/q, measured in N/C.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c06"
+      ],
+      "off_topic": [
+        "phy-c12",
+        "phy-n04",
+        "ooc-24"
+      ]
+    },
+    {
+      "id": "q-phy-07",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "phy102-electrostatics",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Where are electric field lines closer together?",
+        "options": [
+          {
+            "text": "Near an insulator",
+            "is_correct": false
+          },
+          {
+            "text": "Where the field is stronger",
+            "is_correct": true
+          },
+          {
+            "text": "Where the field is zero",
+            "is_correct": false
+          },
+          {
+            "text": "Where the lines cross",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Field lines never cross, and they are closer together where the field is stronger.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c07",
+        "phy-b01"
+      ],
+      "off_topic": [
+        "phy-c09",
+        "phy-n03",
+        "ooc-27"
+      ]
+    },
+    {
+      "id": "q-phy-08",
+      "split": "test",
+      "passages": [
+        {
+          "document": "phy102-electrostatics",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is the electric potential V at a point?",
+        "options": [
+          {
+            "text": "The work done per unit charge in bringing a positive test charge from infinity to the point",
+            "is_correct": true
+          },
+          {
+            "text": "The force per unit charge at the point",
+            "is_correct": false
+          },
+          {
+            "text": "The rate of flow of charge",
+            "is_correct": false
+          },
+          {
+            "text": "The resistance per unit length",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The electric potential V is the work done per unit charge in bringing a positive test charge from infinity to the point.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c08"
+      ],
+      "off_topic": [
+        "phy-c10",
+        "phy-n06",
+        "ooc-26"
+      ]
+    },
+    {
+      "id": "q-phy-09",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "phy102-current",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What does Ohm's law state for a metallic conductor at constant temperature?",
+        "options": [
+          {
+            "text": "The resistance falls with voltage",
+            "is_correct": false
+          },
+          {
+            "text": "The current is proportional to the potential difference across it",
+            "is_correct": true
+          },
+          {
+            "text": "The current is proportional to its resistance",
+            "is_correct": false
+          },
+          {
+            "text": "The power is constant",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Ohm's law: at constant temperature, the current through a metallic conductor is proportional to the potential difference across it, V = IR.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c09"
+      ],
+      "off_topic": [
+        "phy-c05",
+        "phy-n05",
+        "ooc-29"
+      ]
+    },
+    {
+      "id": "q-phy-10",
+      "split": "test",
+      "passages": [
+        {
+          "document": "phy102-current",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "In R = ρL/A, what is ρ?",
+        "options": [
+          {
+            "text": "The current",
+            "is_correct": false
+          },
+          {
+            "text": "The resistivity",
+            "is_correct": true
+          },
+          {
+            "text": "The length",
+            "is_correct": false
+          },
+          {
+            "text": "The cross-sectional area",
+            "is_correct": false
+          }
+        ],
+        "explanation": "R = ρL/A, where ρ is the resistivity, L the length and A the cross-sectional area.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c10",
+        "phy-b02"
+      ],
+      "off_topic": [
+        "phy-c04",
+        "phy-n08",
+        "ooc-28"
+      ]
+    },
+    {
+      "id": "q-phy-11",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "phy102-current",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "How does the combined resistance of resistors in parallel compare with the smallest single resistor?",
+        "options": [
+          {
+            "text": "It is smaller than the smallest single resistor",
+            "is_correct": true
+          },
+          {
+            "text": "It is larger than the largest resistor",
+            "is_correct": false
+          },
+          {
+            "text": "It equals their sum",
+            "is_correct": false
+          },
+          {
+            "text": "It equals the smallest resistor",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Resistors in parallel satisfy 1/R = 1/R₁ + 1/R₂, so the total is smaller than the smallest single resistor.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c11"
+      ],
+      "off_topic": [
+        "phy-c07",
+        "phy-n01",
+        "ooc-01"
+      ]
+    },
+    {
+      "id": "q-phy-12",
+      "split": "test",
+      "passages": [
+        {
+          "document": "phy102-current",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Kirchhoff's voltage law expresses the conservation of what?",
+        "options": [
+          {
+            "text": "Momentum",
+            "is_correct": false
+          },
+          {
+            "text": "Energy",
+            "is_correct": true
+          },
+          {
+            "text": "Charge",
+            "is_correct": false
+          },
+          {
+            "text": "Mass",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Kirchhoff's voltage law: around any closed loop the sum of the potential differences is zero, which expresses conservation of energy.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c12",
+        "phy-b02"
+      ],
+      "off_topic": [
+        "phy-p04",
+        "phy-c06",
+        "phy-n10",
+        "ooc-30"
+      ]
+    },
+    {
+      "id": "q-phy-13",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "phy102-current",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "A kettle is rated 2000 W on a 230 V supply. About what current does it draw?",
+        "options": [
+          {
+            "text": "8.7 A",
+            "is_correct": true
+          },
+          {
+            "text": "2000 A",
+            "is_correct": false
+          },
+          {
+            "text": "230 A",
+            "is_correct": false
+          },
+          {
+            "text": "0.115 A",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Electrical power is P = VI, so a kettle rated 2000 W on a 230 V supply draws a current of about 8.7 A.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c13"
+      ],
+      "off_topic": [
+        "phy-c03",
+        "phy-n11",
+        "ooc-03"
+      ]
+    },
+    {
+      "id": "q-phy-14",
+      "split": "test",
+      "passages": [
+        {
+          "document": "phy102-current",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is electric current?",
+        "options": [
+          {
+            "text": "The work done per unit charge",
+            "is_correct": false
+          },
+          {
+            "text": "The force per unit charge",
+            "is_correct": false
+          },
+          {
+            "text": "The resistance of a wire",
+            "is_correct": false
+          },
+          {
+            "text": "The rate of flow of charge",
+            "is_correct": true
+          }
+        ],
+        "explanation": "Electric current is the rate of flow of charge, I = Q/t, measured in amperes.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "phy-c14",
+        "phy-b02"
+      ],
+      "off_topic": [
+        "phy-c08",
+        "phy-n12",
+        "ooc-02"
+      ]
+    },
+    {
+      "id": "q-chm-01",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "chm101-thermochemistry",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is the sign of ΔH for an exothermic reaction?",
+        "options": [
+          {
+            "text": "Zero",
+            "is_correct": false
+          },
+          {
+            "text": "It depends on the temperature only",
+            "is_correct": false
+          },
+          {
+            "text": "Negative",
+            "is_correct": true
+          },
+          {
+            "text": "Positive",
+            "is_correct": false
+          }
+        ],
+        "explanation": "An exothermic reaction releases heat to its surroundings, so its enthalpy change ΔH is negative.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "chm-c01",
+        "chm-p01",
+        "chm-b01"
+      ],
+      "off_topic": [
+        "chm-c03",
+        "chm-n05",
+        "ooc-05"
+      ]
+    },
+    {
+      "id": "q-chm-02",
+      "split": "test",
+      "passages": [
+        {
+          "document": "chm101-thermochemistry",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is the standard enthalpy of formation of an element in its standard state?",
+        "options": [
+          {
+            "text": "Equal to its bond enthalpy",
+            "is_correct": false
+          },
+          {
+            "text": "Zero",
+            "is_correct": true
+          },
+          {
+            "text": "Positive",
+            "is_correct": false
+          },
+          {
+            "text": "Negative",
+            "is_correct": false
+          }
+        ],
+        "explanation": "By definition ΔHf° of an element in its standard state is zero.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "chm-c02",
+        "chm-b02"
+      ],
+      "off_topic": [
+        "chm-c04",
+        "chm-n04",
+        "ooc-02"
+      ]
+    },
+    {
+      "id": "q-chm-03",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "chm101-thermochemistry",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What does Hess's law state about the total enthalpy change of a reaction?",
+        "options": [
+          {
+            "text": "It depends on the route taken",
+            "is_correct": false
+          },
+          {
+            "text": "It is always negative",
+            "is_correct": false
+          },
+          {
+            "text": "It equals the bond enthalpies of the products",
+            "is_correct": false
+          },
+          {
+            "text": "It is the same whichever route is taken from reactants to products",
+            "is_correct": true
+          }
+        ],
+        "explanation": "Hess's law states that the total enthalpy change of a reaction is the same whichever route is taken, as long as the initial and final states are the same.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "chm-c03",
+        "chm-b01"
+      ],
+      "off_topic": [
+        "chm-c01",
+        "chm-n01",
+        "ooc-07"
+      ]
+    },
+    {
+      "id": "q-chm-04",
+      "split": "test",
+      "passages": [
+        {
+          "document": "chm101-thermochemistry",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "In a calorimeter, which expression gives the heat absorbed by water?",
+        "options": [
+          {
+            "text": "q = mcΔT",
+            "is_correct": true
+          },
+          {
+            "text": "q = VI",
+            "is_correct": false
+          },
+          {
+            "text": "q = kq/r",
+            "is_correct": false
+          },
+          {
+            "text": "q = ΔHf°",
+            "is_correct": false
+          }
+        ],
+        "explanation": "In a calorimeter, the heat absorbed by water is q = mcΔT.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "chm-c04",
+        "chm-b02"
+      ],
+      "off_topic": [
+        "chm-c02",
+        "chm-n06",
+        "ooc-04"
+      ]
+    },
+    {
+      "id": "q-chm-05",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "chm101-thermochemistry",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "How do bond enthalpies estimate ΔH?",
+        "options": [
+          {
+            "text": "The enthalpy of formation of the elements",
+            "is_correct": false
+          },
+          {
+            "text": "Energy to break bonds minus energy released forming bonds",
+            "is_correct": true
+          },
+          {
+            "text": "Energy released forming bonds plus energy to break bonds",
+            "is_correct": false
+          },
+          {
+            "text": "Mass times specific heat capacity",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Bond enthalpies give an estimate: ΔH ≈ (energy to break bonds) − (energy released forming bonds).",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "chm-c05",
+        "chm-b01"
+      ],
+      "off_topic": [
+        "chm-c01",
+        "chm-n03",
+        "ooc-09"
+      ]
+    },
+    {
+      "id": "q-chm-06",
+      "split": "test",
+      "passages": [
+        {
+          "document": "chm101-thermochemistry",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Hess's law lets us calculate which enthalpy changes?",
+        "options": [
+          {
+            "text": "Enthalpy changes that cannot be measured directly",
+            "is_correct": true
+          },
+          {
+            "text": "Only enthalpy changes of combustion",
+            "is_correct": false
+          },
+          {
+            "text": "Only changes measured in a calorimeter",
+            "is_correct": false
+          },
+          {
+            "text": "Rates of reaction",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Hess's law lets us calculate enthalpy changes that cannot be measured directly by combining equations whose ΔH values are known.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "chm-p02"
+      ],
+      "off_topic": [
+        "chm-c04",
+        "chm-n02",
+        "ooc-06"
+      ]
+    },
+    {
+      "id": "q-bio-01",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "bio101-cell",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Where does a prokaryotic cell keep its DNA?",
+        "options": [
+          {
+            "text": "In the vacuole",
+            "is_correct": false
+          },
+          {
+            "text": "In a region called the nucleoid",
+            "is_correct": true
+          },
+          {
+            "text": "In a membrane-bound nucleus",
+            "is_correct": false
+          },
+          {
+            "text": "In the mitochondrion",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Prokaryotic cells, such as bacteria, have no nucleus; their DNA lies in a region called the nucleoid.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "bio-c01",
+        "bio-b01"
+      ],
+      "off_topic": [
+        "bio-c05",
+        "bio-n11",
+        "ooc-11"
+      ]
+    },
+    {
+      "id": "q-bio-02",
+      "split": "test",
+      "passages": [
+        {
+          "document": "bio101-cell",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is the mitochondrion the site of?",
+        "options": [
+          {
+            "text": "Protein synthesis",
+            "is_correct": false
+          },
+          {
+            "text": "Osmosis",
+            "is_correct": false
+          },
+          {
+            "text": "Aerobic respiration",
+            "is_correct": true
+          },
+          {
+            "text": "Photosynthesis",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The mitochondrion is the site of aerobic respiration, where glucose is oxidised to release energy stored as ATP.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "bio-c02",
+        "bio-b02"
+      ],
+      "off_topic": [
+        "bio-c06",
+        "bio-n06",
+        "ooc-10"
+      ]
+    },
+    {
+      "id": "q-bio-03",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "bio101-cell",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Which structures do plant cells have in addition to animal cell organelles?",
+        "options": [
+          {
+            "text": "Mitochondria only",
+            "is_correct": false
+          },
+          {
+            "text": "Chloroplasts, a cellulose cell wall and a large permanent vacuole",
+            "is_correct": true
+          },
+          {
+            "text": "A nucleoid and no nucleus",
+            "is_correct": false
+          },
+          {
+            "text": "Only ribosomes",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Plant cells also have chloroplasts for photosynthesis, a cellulose cell wall and a large permanent vacuole.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "bio-c03",
+        "bio-b01"
+      ],
+      "off_topic": [
+        "bio-c07",
+        "bio-n09",
+        "ooc-13"
+      ]
+    },
+    {
+      "id": "q-bio-04",
+      "split": "test",
+      "passages": [
+        {
+          "document": "bio101-cell",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is the structure of the cell membrane?",
+        "options": [
+          {
+            "text": "A rigid layer of DNA",
+            "is_correct": false
+          },
+          {
+            "text": "A phospholipid bilayer with proteins embedded in it",
+            "is_correct": true
+          },
+          {
+            "text": "A cellulose wall",
+            "is_correct": false
+          },
+          {
+            "text": "A single layer of protein",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The cell membrane is a phospholipid bilayer with proteins embedded in it; it is selectively permeable.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "bio-c04",
+        "bio-b02"
+      ],
+      "off_topic": [
+        "bio-c02",
+        "bio-n08",
+        "ooc-12"
+      ]
+    },
+    {
+      "id": "q-bio-05",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "bio101-cell",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Does diffusion need energy from the cell?",
+        "options": [
+          {
+            "text": "Yes, it uses ATP",
+            "is_correct": false
+          },
+          {
+            "text": "Only in plant cells",
+            "is_correct": false
+          },
+          {
+            "text": "Only against a concentration gradient",
+            "is_correct": false
+          },
+          {
+            "text": "No, diffusion needs no energy from the cell",
+            "is_correct": true
+          }
+        ],
+        "explanation": "Diffusion is the net movement of particles from a region of higher concentration to a region of lower concentration; it needs no energy from the cell.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "bio-c05",
+        "bio-b01"
+      ],
+      "off_topic": [
+        "bio-c07",
+        "bio-n03",
+        "ooc-15"
+      ]
+    },
+    {
+      "id": "q-bio-06",
+      "split": "test",
+      "passages": [
+        {
+          "document": "bio101-cell",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What happens to a plant cell placed in pure water?",
+        "options": [
+          {
+            "text": "It bursts immediately",
+            "is_correct": false
+          },
+          {
+            "text": "Nothing happens",
+            "is_correct": false
+          },
+          {
+            "text": "It takes in water and becomes turgid",
+            "is_correct": true
+          },
+          {
+            "text": "It loses water and becomes plasmolysed",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Osmosis moves water from a dilute solution to a more concentrated one: a plant cell placed in pure water takes in water and becomes turgid.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "bio-c06",
+        "bio-p04"
+      ],
+      "off_topic": [
+        "bio-c02",
+        "bio-n12",
+        "ooc-14"
+      ]
+    },
+    {
+      "id": "q-bio-07",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "bio101-cell",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Which process lets root hair cells absorb mineral ions from the soil against a concentration gradient?",
+        "options": [
+          {
+            "text": "Diffusion",
+            "is_correct": false
+          },
+          {
+            "text": "Photosynthesis",
+            "is_correct": false
+          },
+          {
+            "text": "Active transport",
+            "is_correct": true
+          },
+          {
+            "text": "Osmosis",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Active transport moves substances against a concentration gradient and uses energy from ATP, as when root hair cells absorb mineral ions from the soil.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "bio-c07",
+        "bio-b01"
+      ],
+      "off_topic": [
+        "bio-c05",
+        "bio-n07",
+        "ooc-17"
+      ]
+    },
+    {
+      "id": "q-bio-08",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "bio101-cell",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What happens to a plant cell placed in a concentrated salt solution?",
+        "options": [
+          {
+            "text": "It loses water and becomes plasmolysed",
+            "is_correct": true
+          },
+          {
+            "text": "It takes in water and becomes turgid",
+            "is_correct": false
+          },
+          {
+            "text": "It gains mineral ions",
+            "is_correct": false
+          },
+          {
+            "text": "It divides",
+            "is_correct": false
+          }
+        ],
+        "explanation": "In a concentrated salt solution a plant cell loses water and becomes plasmolysed.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "bio-p03",
+        "bio-b01"
+      ],
+      "off_topic": [
+        "bio-c01",
+        "bio-n05",
+        "ooc-19"
+      ]
+    },
+    {
+      "id": "q-csc-01",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "csc101-python",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Which list method adds one item at the end of a list?",
+        "options": [
+          {
+            "text": "insert",
+            "is_correct": false
+          },
+          {
+            "text": "pop",
+            "is_correct": false
+          },
+          {
+            "text": "slice",
+            "is_correct": false
+          },
+          {
+            "text": "append",
+            "is_correct": true
+          }
+        ],
+        "explanation": "Because lists are mutable you can change them in place: append adds one item at the end.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "csc-c01",
+        "csc-p03",
+        "csc-b01"
+      ],
+      "off_topic": [
+        "csc-c05",
+        "csc-n07",
+        "ooc-21"
+      ]
+    },
+    {
+      "id": "q-csc-02",
+      "split": "test",
+      "passages": [
+        {
+          "document": "csc101-python",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "How are tuples written in Python?",
+        "options": [
+          {
+            "text": "With square brackets",
+            "is_correct": false
+          },
+          {
+            "text": "With curly braces",
+            "is_correct": false
+          },
+          {
+            "text": "With angle brackets",
+            "is_correct": false
+          },
+          {
+            "text": "With round brackets, such as (3, 1, 2)",
+            "is_correct": true
+          }
+        ],
+        "explanation": "Tuples are written with round brackets, such as (3, 1, 2), and are often used for fixed records like coordinates.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "csc-c02",
+        "csc-b02"
+      ],
+      "off_topic": [
+        "csc-c06",
+        "csc-n12",
+        "ooc-20"
+      ]
+    },
+    {
+      "id": "q-csc-03",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "csc101-python",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What happens when an operation seems to modify a string?",
+        "options": [
+          {
+            "text": "It actually builds a new string",
+            "is_correct": true
+          },
+          {
+            "text": "It changes the string in place",
+            "is_correct": false
+          },
+          {
+            "text": "It raises an error",
+            "is_correct": false
+          },
+          {
+            "text": "It converts the string to a list",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Strings are immutable: once created they cannot be changed, so an operation that seems to modify a string actually builds a new one.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "csc-c03",
+        "csc-p03",
+        "csc-b01"
+      ],
+      "off_topic": [
+        "csc-c07",
+        "csc-n09",
+        "ooc-23"
+      ]
+    },
+    {
+      "id": "q-csc-04",
+      "split": "test",
+      "passages": [
+        {
+          "document": "csc101-python",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What does s[1:3] return for a sequence s?",
+        "options": [
+          {
+            "text": "The items at positions 1, 2 and 3",
+            "is_correct": false
+          },
+          {
+            "text": "The item at position 3",
+            "is_correct": false
+          },
+          {
+            "text": "The items at positions 0 and 1",
+            "is_correct": false
+          },
+          {
+            "text": "The items at positions 1 and 2",
+            "is_correct": true
+          }
+        ],
+        "explanation": "Slicing: s[1:3] returns the items at positions 1 and 2.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "csc-c04",
+        "csc-b02"
+      ],
+      "off_topic": [
+        "csc-c06",
+        "csc-n06",
+        "ooc-22"
+      ]
+    },
+    {
+      "id": "q-csc-05",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "csc101-python",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Which values can be dictionary keys?",
+        "options": [
+          {
+            "text": "Immutable values such as strings, numbers or tuples",
+            "is_correct": true
+          },
+          {
+            "text": "Lists",
+            "is_correct": false
+          },
+          {
+            "text": "Any mutable value",
+            "is_correct": false
+          },
+          {
+            "text": "Only strings",
+            "is_correct": false
+          }
+        ],
+        "explanation": "A dictionary maps keys to values; keys must be immutable, such as strings, numbers or tuples.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "csc-c05",
+        "csc-b01"
+      ],
+      "off_topic": [
+        "csc-c01",
+        "csc-n09",
+        "ooc-25"
+      ]
+    },
+    {
+      "id": "q-csc-06",
+      "split": "test",
+      "passages": [
+        {
+          "document": "csc101-python",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is a quick way to remove repeated values from a list?",
+        "options": [
+          {
+            "text": "Convert the list to a tuple",
+            "is_correct": false
+          },
+          {
+            "text": "Use a slice",
+            "is_correct": false
+          },
+          {
+            "text": "Converting the list to a set",
+            "is_correct": true
+          },
+          {
+            "text": "Sort the list",
+            "is_correct": false
+          }
+        ],
+        "explanation": "A set is an unordered collection with no duplicates; converting a list to a set is a quick way to remove repeated values.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "csc-c06",
+        "csc-p02"
+      ],
+      "off_topic": [
+        "csc-c02",
+        "csc-n04",
+        "ooc-24"
+      ]
+    },
+    {
+      "id": "q-csc-07",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "csc101-python",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What does [x * x for x in range(5)] give?",
+        "options": [
+          {
+            "text": "[1, 4, 9, 16, 25]",
+            "is_correct": false
+          },
+          {
+            "text": "[0, 1, 2, 3, 4]",
+            "is_correct": false
+          },
+          {
+            "text": "[0, 2, 4, 6, 8]",
+            "is_correct": false
+          },
+          {
+            "text": "[0, 1, 4, 9, 16]",
+            "is_correct": true
+          }
+        ],
+        "explanation": "A list comprehension builds a list in one expression: [x * x for x in range(5)] gives [0, 1, 4, 9, 16].",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "csc-c07"
+      ],
+      "off_topic": [
+        "csc-c03",
+        "csc-n01",
+        "ooc-27"
+      ]
+    },
+    {
+      "id": "q-csc-08",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "csc101-python",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Why is looking up a dictionary key fast on average regardless of its size?",
+        "options": [
+          {
+            "text": "Keys are stored in a list",
+            "is_correct": false
+          },
+          {
+            "text": "Dictionaries are immutable",
+            "is_correct": false
+          },
+          {
+            "text": "Dictionaries are implemented as hash tables",
+            "is_correct": true
+          },
+          {
+            "text": "Dictionaries are sorted",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Looking up a key is fast on average regardless of the dictionary's size, because dictionaries are implemented as hash tables.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "csc-p01",
+        "csc-c05",
+        "csc-b01"
+      ],
+      "off_topic": [
+        "csc-c03",
+        "csc-n03",
+        "ooc-29"
+      ]
+    },
+    {
+      "id": "q-sta-01",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "sta111-descriptive",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is the mode of a data set?",
+        "options": [
+          {
+            "text": "The largest value",
+            "is_correct": false
+          },
+          {
+            "text": "The value that occurs most often",
+            "is_correct": true
+          },
+          {
+            "text": "The middle value",
+            "is_correct": false
+          },
+          {
+            "text": "The sum divided by the count",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The mode is the value that occurs most often, and a data set can have more than one mode.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "sta-c01",
+        "sta-b01"
+      ],
+      "off_topic": [
+        "sta-c03",
+        "sta-n05",
+        "ooc-29"
+      ]
+    },
+    {
+      "id": "q-sta-02",
+      "split": "test",
+      "passages": [
+        {
+          "document": "sta111-descriptive",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "For the scores 45, 50, 55, 60 and 290, what are the mean and the median?",
+        "options": [
+          {
+            "text": "Mean 100, median 55",
+            "is_correct": true
+          },
+          {
+            "text": "Mean 55, median 100",
+            "is_correct": false
+          },
+          {
+            "text": "Mean 50, median 55",
+            "is_correct": false
+          },
+          {
+            "text": "Mean 100, median 50",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The mean is sensitive to outliers: for the scores 45, 50, 55, 60 and 290, the mean is 100 but the median is 55.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "sta-c02",
+        "sta-b02"
+      ],
+      "off_topic": [
+        "sta-c04",
+        "sta-n08",
+        "ooc-28"
+      ]
+    },
+    {
+      "id": "q-sta-03",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "sta111-descriptive",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "For a sample, what is the sum of squared deviations divided by to give the variance?",
+        "options": [
+          {
+            "text": "n − 1",
+            "is_correct": true
+          },
+          {
+            "text": "n",
+            "is_correct": false
+          },
+          {
+            "text": "n + 1",
+            "is_correct": false
+          },
+          {
+            "text": "the mean",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The variance is the average squared deviation from the mean; for a sample we divide the sum of squared deviations by n − 1.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "sta-c03",
+        "sta-b01"
+      ],
+      "off_topic": [
+        "sta-c05",
+        "sta-n09",
+        "ooc-01"
+      ]
+    },
+    {
+      "id": "q-sta-04",
+      "split": "test",
+      "passages": [
+        {
+          "document": "sta111-descriptive",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What does the interquartile range measure?",
+        "options": [
+          {
+            "text": "The largest value minus the smallest",
+            "is_correct": false
+          },
+          {
+            "text": "The most frequent value",
+            "is_correct": false
+          },
+          {
+            "text": "The spread of the middle half of the data",
+            "is_correct": true
+          },
+          {
+            "text": "The middle value",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The interquartile range, Q3 − Q1, measures the spread of the middle half of the data and resists outliers.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "sta-c04",
+        "sta-p02"
+      ],
+      "off_topic": [
+        "sta-c06",
+        "sta-n02",
+        "ooc-30"
+      ]
+    },
+    {
+      "id": "q-sta-05",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "sta111-descriptive",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Which is an example of unstructured data?",
+        "options": [
+          {
+            "text": "A spreadsheet of student scores",
+            "is_correct": false
+          },
+          {
+            "text": "A database table",
+            "is_correct": false
+          },
+          {
+            "text": "Rows and columns of a fixed format",
+            "is_correct": false
+          },
+          {
+            "text": "Emails",
+            "is_correct": true
+          }
+        ],
+        "explanation": "Unstructured data has no predefined model; examples are emails, photographs, audio recordings and free-text survey answers.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "sta-c05",
+        "sta-b01"
+      ],
+      "off_topic": [
+        "sta-c01",
+        "sta-n03",
+        "ooc-03"
+      ]
+    },
+    {
+      "id": "q-sta-06",
+      "split": "test",
+      "passages": [
+        {
+          "document": "sta111-descriptive",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "Which is an example of qualitative data?",
+        "options": [
+          {
+            "text": "Blood group",
+            "is_correct": true
+          },
+          {
+            "text": "Height",
+            "is_correct": false
+          },
+          {
+            "text": "Number of students in a class",
+            "is_correct": false
+          },
+          {
+            "text": "Time",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Qualitative data describes categories, such as department or blood group; quantitative data is numerical.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "sta-c06"
+      ],
+      "off_topic": [
+        "sta-c08",
+        "sta-n04",
+        "ooc-02"
+      ]
+    },
+    {
+      "id": "q-sta-07",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "sta111-descriptive",
+          "page": 3
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "When is quantitative data discrete?",
+        "options": [
+          {
+            "text": "When it has outliers",
+            "is_correct": false
+          },
+          {
+            "text": "When it is counted",
+            "is_correct": true
+          },
+          {
+            "text": "When it is measured",
+            "is_correct": false
+          },
+          {
+            "text": "When it describes categories",
+            "is_correct": false
+          }
+        ],
+        "explanation": "Quantitative data is discrete when it is counted, such as the number of students in a class, and continuous when it is measured.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "sta-c07",
+        "sta-b01"
+      ],
+      "off_topic": [
+        "sta-c03",
+        "sta-n11",
+        "ooc-05"
+      ]
+    },
+    {
+      "id": "q-sta-08",
+      "split": "test",
+      "passages": [
+        {
+          "document": "sta111-descriptive",
+          "page": 2
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "What is the range of a data set?",
+        "options": [
+          {
+            "text": "The largest value minus the smallest",
+            "is_correct": true
+          },
+          {
+            "text": "Q3 − Q1",
+            "is_correct": false
+          },
+          {
+            "text": "The square root of the variance",
+            "is_correct": false
+          },
+          {
+            "text": "The middle value",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The range is the largest value minus the smallest.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "sta-c08",
+        "sta-p02"
+      ],
+      "off_topic": [
+        "sta-c06",
+        "sta-n10",
+        "ooc-04"
+      ]
+    },
+    {
+      "id": "q-sta-09",
+      "split": "dev",
+      "passages": [
+        {
+          "document": "sta111-descriptive",
+          "page": 1
+        }
+      ],
+      "item": {
+        "question_type": "mcq",
+        "prompt": "For an even number of values, how is the median found?",
+        "options": [
+          {
+            "text": "The most frequent value",
+            "is_correct": false
+          },
+          {
+            "text": "The sum of the values divided by the count",
+            "is_correct": false
+          },
+          {
+            "text": "The average of the two middle values",
+            "is_correct": true
+          },
+          {
+            "text": "The larger of the two middle values",
+            "is_correct": false
+          }
+        ],
+        "explanation": "The median is the middle value when the data are sorted; for an even number of values it is the average of the two middle values.",
+        "difficulty": "medium",
+        "sources": [
+          1
+        ]
+      },
+      "on_topic": [
+        "sta-p03",
+        "sta-c01",
+        "sta-b01"
+      ],
+      "off_topic": [
+        "sta-c07",
+        "sta-n07",
+        "ooc-07"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,2107 @@
+{
+  "version": "v1",
+  "status": "unreviewed",
+  "review": "Drafted by Claude for the purpose; no label has had human review yet. The same author wrote the labels and the candidate checks, so the held-out test split guards against tuning, not against the author's blind spots.",
+  "description": "Labelled topics for AI-10's topic-coverage check (before generation). Each is a (course, topic) an exam could be requested for, over the retrieval evaluation corpus and its past-question distractors (data/retrieval_eval/v1). Original course-style text written for the purpose; no third-party material.",
+  "corpus": "data/retrieval_eval/v1",
+  "labelling_rule": "covered: the lecture notes teach the topic, so at least one exam question with a supported answer can be set on it; evidence names the page and a verbatim span. Not covered: the notes don't teach it, even if they share its words or a past-question paper asks about it; why says what is missing. Categories: covered_direct (named as in the notes), covered_paraphrase (named in other words), covered_broad (a whole document or course area), near_miss (same course and subject, not taught), out_of_corpus (a subject the corpus doesn't teach).",
+  "splits": "dev chooses thresholds; test is held out and only reported.",
+  "topics": [
+    {
+      "id": "mts-c01",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Limits of functions",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-limits",
+        "page": 1,
+        "span": "can be made as close to L as we like by taking x sufficiently close to a"
+      }
+    },
+    {
+      "id": "mts-c02",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "One-sided limits",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-limits",
+        "page": 1,
+        "span": "One-sided limits."
+      }
+    },
+    {
+      "id": "mts-c03",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Evaluating limits by factorisation",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-limits",
+        "page": 2,
+        "span": "Factorise and cancel"
+      }
+    },
+    {
+      "id": "mts-c04",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "The squeeze theorem",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-limits",
+        "page": 2,
+        "span": "The squeeze theorem."
+      }
+    },
+    {
+      "id": "mts-c05",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Limits at infinity of rational functions",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-limits",
+        "page": 3,
+        "span": "For a rational function, divide the numerator and the denominator by the highest power of x in the denominator."
+      }
+    },
+    {
+      "id": "mts-c06",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "Continuity of a function",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-limits",
+        "page": 3,
+        "span": "A function f is continuous at a when three conditions hold"
+      }
+    },
+    {
+      "id": "mts-c07",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Removable and jump discontinuities",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-limits",
+        "page": 3,
+        "span": "A removable discontinuity is a hole that can be filled by redefining one value"
+      }
+    },
+    {
+      "id": "mts-c08",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "The Intermediate Value Theorem",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-limits",
+        "page": 3,
+        "span": "The Intermediate Value Theorem."
+      }
+    },
+    {
+      "id": "mts-c09",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "The derivative from first principles",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 1,
+        "span": "The Derivative from First Principles"
+      }
+    },
+    {
+      "id": "mts-c10",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "Differentiability and continuity",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 1,
+        "span": "A function that is differentiable at a point is continuous there"
+      }
+    },
+    {
+      "id": "mts-c11",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "The product rule",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 2,
+        "span": "Product rule: (fg)′ = f′g + fg′."
+      }
+    },
+    {
+      "id": "mts-c12",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "The quotient rule",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 2,
+        "span": "Quotient rule: (f/g)′ = (f′g − fg′)/g², valid wherever g ≠ 0."
+      }
+    },
+    {
+      "id": "mts-c13",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "The chain rule",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 2,
+        "span": "differentiate the outside function, keep the inside, then multiply by the derivative of the inside"
+      }
+    },
+    {
+      "id": "mts-c14",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "The power rule",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 2,
+        "span": "Power rule: d/dx (xⁿ) = n xⁿ⁻¹ for any real n."
+      }
+    },
+    {
+      "id": "mts-c15",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Implicit differentiation",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 3,
+        "span": "When y is defined implicitly, differentiate both sides with respect to x"
+      }
+    },
+    {
+      "id": "mts-c16",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "Stationary points and the second derivative test",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 3,
+        "span": "The second derivative test classifies them"
+      }
+    },
+    {
+      "id": "mts-p01",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Gradient of a curve at a point",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 1,
+        "span": "it is the slope of the tangent line to the curve y = f(x)"
+      }
+    },
+    {
+      "id": "mts-p02",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "Turning points of a curve",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 3,
+        "span": "Stationary points occur where f′(x) = 0."
+      }
+    },
+    {
+      "id": "mts-p03",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Related rates",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 3,
+        "span": "If a spherical balloon's radius grows at 2 cm/s"
+      }
+    },
+    {
+      "id": "mts-p04",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "Limits approached from one side only",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "mts102-limits",
+        "page": 1,
+        "span": "uses only values of x below a"
+      }
+    },
+    {
+      "id": "mts-b01",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Limits and continuity",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "mts102-limits",
+        "page": 3,
+        "span": "lim(x→a) f(x) exists, and the limit equals f(a)"
+      }
+    },
+    {
+      "id": "mts-b02",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "Differentiation",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "mts102-differentiation",
+        "page": 2,
+        "span": "Rules of Differentiation"
+      }
+    },
+    {
+      "id": "phy-c01",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Electric charge",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-electrostatics",
+        "page": 1,
+        "span": "Charge comes in two kinds, positive and negative."
+      }
+    },
+    {
+      "id": "phy-c02",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Charging by friction",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-electrostatics",
+        "page": 1,
+        "span": "Charging by friction."
+      }
+    },
+    {
+      "id": "phy-c03",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Millikan's oil-drop experiment",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-electrostatics",
+        "page": 1,
+        "span": "Robert Millikan measured e in his oil-drop experiment"
+      }
+    },
+    {
+      "id": "phy-c04",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Coulomb's law",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-electrostatics",
+        "page": 2,
+        "span": "The force between two point charges q₁ and q₂ separated by a distance r is F = k q₁q₂ / r²"
+      }
+    },
+    {
+      "id": "phy-c05",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Conductors and insulators",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-electrostatics",
+        "page": 2,
+        "span": "Conductors and insulators."
+      }
+    },
+    {
+      "id": "phy-c06",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "The electric field",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-electrostatics",
+        "page": 3,
+        "span": "The electric field at a point is the force per unit positive test charge"
+      }
+    },
+    {
+      "id": "phy-c07",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Electric field lines",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-electrostatics",
+        "page": 3,
+        "span": "Field lines never cross"
+      }
+    },
+    {
+      "id": "phy-c08",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Electric potential",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-electrostatics",
+        "page": 3,
+        "span": "The electric potential V is the work done per unit charge"
+      }
+    },
+    {
+      "id": "phy-c09",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Ohm's law",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-current",
+        "page": 1,
+        "span": "Ohm's law states that"
+      }
+    },
+    {
+      "id": "phy-c10",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Resistivity",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-current",
+        "page": 1,
+        "span": "where ρ is the resistivity"
+      }
+    },
+    {
+      "id": "phy-c11",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Resistors in series and parallel",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-current",
+        "page": 2,
+        "span": "Resistors in series carry the same current and their resistances add"
+      }
+    },
+    {
+      "id": "phy-c12",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Kirchhoff's laws",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-current",
+        "page": 2,
+        "span": "Kirchhoff's voltage law: around any closed loop the sum of the potential differences is zero"
+      }
+    },
+    {
+      "id": "phy-c13",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Electrical power",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-current",
+        "page": 2,
+        "span": "Electrical power is P = VI = I²R = V²/R, measured in watts."
+      }
+    },
+    {
+      "id": "phy-c14",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Electric current",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "phy102-current",
+        "page": 1,
+        "span": "Electric current is the rate of flow of charge"
+      }
+    },
+    {
+      "id": "phy-p01",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Force between two point charges",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "phy102-electrostatics",
+        "page": 2,
+        "span": "The force acts along the line joining the charges"
+      }
+    },
+    {
+      "id": "phy-p02",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Quantisation of charge",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "phy102-electrostatics",
+        "page": 1,
+        "span": "Charge is quantised"
+      }
+    },
+    {
+      "id": "phy-p03",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "How the length and thickness of a wire affect its resistance",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "phy102-current",
+        "page": 1,
+        "span": "A longer wire has more resistance; a thicker wire has less."
+      }
+    },
+    {
+      "id": "phy-p04",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Conservation of charge at a junction",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "phy102-current",
+        "page": 2,
+        "span": "the total current entering a junction equals the total current leaving it"
+      }
+    },
+    {
+      "id": "phy-b01",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Electrostatics",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "phy102-electrostatics",
+        "page": 3,
+        "span": "Inside a conductor in electrostatic equilibrium the field is zero"
+      }
+    },
+    {
+      "id": "phy-b02",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Current electricity",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "phy102-current",
+        "page": 1,
+        "span": "Current, Voltage and Resistance"
+      }
+    },
+    {
+      "id": "chm-c01",
+      "split": "dev",
+      "course": "CHM 101",
+      "topic": "Exothermic and endothermic reactions",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "chm101-thermochemistry",
+        "page": 1,
+        "span": "An exothermic reaction releases heat to its surroundings"
+      }
+    },
+    {
+      "id": "chm-c02",
+      "split": "test",
+      "course": "CHM 101",
+      "topic": "Standard enthalpy of formation",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "chm101-thermochemistry",
+        "page": 1,
+        "span": "is the enthalpy change when one mole of a compound forms from its elements in their standard states"
+      }
+    },
+    {
+      "id": "chm-c03",
+      "split": "dev",
+      "course": "CHM 101",
+      "topic": "Hess's law",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "chm101-thermochemistry",
+        "page": 2,
+        "span": "Hess's law states that the total enthalpy change of a reaction is the same whichever route is taken"
+      }
+    },
+    {
+      "id": "chm-c04",
+      "split": "test",
+      "course": "CHM 101",
+      "topic": "Calorimetry",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "chm101-thermochemistry",
+        "page": 2,
+        "span": "In a calorimeter, the heat absorbed by water is q = mcΔT"
+      }
+    },
+    {
+      "id": "chm-c05",
+      "split": "dev",
+      "course": "CHM 101",
+      "topic": "Bond enthalpies",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "chm101-thermochemistry",
+        "page": 2,
+        "span": "Bond enthalpies give an estimate"
+      }
+    },
+    {
+      "id": "chm-c06",
+      "split": "test",
+      "course": "CHM 101",
+      "topic": "Specific heat capacity of water",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "chm101-thermochemistry",
+        "page": 2,
+        "span": "its specific heat capacity"
+      }
+    },
+    {
+      "id": "chm-p01",
+      "split": "dev",
+      "course": "CHM 101",
+      "topic": "Heat given out or taken in by chemical reactions",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "chm101-thermochemistry",
+        "page": 1,
+        "span": "An endothermic reaction absorbs heat, so ΔH is positive"
+      }
+    },
+    {
+      "id": "chm-p02",
+      "split": "test",
+      "course": "CHM 101",
+      "topic": "Energy cycles for enthalpy changes that cannot be measured directly",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "chm101-thermochemistry",
+        "page": 2,
+        "span": "It lets us calculate enthalpy changes that cannot be measured directly"
+      }
+    },
+    {
+      "id": "chm-b01",
+      "split": "dev",
+      "course": "CHM 101",
+      "topic": "Thermochemistry",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "chm101-thermochemistry",
+        "page": 1,
+        "span": "Energy Changes in Reactions"
+      }
+    },
+    {
+      "id": "chm-b02",
+      "split": "test",
+      "course": "CHM 101",
+      "topic": "Enthalpy changes",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "chm101-thermochemistry",
+        "page": 1,
+        "span": "so its enthalpy change ΔH is negative"
+      }
+    },
+    {
+      "id": "bio-c01",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Prokaryotic and eukaryotic cells",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 1,
+        "span": "Prokaryotic cells, such as bacteria, have no nucleus"
+      }
+    },
+    {
+      "id": "bio-c02",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "The mitochondrion",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 1,
+        "span": "The mitochondrion is the site of aerobic respiration"
+      }
+    },
+    {
+      "id": "bio-c03",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Plant cell structure",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 1,
+        "span": "Plant cells also have chloroplasts for photosynthesis, a cellulose cell wall and a large permanent vacuole."
+      }
+    },
+    {
+      "id": "bio-c04",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "The cell membrane",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 2,
+        "span": "The cell membrane is a phospholipid bilayer with proteins embedded in it"
+      }
+    },
+    {
+      "id": "bio-c05",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Diffusion",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 2,
+        "span": "Diffusion is the net movement of particles"
+      }
+    },
+    {
+      "id": "bio-c06",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "Osmosis",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 2,
+        "span": "Osmosis is the diffusion of water molecules"
+      }
+    },
+    {
+      "id": "bio-c07",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Active transport",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 2,
+        "span": "Active transport moves substances against a concentration gradient"
+      }
+    },
+    {
+      "id": "bio-p01",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "The powerhouse of the cell",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 1,
+        "span": "it is often called the powerhouse of the cell"
+      }
+    },
+    {
+      "id": "bio-p02",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "Cells without a nucleus",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 1,
+        "span": "their DNA lies in a region called the nucleoid"
+      }
+    },
+    {
+      "id": "bio-p03",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Turgid and plasmolysed plant cells",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 2,
+        "span": "becomes turgid"
+      }
+    },
+    {
+      "id": "bio-p04",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "Water movement across a partially permeable membrane",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 2,
+        "span": "from a dilute solution to a more concentrated one"
+      }
+    },
+    {
+      "id": "bio-b01",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Cell biology",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 1,
+        "span": "Eukaryotic cells, such as those of plants and animals"
+      }
+    },
+    {
+      "id": "bio-b02",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "The cell",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "bio101-cell",
+        "page": 1,
+        "span": "contain membrane-bound organelles"
+      }
+    },
+    {
+      "id": "csc-c01",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "Python lists",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 1,
+        "span": "A list is an ordered, mutable sequence written with square brackets"
+      }
+    },
+    {
+      "id": "csc-c02",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "Tuples",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 1,
+        "span": "Tuples are written with round brackets"
+      }
+    },
+    {
+      "id": "csc-c03",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "Immutable strings",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 1,
+        "span": "Strings and tuples are also ordered sequences, but they are immutable"
+      }
+    },
+    {
+      "id": "csc-c04",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "Indexing and slicing sequences",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 1,
+        "span": "All sequences support indexing from 0, negative indexing from the end, and slicing"
+      }
+    },
+    {
+      "id": "csc-c05",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "Dictionaries",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 2,
+        "span": "A dictionary maps keys to values"
+      }
+    },
+    {
+      "id": "csc-c06",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "Sets",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 2,
+        "span": "A set is an unordered collection with no duplicates."
+      }
+    },
+    {
+      "id": "csc-c07",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "List comprehensions",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 2,
+        "span": "A list comprehension builds a list in one expression"
+      }
+    },
+    {
+      "id": "csc-p01",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "Hash tables behind key lookup",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 2,
+        "span": "because dictionaries are implemented as hash tables"
+      }
+    },
+    {
+      "id": "csc-p02",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "Removing repeated values from a list",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 2,
+        "span": "Converting a list to a set is a quick way to remove repeated values"
+      }
+    },
+    {
+      "id": "csc-p03",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "Mutable versus immutable types",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 1,
+        "span": "Because lists are mutable you can change them in place"
+      }
+    },
+    {
+      "id": "csc-p04",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "Adding and removing items in a list",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 1,
+        "span": "append adds one item at the end"
+      }
+    },
+    {
+      "id": "csc-b01",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "Python data types",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 1,
+        "span": "A list is an ordered, mutable sequence"
+      }
+    },
+    {
+      "id": "csc-b02",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "Sequences and collections",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "csc101-python",
+        "page": 2,
+        "span": "sets support union, intersection and difference"
+      }
+    },
+    {
+      "id": "sta-c01",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "Mean, median and mode",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 1,
+        "span": "The mode is the value that occurs most often"
+      }
+    },
+    {
+      "id": "sta-c02",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "The effect of outliers on the mean",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 1,
+        "span": "The mean is sensitive to outliers"
+      }
+    },
+    {
+      "id": "sta-c03",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "Variance and standard deviation",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 2,
+        "span": "The variance is the average squared deviation from the mean"
+      }
+    },
+    {
+      "id": "sta-c04",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "The interquartile range",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 2,
+        "span": "The interquartile range, Q3 − Q1, measures the spread of the middle half of the data"
+      }
+    },
+    {
+      "id": "sta-c05",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "Structured and unstructured data",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 3,
+        "span": "Structured data is organised in a fixed format of rows and columns"
+      }
+    },
+    {
+      "id": "sta-c06",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "Qualitative and quantitative data",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 3,
+        "span": "Qualitative data describes categories"
+      }
+    },
+    {
+      "id": "sta-c07",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "Discrete and continuous data",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 3,
+        "span": "Quantitative data is discrete when it is counted"
+      }
+    },
+    {
+      "id": "sta-c08",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "The range of a data set",
+      "covered": true,
+      "category": "covered_direct",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 2,
+        "span": "The range is the largest value minus the smallest."
+      }
+    },
+    {
+      "id": "sta-p01",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "Averages",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 1,
+        "span": "The mean is the sum of the values divided by the number of values."
+      }
+    },
+    {
+      "id": "sta-p02",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "Dispersion",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 2,
+        "span": "Measures of Spread"
+      }
+    },
+    {
+      "id": "sta-p03",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "The middle value of sorted data",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 1,
+        "span": "The median is the middle value when the data are sorted"
+      }
+    },
+    {
+      "id": "sta-p04",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "Counted versus measured data",
+      "covered": true,
+      "category": "covered_paraphrase",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 3,
+        "span": "continuous when it is measured"
+      }
+    },
+    {
+      "id": "sta-b01",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "Descriptive statistics",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 1,
+        "span": "Measures of Central Tendency"
+      }
+    },
+    {
+      "id": "sta-b02",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "Measures of central tendency",
+      "covered": true,
+      "category": "covered_broad",
+      "evidence": {
+        "document": "sta111-descriptive",
+        "page": 1,
+        "span": "The median is the middle value"
+      }
+    },
+    {
+      "id": "mts-n01",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "L'Hôpital's rule",
+      "covered": false,
+      "category": "near_miss",
+      "why": "0/0 limits are done by factorising or the conjugate; the rule is never stated"
+    },
+    {
+      "id": "mts-n02",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "Integration by parts",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no integration at all"
+    },
+    {
+      "id": "mts-n03",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Taylor and Maclaurin series",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no series"
+    },
+    {
+      "id": "mts-n04",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "Partial derivatives",
+      "covered": false,
+      "category": "near_miss",
+      "why": "only functions of one variable"
+    },
+    {
+      "id": "mts-n05",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "The mean value theorem",
+      "covered": false,
+      "category": "near_miss",
+      "why": "only the Intermediate Value Theorem"
+    },
+    {
+      "id": "mts-n06",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "Derivatives of logarithmic functions",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no logarithms"
+    },
+    {
+      "id": "mts-n07",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Limits of sequences",
+      "covered": false,
+      "category": "near_miss",
+      "why": "limits of functions only"
+    },
+    {
+      "id": "mts-n08",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "The Newton-Raphson method for roots of equations",
+      "covered": false,
+      "category": "near_miss",
+      "why": "the IVT locates a root; no iterative method"
+    },
+    {
+      "id": "mts-n09",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Asymptotes of rational functions",
+      "covered": false,
+      "category": "near_miss",
+      "why": "limits of rational functions only; asymptotes never named"
+    },
+    {
+      "id": "mts-n10",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "Maxima and minima of functions of two variables",
+      "covered": false,
+      "category": "near_miss",
+      "why": "one-variable stationary points only"
+    },
+    {
+      "id": "mts-n11",
+      "split": "dev",
+      "course": "MTS 102",
+      "topic": "Definite integrals and the area under a curve",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no integration"
+    },
+    {
+      "id": "mts-n12",
+      "split": "test",
+      "course": "MTS 102",
+      "topic": "Derivatives of inverse trigonometric functions",
+      "covered": false,
+      "category": "near_miss",
+      "why": "sin, cos and tan only"
+    },
+    {
+      "id": "phy-n01",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Capacitors in series and parallel",
+      "covered": false,
+      "category": "near_miss",
+      "why": "resistors only; no capacitors"
+    },
+    {
+      "id": "phy-n02",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Gauss's law",
+      "covered": false,
+      "category": "near_miss",
+      "why": "never stated"
+    },
+    {
+      "id": "phy-n03",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Magnetic fields around current-carrying conductors",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no magnetism"
+    },
+    {
+      "id": "phy-n04",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Electromagnetic induction",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no magnetism"
+    },
+    {
+      "id": "phy-n05",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Alternating current",
+      "covered": false,
+      "category": "near_miss",
+      "why": "direct current only"
+    },
+    {
+      "id": "phy-n06",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Internal resistance of a cell",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no sources or internal resistance"
+    },
+    {
+      "id": "phy-n07",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Electric dipoles",
+      "covered": false,
+      "category": "near_miss",
+      "why": "point charges only"
+    },
+    {
+      "id": "phy-n08",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "The Wheatstone bridge",
+      "covered": false,
+      "category": "near_miss",
+      "why": "never described"
+    },
+    {
+      "id": "phy-n09",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Semiconductors and doping",
+      "covered": false,
+      "category": "near_miss",
+      "why": "conductors and insulators only"
+    },
+    {
+      "id": "phy-n10",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Lenz's law",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no induction"
+    },
+    {
+      "id": "phy-n11",
+      "split": "dev",
+      "course": "PHY 102",
+      "topic": "Charging and discharging a capacitor",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no capacitors"
+    },
+    {
+      "id": "phy-n12",
+      "split": "test",
+      "course": "PHY 102",
+      "topic": "Electromotive force of a battery",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no e.m.f.; past papers mention a battery without teaching it"
+    },
+    {
+      "id": "chm-n01",
+      "split": "dev",
+      "course": "CHM 101",
+      "topic": "Chemical equilibrium and Le Chatelier's principle",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no equilibrium of reactions"
+    },
+    {
+      "id": "chm-n02",
+      "split": "test",
+      "course": "CHM 101",
+      "topic": "Entropy and Gibbs free energy",
+      "covered": false,
+      "category": "near_miss",
+      "why": "enthalpy only"
+    },
+    {
+      "id": "chm-n03",
+      "split": "dev",
+      "course": "CHM 101",
+      "topic": "Rates of chemical reactions",
+      "covered": false,
+      "category": "near_miss",
+      "why": "energy changes only, not rates"
+    },
+    {
+      "id": "chm-n04",
+      "split": "test",
+      "course": "CHM 101",
+      "topic": "Lattice enthalpy and the Born-Haber cycle",
+      "covered": false,
+      "category": "near_miss",
+      "why": "formation and bond enthalpies only"
+    },
+    {
+      "id": "chm-n05",
+      "split": "dev",
+      "course": "CHM 101",
+      "topic": "Activation energy and catalysts",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no kinetics"
+    },
+    {
+      "id": "chm-n06",
+      "split": "test",
+      "course": "CHM 101",
+      "topic": "Electrochemical cells",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no electrochemistry"
+    },
+    {
+      "id": "chm-n07",
+      "split": "dev",
+      "course": "CHM 101",
+      "topic": "The ideal gas law",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no gases"
+    },
+    {
+      "id": "chm-n08",
+      "split": "test",
+      "course": "CHM 101",
+      "topic": "Acid-base titration",
+      "covered": false,
+      "category": "near_miss",
+      "why": "neutralisation is only an example of an exothermic reaction"
+    },
+    {
+      "id": "chm-n09",
+      "split": "dev",
+      "course": "CHM 101",
+      "topic": "Trends in the periodic table",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no periodicity"
+    },
+    {
+      "id": "chm-n10",
+      "split": "test",
+      "course": "CHM 101",
+      "topic": "Oxidation and reduction",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no redox"
+    },
+    {
+      "id": "bio-n01",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Mitosis",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no cell division"
+    },
+    {
+      "id": "bio-n02",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "Meiosis and gamete formation",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no cell division"
+    },
+    {
+      "id": "bio-n03",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Facilitated diffusion",
+      "covered": false,
+      "category": "near_miss",
+      "why": "simple diffusion only; no carrier or channel proteins"
+    },
+    {
+      "id": "bio-n04",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "DNA replication",
+      "covered": false,
+      "category": "near_miss",
+      "why": "DNA's location only"
+    },
+    {
+      "id": "bio-n05",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Enzymes and their properties",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no enzymes"
+    },
+    {
+      "id": "bio-n06",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "The light-dependent reactions of photosynthesis",
+      "covered": false,
+      "category": "near_miss",
+      "why": "chloroplasts are named as the site of photosynthesis, nothing more"
+    },
+    {
+      "id": "bio-n07",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Endocytosis and exocytosis",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no bulk transport"
+    },
+    {
+      "id": "bio-n08",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "Water potential",
+      "covered": false,
+      "category": "near_miss",
+      "why": "osmosis is described without water potential"
+    },
+    {
+      "id": "bio-n09",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Glycolysis",
+      "covered": false,
+      "category": "near_miss",
+      "why": "respiration is named, its stages are not"
+    },
+    {
+      "id": "bio-n10",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "Mendelian inheritance",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no genetics"
+    },
+    {
+      "id": "bio-n11",
+      "split": "dev",
+      "course": "BIO 101",
+      "topic": "Bacterial reproduction by binary fission",
+      "covered": false,
+      "category": "near_miss",
+      "why": "bacteria appear only as prokaryote examples"
+    },
+    {
+      "id": "bio-n12",
+      "split": "test",
+      "course": "BIO 101",
+      "topic": "The cell cycle",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no cell division"
+    },
+    {
+      "id": "csc-n01",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "For and while loops",
+      "covered": false,
+      "category": "near_miss",
+      "why": "a comprehension uses for; loops are never taught (past papers ask for one)"
+    },
+    {
+      "id": "csc-n02",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "Recursion",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no functions"
+    },
+    {
+      "id": "csc-n03",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "Classes and objects",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no object-oriented programming"
+    },
+    {
+      "id": "csc-n04",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "File handling",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no files"
+    },
+    {
+      "id": "csc-n05",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "Exception handling with try and except",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no exceptions"
+    },
+    {
+      "id": "csc-n06",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "Sorting algorithms",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no algorithms"
+    },
+    {
+      "id": "csc-n07",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "Linked lists",
+      "covered": false,
+      "category": "near_miss",
+      "why": "Python lists only"
+    },
+    {
+      "id": "csc-n08",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "Dictionary comprehensions",
+      "covered": false,
+      "category": "near_miss",
+      "why": "list comprehensions only"
+    },
+    {
+      "id": "csc-n09",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "String formatting with f-strings",
+      "covered": false,
+      "category": "near_miss",
+      "why": "strings only as immutable sequences"
+    },
+    {
+      "id": "csc-n10",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "Defining functions with default arguments",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no function definitions (past papers ask for one)"
+    },
+    {
+      "id": "csc-n11",
+      "split": "dev",
+      "course": "CSC 101",
+      "topic": "Binary search",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no searching algorithms"
+    },
+    {
+      "id": "csc-n12",
+      "split": "test",
+      "course": "CSC 101",
+      "topic": "Nested lists and matrices",
+      "covered": false,
+      "category": "near_miss",
+      "why": "flat lists only"
+    },
+    {
+      "id": "sta-n01",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "Probability of events",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no probability"
+    },
+    {
+      "id": "sta-n02",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "The normal distribution",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no distributions"
+    },
+    {
+      "id": "sta-n03",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "Correlation and linear regression",
+      "covered": false,
+      "category": "near_miss",
+      "why": "one variable only"
+    },
+    {
+      "id": "sta-n04",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "Hypothesis testing",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no inference"
+    },
+    {
+      "id": "sta-n05",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "The weighted mean",
+      "covered": false,
+      "category": "near_miss",
+      "why": "the plain mean only"
+    },
+    {
+      "id": "sta-n06",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "Sampling methods",
+      "covered": false,
+      "category": "near_miss",
+      "why": "a sample appears only in the sample variance"
+    },
+    {
+      "id": "sta-n07",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "Geometric and harmonic means",
+      "covered": false,
+      "category": "near_miss",
+      "why": "the arithmetic mean only"
+    },
+    {
+      "id": "sta-n08",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "The standard error of the mean",
+      "covered": false,
+      "category": "near_miss",
+      "why": "standard deviation only"
+    },
+    {
+      "id": "sta-n09",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "Skewness and kurtosis",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no shape measures"
+    },
+    {
+      "id": "sta-n10",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "The coefficient of variation",
+      "covered": false,
+      "category": "near_miss",
+      "why": "never defined"
+    },
+    {
+      "id": "sta-n11",
+      "split": "dev",
+      "course": "STA 111",
+      "topic": "Box plots",
+      "covered": false,
+      "category": "near_miss",
+      "why": "quartiles appear only in the interquartile range"
+    },
+    {
+      "id": "sta-n12",
+      "split": "test",
+      "course": "STA 111",
+      "topic": "Grouped frequency tables",
+      "covered": false,
+      "category": "near_miss",
+      "why": "no frequency tables"
+    },
+    {
+      "id": "ooc-01",
+      "split": "dev",
+      "course": "GST 111",
+      "topic": "Concord in English grammar",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-02",
+      "split": "test",
+      "course": "HIS 101",
+      "topic": "The Nigerian Civil War",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-03",
+      "split": "dev",
+      "course": "ECO 101",
+      "topic": "Supply and demand",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-04",
+      "split": "test",
+      "course": "CSC 401",
+      "topic": "Quantum computing",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-05",
+      "split": "dev",
+      "course": "AGR 101",
+      "topic": "Soil formation and soil profiles",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-06",
+      "split": "test",
+      "course": "GEO 101",
+      "topic": "Plate tectonics",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-07",
+      "split": "dev",
+      "course": "ACC 101",
+      "topic": "Double-entry bookkeeping",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-08",
+      "split": "test",
+      "course": "LAW 101",
+      "topic": "Fundamental human rights in the Nigerian constitution",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-09",
+      "split": "dev",
+      "course": "ARC 101",
+      "topic": "Elements of architectural drawing",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-10",
+      "split": "test",
+      "course": "CVE 201",
+      "topic": "Bending moments in beams",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-11",
+      "split": "dev",
+      "course": "MEE 201",
+      "topic": "Thermodynamic cycles of heat engines",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-12",
+      "split": "test",
+      "course": "PHL 101",
+      "topic": "Logic and fallacies",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-13",
+      "split": "dev",
+      "course": "MCB 201",
+      "topic": "Bacterial growth curves",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-14",
+      "split": "test",
+      "course": "FST 201",
+      "topic": "Food preservation methods",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-15",
+      "split": "dev",
+      "course": "SVG 201",
+      "topic": "Levelling in surveying",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-16",
+      "split": "test",
+      "course": "MUS 101",
+      "topic": "Rhythm and metre",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-17",
+      "split": "dev",
+      "course": "EEE 301",
+      "topic": "Digital logic gates",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-18",
+      "split": "test",
+      "course": "GST 112",
+      "topic": "History and philosophy of science",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-19",
+      "split": "dev",
+      "course": "BCH 201",
+      "topic": "Amino acids and protein structure",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-20",
+      "split": "test",
+      "course": "PSY 101",
+      "topic": "Classical conditioning",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-21",
+      "split": "dev",
+      "course": "MKT 201",
+      "topic": "The marketing mix",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-22",
+      "split": "test",
+      "course": "AGE 201",
+      "topic": "Tractor engine maintenance",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-23",
+      "split": "dev",
+      "course": "GST 111",
+      "topic": "Writing a formal letter",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-24",
+      "split": "test",
+      "course": "ENT 211",
+      "topic": "Writing a business plan",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-25",
+      "split": "dev",
+      "course": "FWT 201",
+      "topic": "Wildlife conservation",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-26",
+      "split": "test",
+      "course": "MME 201",
+      "topic": "Heat treatment of steel",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-27",
+      "split": "dev",
+      "course": "GLY 201",
+      "topic": "Igneous rocks",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-28",
+      "split": "test",
+      "course": "EMT 201",
+      "topic": "Air pollution control",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-29",
+      "split": "dev",
+      "course": "URP 201",
+      "topic": "Land use planning",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    },
+    {
+      "id": "ooc-30",
+      "split": "test",
+      "course": "NUR 101",
+      "topic": "Taking a patient's vital signs",
+      "covered": false,
+      "category": "out_of_corpus",
+      "why": "a subject the corpus does not teach"
+    }
+  ]
+}
