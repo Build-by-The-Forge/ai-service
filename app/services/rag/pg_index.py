@@ -48,6 +48,7 @@ from app.db.models.asset_scope import AssetScope
 from app.db.models.document_chunk import DocumentChunk as ChunkRow
 from app.db.models.ingestion_fence import IngestionFence
 from app.services.rag.lexical import LexicalIndexPort
+from app.services.rag.scopes import refuse_if_held_elsewhere
 from app.services.rag.vector_store import VectorStorePort
 
 if TYPE_CHECKING:
@@ -126,7 +127,12 @@ class PgChunkIndex(VectorStorePort, LexicalIndexPort):
         self, *, tenant_id: str, asset_id: str, run_number: int, attempt: int
     ) -> tuple[int, int]:
         """Raise the asset's fence to (run_number, attempt) unless it is
-        already that or higher; returns the fence now in force."""
+        already that or higher; returns the fence now in force.
+
+        An asset another tenant already owns (its fence or its scope) is
+        refused with AssetHeldByAnotherTenantError and nothing is written. The
+        check and the write share one transaction under the asset's advisory
+        lock, so two tenants naming a new asset at once can't both take it."""
         tenant_id = _tenant(tenant_id)
         insert = pg_insert(IngestionFence).values(
             tenant_id=tenant_id, asset_id=asset_id, run_number=run_number, attempt=attempt
@@ -143,6 +149,9 @@ class PgChunkIndex(VectorStorePort, LexicalIndexPort):
         )
         try:
             async with self._session() as db, db.begin():
+                await refuse_if_held_elsewhere(
+                    db, tenant_id=tenant_id, asset_id=asset_id, lock=True
+                )
                 await db.execute(stmt)
                 row = (
                     await db.execute(

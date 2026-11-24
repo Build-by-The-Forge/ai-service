@@ -677,14 +677,7 @@ async def test_dispatch_fails_closed_when_the_scope_store_is_unavailable(
 OWNED = "asset-owned-by-b"
 
 
-def refused_by_the_fix(test):
-    """Fails on the code before the ownership fix (strictly); the fix commit
-    makes this the identity."""
-    return pytest.mark.xfail(strict=True, reason="fails before the ownership fix")(test)
-
-
 @real_redis
-@refused_by_the_fix
 async def test_version_zero_for_an_asset_another_tenant_scopes_is_refused(guard, in_memory_scopes):
     in_memory_scopes.rows[(TENANT_B, OWNED)] = (KnowledgeScope.PERSONAL, 3)
     app, recorder = build(guard)
@@ -697,7 +690,6 @@ async def test_version_zero_for_an_asset_another_tenant_scopes_is_refused(guard,
 
 
 @real_redis
-@refused_by_the_fix
 async def test_version_zero_for_an_asset_another_tenant_fences_is_refused_and_no_fence_moves(
     guard, in_memory_index_fence
 ):
@@ -729,7 +721,6 @@ async def test_a_stated_scope_for_an_asset_another_tenant_fences_is_refused_and_
 
 
 @real_redis
-@refused_by_the_fix
 async def test_a_fence_taken_between_the_scope_step_and_the_fence_is_refused_and_the_claim_released(
     guard, in_memory_index_fence
 ):

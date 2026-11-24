@@ -49,18 +49,6 @@ pytestmark = [
 ]
 
 
-# Cases that are wrong on the code before the ownership fix are expected to
-# fail there (strictly: a pass is an error). The fix commit makes this the
-# identity, so they run as ordinary tests.
-def refused_by_the_fix(test):
-    return pytest.mark.xfail(strict=True, reason="fails before the ownership fix")(test)
-
-
-ZERO = pytest.param(
-    0, "unknown", marks=pytest.mark.xfail(strict=True, reason="fails before the ownership fix")
-)
-
-
 class RecordingDispatcher:
     def __init__(self) -> None:
         self.tasks: list[dict] = []
@@ -147,7 +135,7 @@ async def give_a_scope(
 # --- another tenant owns the asset: refused, whatever the version --------------------
 
 
-@pytest.mark.parametrize("version, scope", [ZERO, (1, "personal"), (7, "institutional")])
+@pytest.mark.parametrize("version, scope", [(0, "unknown"), (1, "personal"), (7, "institutional")])
 @pytest.mark.parametrize("held_by", ["fence", "scope", "both"])
 async def test_an_asset_another_tenant_holds_is_refused_and_nothing_changes(
     world, version, scope, held_by
@@ -186,7 +174,6 @@ async def test_the_tenants_own_asset_is_accepted_at_any_version(world, version, 
     assert TENANT_B not in await fences(asset) and TENANT_B not in await scopes(asset)
 
 
-@refused_by_the_fix
 async def test_a_version_zero_dispatch_for_a_new_asset_takes_the_fence_and_writes_no_scope(world):
     app, recorder = world
     asset = new_asset()
@@ -208,7 +195,6 @@ async def test_a_version_zero_dispatch_for_a_new_asset_takes_the_fence_and_write
 # --- duplicates and retries cannot get around the rule --------------------------------
 
 
-@refused_by_the_fix
 async def test_another_tenant_repeating_the_owners_key_gets_a_refusal_never_the_owners_task(world):
     app, recorder = world
     asset = new_asset()
@@ -235,7 +221,6 @@ async def test_the_owners_own_duplicate_is_still_a_duplicate(world):
     assert len(recorder.tasks) == 1
 
 
-@refused_by_the_fix
 async def test_a_refused_dispatch_leaves_its_key_free_for_a_retry_once_the_asset_is_its_own(world):
     """A refusal releases nothing it didn't claim and claims nothing: the same
     key is usable later for an asset the tenant does own."""
@@ -256,14 +241,7 @@ async def test_a_refused_dispatch_leaves_its_key_free_for_a_retry_once_the_asset
 
 @pytest.mark.parametrize(
     "version",
-    [
-        pytest.param(
-            0, marks=pytest.mark.xfail(strict=True, reason="fails before the ownership fix")
-        ),
-        pytest.param(
-            1, marks=pytest.mark.xfail(strict=False, reason="a race the old code usually loses")
-        ),
-    ],
+    [0, 1],
 )
 async def test_two_tenants_dispatching_one_new_asset_at_once_get_exactly_one_winner(world, version):
     """The fence is claimed under the asset's lock, so whichever tenant's
@@ -288,7 +266,6 @@ async def test_two_tenants_dispatching_one_new_asset_at_once_get_exactly_one_win
 # --- the stores themselves ------------------------------------------------------------
 
 
-@refused_by_the_fix
 async def test_the_fence_refuses_an_asset_another_tenant_holds_and_writes_nothing(world):
     from app.services.rag.scopes import AssetHeldByAnotherTenantError
 
@@ -299,7 +276,6 @@ async def test_the_fence_refuses_an_asset_another_tenant_holds_and_writes_nothin
     assert await fences(asset) == {}
 
 
-@refused_by_the_fix
 async def test_current_refuses_an_asset_another_tenant_holds(world):
     from app.services.rag.scopes import AssetHeldByAnotherTenantError
 

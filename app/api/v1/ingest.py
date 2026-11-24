@@ -188,6 +188,22 @@ async def dispatch_ingest_task(
             run_number=payload.run_number,
             attempt=payload.attempt_count,
         )
+    except AssetHeldByAnotherTenantError as exc:
+        # Another tenant took the asset between the scope step and here (or
+        # holds it by a fence alone): nothing is queued and no fence changed.
+        # The claim is released so this key names no task.
+        try:
+            await idempotency_store.release(tenant_id, payload.idempotency_key, candidate_task_id)
+        except IdempotencyUnavailableError:
+            logger.warning("Dispatch claim not released after refusal: task=%s", candidate_task_id)
+        logger.warning(
+            "dispatch refused: asset held by another tenant tenant=%s asset=%s",
+            tenant_id,
+            payload.asset_id,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="asset belongs to another tenant"
+        ) from exc
     except VectorStoreError as exc:
         try:
             await idempotency_store.release(tenant_id, payload.idempotency_key, candidate_task_id)
