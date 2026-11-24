@@ -6,6 +6,7 @@ Retrieval context comes from the verified request tenant only.
 """
 
 import logging
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -15,7 +16,7 @@ from app.core.prompt_builder import PromptBuilder
 from app.schemas.ai import GeneratedQuestion
 from app.services.ai.gateway_llm import ModelCaller, StructuredOutputError
 from app.services.generation.question_checks import Verdict, check_question, count_reasons
-from app.services.rag.evidence import Passage
+from app.services.rag.evidence import Evidence, Passage
 from app.services.rag.recorder import SourceUsed
 from app.services.rag.retrieval import RetrievalService
 
@@ -53,12 +54,16 @@ class StructuredQuestionGenerator:
         difficulty: str,
         question_type: str,
         course: str | None = None,
+        covers: Callable[[Evidence], bool] | None = None,
     ) -> GeneratedQuestions:
         # The course, when given, is part of both the retrieval query and the
         # prompt, so it disambiguates a topic shared by several courses.
         query = f"{course} {topic}" if course else topic
         evidence = await self.retriever.evidence(query, denied_assets)
-        if not evidence.passages:
+        # A caller's coverage check (AI-10's exam) can decide that passages
+        # retrieval did return don't cover the topic: then, as when it
+        # returns nothing, the model isn't asked and nothing is sent.
+        if not evidence.passages or (covers is not None and not covers(evidence)):
             return GeneratedQuestions(
                 questions=[], discarded=0, grounded=False, sources_used=evidence.sources_used
             )

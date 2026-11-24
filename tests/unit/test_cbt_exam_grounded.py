@@ -4,9 +4,9 @@ The exam generator keeps only structurally valid, four-option, grounded
 questions with supported explanations, each naming the document versions it
 cites. Malformed or unsupported output is discarded and counted, and one
 tenant's material never reaches another's exam. When retrieval returns
-nothing the model isn't asked; when it returns passages that don't cover
-the topic, they are sent, and what is and isn't then enforced is tested on
-a populated index below. No route reaches the generator yet.
+nothing, or passages that don't cover the topic, the model isn't asked; a
+supported question on another topic is discarded as off topic. No route
+reaches the generator yet.
 """
 
 import ast
@@ -20,12 +20,14 @@ from app.core.tenant import RequestScopeMissingError
 from app.services.ai.gateway_llm import GatewayLLM, invocation_context
 from app.services.generation.cbt_ai_generator import CBTAIGenerator, CrossTenantInvocationError
 from app.services.rag.embedder import MockEmbeddingAdapter
+from app.services.rag.evidence import Passage
 from app.services.rag.lexical import BM25Index
 from app.services.rag.retrieval import HybridRetrievalEngine, RetrievalService
 from app.services.rag.vector_store import InMemoryVectorStore
 from tests.cbt_support import PASSAGE as GOOD_PASSAGE
 from tests.cbt_support import (
     GOOD,
+    PASSAGE_ONE,
     NoMaterial,
     Recording,
     Retriever,
@@ -353,7 +355,8 @@ async def test_the_course_decides_which_material_an_overlapping_topic_draws_on(
 #
 # Production retrieval returns its top passages even when the topic is absent,
 # and its scores can't tell (ADR 001). These tests run the hybrid engine on an
-# index holding only biology, and ask about quantum computing.
+# index holding only biology, and ask about quantum computing: the topic-coverage
+# check (data/topic_coverage/v1) keeps those passages from the model.
 
 QUANTUM_QUESTION = question(
     prompt="Which property lets a qubit hold several states at once?",
@@ -391,30 +394,59 @@ async def ask_quantum(retriever, answer):
 
 
 @pytest.mark.asyncio
-async def test_an_uncovered_topic_on_a_populated_index_still_reaches_the_model(biology_only):
-    """What is enforced today, stated plainly: the unrelated passages are sent."""
-    result, adapter = await ask_quantum(biology_only, {"questions": []})
+async def test_an_uncovered_topic_on_a_populated_index_never_reaches_the_model(biology_only):
+    """Retrieval returns the biology passage; the coverage check finds no
+    quantum computing in it, so nothing is sent."""
+    result, adapter = await ask_quantum(biology_only, {"questions": [QUANTUM_QUESTION]})
 
-    [request] = adapter.requests
-    assert "mitochondrion" in "\n".join(message.content for message in request.messages)
-    assert result["grounded"] is True and result["questions"] == []
-
-
-@pytest.mark.asyncio
-async def test_a_question_on_the_uncovered_topic_is_rejected(biology_only):
-    result, _ = await ask_quantum(biology_only, {"questions": [QUANTUM_QUESTION]})
-
-    assert result["questions"] == []
-    assert result["discarded"] == 1 and result["rejected"] == {"unsupported_premise": 1}
+    assert adapter.requests == []
+    assert result["grounded"] is False and result["questions"] == []
+    assert result["sources_used"] == [{"asset_id": "asset-bio", "run_number": 1, "attempt": 1}]
 
 
 @pytest.mark.asyncio
-@pytest.mark.xfail(
-    strict=True,
-    reason="Not enforced: no topic-coverage check (review decision on #62). A question "
-    "supported by unrelated passages but off the requested topic passes.",
-)
 async def test_a_supported_question_on_another_topic_is_rejected(biology_only):
-    result, _ = await ask_quantum(biology_only, {"questions": [GOOD]})
+    # The strict xfail of the #62 review: the topic-coverage check rejects it.
+    result, adapter = await ask_quantum(biology_only, {"questions": [GOOD]})
 
     assert result["questions"] == []
+    assert adapter.requests == [] and result["grounded"] is False
+
+
+OSMOSIS = Passage(
+    2,
+    "Osmosis is the diffusion of water molecules across a partially permeable membrane.",
+    "chunk-2",
+    "asset-osmosis",
+    1,
+    1,
+)
+
+
+@pytest.mark.asyncio
+async def test_a_supported_question_citing_another_topics_passage_is_rejected_off_topic():
+    """The material covers osmosis, so the model is asked; a question on
+    ATP that cites only the mitochondrion passage is supported, but off topic."""
+    result, adapter = await exam(
+        {"questions": [GOOD]}, retriever=Retriever(PASSAGE_ONE, OSMOSIS), topic="osmosis"
+    )
+
+    assert len(adapter.requests) == 1
+    assert result["questions"] == [] and result["grounded"] is True
+    assert result["discarded"] == 1 and result["rejected"] == {"off_topic": 1}
+
+    on_topic = question(
+        prompt="Osmosis is the diffusion of which molecules?",
+        options=[
+            {"text": "Water molecules", "is_correct": True},
+            {"text": "Salt ions", "is_correct": False},
+            {"text": "Glucose", "is_correct": False},
+            {"text": "Proteins", "is_correct": False},
+        ],
+        explanation="Osmosis is the diffusion of water molecules across a membrane.",
+        sources=[2],
+    )
+    result, _ = await exam(
+        {"questions": [on_topic]}, retriever=Retriever(PASSAGE_ONE, OSMOSIS), topic="osmosis"
+    )
+    assert [q["prompt"] for q in result["questions"]] == [on_topic["prompt"]]

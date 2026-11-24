@@ -16,17 +16,19 @@ Two boundaries, both required before any route may reach it:
   and sources_used is every version retrieval returned (the retrieval
   recorder's, never the model's).
 
-What is and isn't enforced about coverage (review of #62, issue A):
+Topic coverage (review of #62, issue A; app/services/generation/topic_coverage.py):
 
 - When retrieval returns **nothing**, the model isn't asked (grounded: false).
 - Retrieval returns its top passages even for a topic they don't cover,
-  and retrieval scores can't tell (ADR 001), so **those passages are sent**.
-  A question must then cite them and stay within them, or it is discarded:
-  a question on the absent topic fails the support checks.
-- **Not yet enforced:** a question that is supported by those passages but
-  is about something other than the requested topic can pass. There is no
-  topic-coverage check; whether to add a measured one before routing, or
-  to accept this rule, is a review decision.
+  and retrieval scores can't tell (ADR 001). **Before generation** the
+  coverage check asks whether one passage carries the topic's terms; if
+  not, the model isn't asked and nothing is sent (grounded: false).
+- **After generation** a supported question must also be on the topic: a
+  passage it cites must carry the topic's terms, or it is discarded
+  (rejected: off_topic).
+- Both checks are lexical, with thresholds chosen and measured on a labelled
+  set (data/topic_coverage/v1, its baseline.json). They lower the rate of
+  off-topic exams, measured with its intervals; they don't make it zero.
 
 Not routed: CBTFusionEngine, its only caller, has no route. Routing it is
 its own reviewed change, with its own signed permission.
@@ -39,6 +41,7 @@ from app.core.models.contracts import ModelInvocationContext
 from app.services.ai.gateway_llm import GatewayLLM
 from app.services.generation.cbt_exam import check_exam_question, citations
 from app.services.generation.structured_questions import StructuredQuestionGenerator
+from app.services.generation.topic_coverage import check_relevance, covers
 from app.services.rag.retrieval import RetrievalService
 
 
@@ -77,6 +80,8 @@ class CBTAIGenerator:
                 question_type="mcq",
                 # The course disambiguates the topic, in retrieval and prompt.
                 course=course,
+                # Passages that don't cover the topic aren't sent.
+                covers=lambda evidence: covers(topic, evidence.passages),
             )
 
         questions: list[dict[str, Any]] = []
@@ -84,6 +89,8 @@ class CBTAIGenerator:
         rejected = dict(generated.rejected)
         for question in generated.questions:
             verdict = check_exam_question(question, generated.passages)
+            if verdict.ok:
+                verdict = check_relevance(topic, question, generated.passages)
             if not verdict.ok:
                 discarded += 1
                 if verdict.reason:
