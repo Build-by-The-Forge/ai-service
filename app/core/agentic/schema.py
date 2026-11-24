@@ -16,6 +16,7 @@ never the value itself: a value can be a student's text.
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from typing import Any
 
 MAX_DEPTH = 8
@@ -57,25 +58,25 @@ def check_schema(schema: Any, *, _depth: int = 0, _nodes: list[int] | None = Non
         raise SchemaError("schema is too large")
     if _depth > MAX_DEPTH:
         raise SchemaError("schema is nested too deeply")
-    if not isinstance(schema, dict):
+    if not isinstance(schema, Mapping):
         raise SchemaError("a schema is an object")
     for keyword in schema:
         if keyword not in _VALIDATING and keyword not in _ANNOTATIONS:
             raise SchemaError(f"unsupported schema keyword: {keyword}")
     declared = schema.get("type")
     if declared is not None:
-        names = declared if isinstance(declared, list) else [declared]
+        names = declared if isinstance(declared, (list, tuple)) else [declared]
         if not names or any(not isinstance(n, str) or n not in _TYPES for n in names):
             raise SchemaError("unknown type")
-    if "enum" in schema and (not isinstance(schema["enum"], list) or not schema["enum"]):
+    if "enum" in schema and (not isinstance(schema["enum"], (list, tuple)) or not schema["enum"]):
         raise SchemaError("enum is a non-empty list")
     if "required" in schema:
         required = schema["required"]
-        if not isinstance(required, list) or any(not isinstance(r, str) for r in required):
+        if not isinstance(required, (list, tuple)) or any(not isinstance(r, str) for r in required):
             raise SchemaError("required is a list of names")
     properties = schema.get("properties")
     if properties is not None:
-        if not isinstance(properties, dict):
+        if not isinstance(properties, Mapping):
             raise SchemaError("properties is an object")
         for sub in properties.values():
             check_schema(sub, _depth=_depth + 1, _nodes=nodes)
@@ -94,7 +95,7 @@ def check_schema(schema: Any, *, _depth: int = 0, _nodes: list[int] | None = Non
             raise SchemaError(f"{keyword} is a number")
 
 
-def validate(schema: dict[str, Any], value: Any) -> list[str]:
+def validate(schema: Mapping[str, Any], value: Any) -> list[str]:
     """The problems with value, as ``path: rule`` strings; empty when it is
     valid. The schema is assumed to have passed check_schema."""
     problems: list[str] = []
@@ -130,13 +131,13 @@ def _matches(name: str, value: Any) -> bool:
     return value is None  # "null"
 
 
-def _validate(schema: dict[str, Any], value: Any, path: str, depth: int, out: list[str]) -> None:
+def _validate(schema: Mapping[str, Any], value: Any, path: str, depth: int, out: list[str]) -> None:
     if depth > MAX_DEPTH + 4:  # the value, not the schema, is too deep
         out.append(f"{path}: nested too deeply")
         return
     declared = schema.get("type")
     if declared is not None:
-        names = declared if isinstance(declared, list) else [declared]
+        names = declared if isinstance(declared, (list, tuple)) else [declared]
         if not any(_matches(n, value) for n in names):
             out.append(f"{path}: wrong type")
             return
@@ -173,7 +174,7 @@ def _validate(schema: dict[str, Any], value: Any, path: str, depth: int, out: li
                 _validate(properties[name], item, f"{path}.{name}", depth + 1, out)
             elif extra is False:
                 out.append(f"{path}.{str(name)[:40]}: not allowed")
-            elif isinstance(extra, dict):
+            elif isinstance(extra, Mapping):
                 _validate(extra, item, f"{path}.{name}", depth + 1, out)
 
 

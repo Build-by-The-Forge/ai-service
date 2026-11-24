@@ -394,6 +394,8 @@ def test_canonical_json_is_stable_and_refuses_nan():
 PORTABLE = ["schema.py", "contracts.py"]
 ALLOWED_ROOTS = {
     "__future__",
+    "collections",
+    "types",
     "hashlib",
     "json",
     "math",
@@ -424,3 +426,92 @@ def test_the_contracts_import_nothing_server_or_provider_shaped():
     text = "".join((root / n).read_text(encoding="utf-8").lower() for n in PORTABLE)
     for provider in ("gemini", "fireworks", "openai", "anthropic"):
         assert provider not in text
+
+
+# --- schemas are deeply immutable -----------------------------------------------------------
+
+
+def nested_contract():
+    return contract(
+        input_schema={
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "maxLength": 20},
+                "mode": {"enum": ["a", "b"]},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        }
+    )
+
+
+def test_a_contracts_schemas_cannot_be_changed_at_any_depth():
+    c = nested_contract()
+    with pytest.raises(TypeError):
+        c.input_schema["additionalProperties"] = True  # type: ignore[index]
+    with pytest.raises(TypeError):
+        c.input_schema["properties"]["query"]["maxLength"] = 10_000  # type: ignore[index]
+    with pytest.raises(TypeError):
+        c.input_schema["properties"]["tenant_id"] = {"type": "string"}  # type: ignore[index]
+    with pytest.raises(TypeError):
+        del c.output_schema["type"]  # type: ignore[attr-defined]
+    with pytest.raises((TypeError, AttributeError)):
+        c.input_schema["required"].append("other")  # type: ignore[index]
+    with pytest.raises((TypeError, AttributeError)):
+        c.input_schema["properties"]["mode"]["enum"].append("c")  # type: ignore[index]
+    assert c.input_schema["properties"]["query"]["maxLength"] == 20
+
+
+def test_changing_the_dict_a_contract_was_built_from_does_not_change_the_contract():
+    source = {
+        "type": "object",
+        "properties": {"query": {"type": "string", "maxLength": 20}},
+        "additionalProperties": False,
+    }
+    c = contract(input_schema=source)
+    source["additionalProperties"] = True
+    source["properties"]["query"]["maxLength"] = 10_000
+    source["properties"]["smuggled"] = {"type": "string"}
+    assert c.input_schema["additionalProperties"] is False
+    assert c.input_schema["properties"]["query"]["maxLength"] == 20
+    assert "smuggled" not in c.input_schema["properties"]
+
+
+def test_what_the_model_is_shown_and_what_is_serialised_are_independent_plain_copies():
+    c = nested_contract()
+    shown = c.describe_for_model()["input_schema"]
+    assert isinstance(shown, dict) and isinstance(shown["required"], list)
+    shown["properties"]["query"]["maxLength"] = 10_000
+    shown["required"].append("other")
+    dumped = c.model_dump(mode="json")
+    dumped["input_schema"]["additionalProperties"] = True
+    assert c.input_schema["properties"]["query"]["maxLength"] == 20
+    assert c.input_schema["additionalProperties"] is False
+    assert list(c.input_schema["required"]) == ["query"]
+    json.dumps(c.model_dump(mode="json"))  # nothing a JSON file cannot hold
+    assert ToolContract.model_validate_json(c.model_dump_json()) == c
+
+
+def test_a_frozen_contract_can_seed_another_and_is_still_checked():
+    c = nested_contract()
+    again = contract(name="other_tool", input_schema=c.input_schema)
+    assert again.input_schema == c.input_schema
+    assert again.input_schema is not c.input_schema
+    with pytest.raises(ValidationError):
+        contract(input_schema={**c.model_dump()["input_schema"], "additionalProperties": True})
+
+
+def test_validation_against_a_frozen_schema_still_works():
+    from app.core.agentic.schema import validate
+
+    c = nested_contract()
+    assert validate(c.input_schema, {"query": "heat", "mode": "a"}) == []
+    assert any(
+        "not an allowed value" in p for p in validate(c.input_schema, {"query": "x", "mode": "z"})
+    )
+    assert any("not allowed" in p for p in validate(c.input_schema, {"query": "x", "extra": 1}))
+    type_list = contract(
+        output_schema={"type": "object", "properties": {"a": {"type": ["string", "null"]}}}
+    )
+    assert validate(type_list.output_schema, {"a": None}) == []
+    assert validate(type_list.output_schema, {"a": 3}) != []

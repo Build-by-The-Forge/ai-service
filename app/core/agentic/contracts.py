@@ -34,10 +34,19 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections.abc import Mapping
 from enum import StrEnum
+from types import MappingProxyType
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 from app.core.agentic.schema import SchemaError, check_schema
 
@@ -66,6 +75,26 @@ def canonical_json(value: Any) -> str:
 
 def digest(value: Any) -> str:
     return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
+
+
+def freeze(value: Any) -> Any:
+    """A deeply immutable copy: objects become read-only mappings, arrays become
+    tuples. A frozen model with a plain dict inside is only frozen at the top;
+    this is what makes a registered schema impossible to change afterwards."""
+    if isinstance(value, Mapping):
+        return MappingProxyType({k: freeze(v) for k, v in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(freeze(v) for v in value)
+    return value
+
+
+def thaw(value: Any) -> Any:
+    """A plain, independent, JSON-shaped copy of frozen data."""
+    if isinstance(value, Mapping):
+        return {k: thaw(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [thaw(v) for v in value]
+    return value
 
 
 # --- Tool contract -----------------------------------------------------------
@@ -181,7 +210,13 @@ class ToolContract(_Model):
             raise ValueError(str(exc)) from None
         if value.get("type") != "object":
             raise ValueError("a tool's input and output are objects")
-        return value
+        # A deep, read-only copy: the caller's dict is not the contract's, and
+        # nothing holding the contract can change a schema after validation.
+        return freeze(value)  # type: ignore[no-any-return]
+
+    @field_serializer("input_schema", "output_schema")
+    def _thaw_schema(self, value: Mapping[str, Any]) -> dict[str, Any]:
+        return thaw(value)  # type: ignore[no-any-return]
 
     @model_validator(mode="after")
     def _consistent(self) -> ToolContract:
@@ -213,7 +248,7 @@ class ToolContract(_Model):
         return {
             "name": self.name,
             "description": self.description,
-            "input_schema": self.input_schema,
+            "input_schema": thaw(self.input_schema),
         }
 
 
