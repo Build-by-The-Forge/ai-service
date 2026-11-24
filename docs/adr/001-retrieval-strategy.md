@@ -114,6 +114,11 @@ groups.
   to it. Generated questions are produced from passages, but are not yet
   checked one by one for traceability, answerability or unsupported
   premises; that check is tracked as a follow-up.
+- Retrieval presence isn't topic coverage. AI-10's exam generator adds a
+  measured lexical coverage check before generation and a relevance check
+  after it (`docs/topic-coverage-evaluation.md`, `data/topic_coverage/v1`).
+  On the set's held-out split, 9.4% of off-topic exam questions are kept
+  (95% CI 4.9–17.5%), against 100% before the checks.
 - Abstention depends on the model following the grounding instructions.
   The deterministic check catches answers that cite nothing or cite
   passages they were not given. It does not catch a model that cites a
