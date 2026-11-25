@@ -19,6 +19,7 @@ from app.db.models.document_chunk import DocumentChunk as ChunkRow
 from app.db.session import get_async_session_local, initialize_database, reset_engine
 from app.services.ingestion.chunking import Chunk, chunk_id
 from app.services.rag.pg_index import PgChunkIndex
+from app.services.rag.scopes import AssetHeldByAnotherTenantError
 
 pytestmark = pytest.mark.skipif(
     not os.getenv("DATABASE_URL", "").startswith("postgresql"), reason="needs PostgreSQL"
@@ -128,13 +129,25 @@ async def test_the_fence_only_rises(store, ids):
     assert await raise_to(store, tenant, asset, 1, 9) == (2, 1)
 
 
-async def test_fences_are_per_tenant_and_asset(store, ids):
+async def test_fences_are_per_asset_and_an_asset_belongs_to_one_tenant(store, ids):
+    """M3-D PR 7: another tenant can't take an asset this one holds, at any
+    attempt, and the refusal changes nothing; each tenant's own assets have
+    fences of their own."""
     tenant, asset = ids
     other_tenant = str(uuid.uuid4())
     await raise_to(store, tenant, asset, 1, 5)
-    assert await raise_to(store, other_tenant, asset, 1, 1) == (1, 1)
-    assert await raise_to(store, tenant, asset + "-b", 1, 1) == (1, 1)
-    await write(store, other_tenant, asset, attempt=1)  # its own fence admits it
+    with pytest.raises(AssetHeldByAnotherTenantError):
+        await raise_to(store, other_tenant, asset, 1, 1)
+    with pytest.raises(AssetHeldByAnotherTenantError):
+        await raise_to(store, other_tenant, asset, 9, 9)
+    assert await raise_to(store, tenant, asset, 1, 5) == (1, 5)  # the owner's fence didn't move
+    assert await raise_to(store, tenant, asset + "-b", 1, 1) == (
+        1,
+        1,
+    )  # another asset, its own fence
+    other_asset = asset + "-other"
+    assert await raise_to(store, other_tenant, other_asset, 1, 1) == (1, 1)
+    await write(store, other_tenant, other_asset, attempt=1)  # its own fence admits it
 
 
 async def test_concurrent_writes_by_two_attempts_serialise_and_only_the_fenced_one_lands(

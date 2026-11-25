@@ -181,7 +181,7 @@ async def test_a_failed_assignment_writes_nothing_and_keeps_the_previous_state()
 
 async def test_current_reads_the_stored_state_and_writes_nothing(store):
     """M3-D PR 7: a dispatch stating version 0 only reads. A document with
-    no row is unknown at version 0, and another tenant's row is invisible."""
+    no row is unknown at version 0, and an asset another tenant holds is refused."""
     tenant, asset = ids()
     other_tenant, _ = ids()
     unseen = await store.current(tenant_id=tenant, asset_id=asset)
@@ -194,5 +194,6 @@ async def test_current_reads_the_stored_state_and_writes_nothing(store):
     for _ in range(7):  # past five runs, where a generic plan could differ
         held = await store.current(tenant_id=tenant, asset_id=asset)
         assert (held.scope, held.version) == (PERSONAL, 3)
-    elsewhere = await store.current(tenant_id=other_tenant, asset_id=asset)
-    assert (elsewhere.scope, elsewhere.version) == (UNKNOWN, 0)
+    # Another tenant doesn't see "no row": the asset is the first tenant's.
+    with pytest.raises(AssetHeldByAnotherTenantError):
+        await store.current(tenant_id=other_tenant, asset_id=asset)
