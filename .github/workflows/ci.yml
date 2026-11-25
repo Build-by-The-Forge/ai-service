@@ -84,7 +84,39 @@ jobs:
       # report is the coverage.xml the next step uploads.
       - name: Run tests
         run: |
-          pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
+          pytest tests/ -v -ra --tb=short --junitxml=pytest-junit.xml --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
+
+      # A red run explains itself: the failing tests and their error lines go to the job
+      # summary, and the full JUnit report is an artifact (read it with a tool, no log scraping).
+      - name: Summarise test failures
+        if: always()
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import os, xml.etree.ElementTree as ET
+          if not os.path.exists("pytest-junit.xml"):
+              print("No JUnit report: the tests did not finish (see the run log).")
+          else:
+              root = ET.parse("pytest-junit.xml").getroot()
+              cases = list(root.iter("testcase"))
+              bad = [(c, t) for c in cases for t in ("failure", "error") if c.find(t) is not None]
+              print("### Tests: %d run, %d failing or erroring" % (len(cases), len(bad)))
+              for c, t in bad[:60]:
+                  e = c.find(t)
+                  lines = [l for l in (e.text or "").splitlines() if l.startswith("E ")][:4]
+                  print("- `%s::%s`" % (c.get("classname"), c.get("name")))
+                  for l in lines or [(e.get("message") or "")[:200]]:
+                      print("  - `%s`" % l[:200].replace("`", "'"))
+              if len(bad) > 60:
+                  print("... and %d more (see the pytest-junit artifact)" % (len(bad) - 60))
+          PY
+
+      - name: Upload JUnit report
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: pytest-junit
+          path: pytest-junit.xml
+          retention-days: 14
 
       - name: Upload coverage
         if: always()
