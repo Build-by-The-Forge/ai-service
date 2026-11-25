@@ -2,6 +2,10 @@
 
 Tenant isolation at the query, idempotent and atomic re-indexing, the
 index surviving a fresh engine, and both retrieval sides.
+
+An asset belongs to one tenant (M3-D PR 7: a fence is refused for an asset
+another tenant holds), and the database persists across the suite, so each test
+names assets of its own.
 """
 
 import os
@@ -74,18 +78,20 @@ def tenants():
 
 async def test_dense_returns_the_nearest_chunk_with_its_page(store, tenants):
     a, _ = tenants
-    assert await index(store, a, "asset-1") == 3
+    one = f"asset-1-{a}"
+    assert await index(store, a, one) == 3
     (top, score), *_ = await store.query_dense(
         unit(2), RetrievalFilter(tenant_id=a, denied_assets=frozenset()), top_k=3
     )
     assert top.content.startswith("Millikan") and score == pytest.approx(1.0)
     assert top.metadata["page_start"] == 3 and top.provenance.page_number == 3
-    assert top.document_id == "asset-1" and top.tenant_id == a
+    assert top.document_id == one and top.tenant_id == a
 
 
 async def test_sparse_ors_the_terms_and_stems(store, tenants):
     a, _ = tenants
-    await index(store, a, "asset-1")
+    one = f"asset-1-{a}"
+    await index(store, a, one)
     hits = await store.query_sparse(
         "why do repelling charges matter xyzzy",
         RetrievalFilter(tenant_id=a, denied_assets=frozenset()),
@@ -103,8 +109,9 @@ async def test_sparse_ors_the_terms_and_stems(store, tenants):
 
 async def test_tenant_b_never_retrieves_tenant_a(store, tenants):
     a, b = tenants
-    await index(store, a, "asset-1")
-    await index(store, b, "asset-2", texts=["Photosynthesis converts light to energy."])
+    one, two = f"asset-1-{a}", f"asset-2-{a}"
+    await index(store, a, one)
+    await index(store, b, two, texts=["Photosynthesis converts light to energy."])
     dense = await store.query_dense(
         unit(2), RetrievalFilter(tenant_id=b, denied_assets=frozenset()), top_k=10
     )
@@ -112,21 +119,23 @@ async def test_tenant_b_never_retrieves_tenant_a(store, tenants):
         "electron charge", RetrievalFilter(tenant_id=b, denied_assets=frozenset()), top_k=10
     )
     assert {c.tenant_id for c, _ in dense} == {b} and sparse == []
-    # The same asset id under another tenant is another tenant's asset.
-    assert await store.delete_document(b, "asset-1") == 0
+    # Deleting under another tenant touches nothing of this one's (the tenant
+    # is in the delete's own SQL, whatever id is named).
+    assert await store.delete_document(b, one) == 0
     assert await store.count(a) == 3
 
 
 async def test_reindexing_the_same_run_is_idempotent(store, tenants):
     a, _ = tenants
-    await index(store, a, "asset-1")
+    one = f"asset-1-{a}"
+    await index(store, a, one)
     first = {
         c.chunk_id
         for c, _ in await store.query_dense(
             unit(0), RetrievalFilter(a, denied_assets=frozenset()), 10
         )
     }
-    await index(store, a, "asset-1")
+    await index(store, a, one)
     again = {
         c.chunk_id
         for c, _ in await store.query_dense(
@@ -138,8 +147,9 @@ async def test_reindexing_the_same_run_is_idempotent(store, tenants):
 
 async def test_reindexing_replaces_the_asset_whole(store, tenants):
     a, _ = tenants
-    await index(store, a, "asset-1")
-    await index(store, a, "asset-1", texts=["A single new chunk."], run=2)
+    one = f"asset-1-{a}"
+    await index(store, a, one)
+    await index(store, a, one, texts=["A single new chunk."], run=2)
     rows = await store.query_dense(unit(0), RetrievalFilter(a, denied_assets=frozenset()), 10)
     assert [c.content for c, _ in rows] == ["A single new chunk."]
     assert rows[0][0].metadata["run_number"] == 2
@@ -147,9 +157,10 @@ async def test_reindexing_replaces_the_asset_whole(store, tenants):
 
 async def test_a_failed_reindex_leaves_the_previous_index_untouched(store, tenants):
     a, _ = tenants
-    await index(store, a, "asset-1")
+    one = f"asset-1-{a}"
+    await index(store, a, one)
     with pytest.raises((VectorStoreError, ValueError)):
-        await index(store, a, "asset-1", run=2, vectors=[unit(0), unit(1), [1.0, 0.0]])
+        await index(store, a, one, run=2, vectors=[unit(0), unit(1), [1.0, 0.0]])
     assert await store.count(a) == 3
     rows = await store.query_dense(unit(0), RetrievalFilter(a, denied_assets=frozenset()), 10)
     assert {c.metadata["run_number"] for c, _ in rows} == {1}
@@ -157,17 +168,19 @@ async def test_a_failed_reindex_leaves_the_previous_index_untouched(store, tenan
 
 async def test_the_asset_filter_is_applied_in_the_query(store, tenants):
     a, _ = tenants
-    await index(store, a, "asset-1")
-    await index(store, a, "asset-2", texts=["Charge is conserved in every interaction."])
-    only = RetrievalFilter(tenant_id=a, document_ids=["asset-2"], denied_assets=frozenset())
-    assert {c.document_id for c, _ in await store.query_dense(unit(0), only, 10)} == {"asset-2"}
-    assert {c.document_id for c, _ in await store.query_sparse("charge", only, 10)} == {"asset-2"}
+    one, two = f"asset-1-{a}", f"asset-2-{a}"
+    await index(store, a, one)
+    await index(store, a, two, texts=["Charge is conserved in every interaction."])
+    only = RetrievalFilter(tenant_id=a, document_ids=[two], denied_assets=frozenset())
+    assert {c.document_id for c, _ in await store.query_dense(unit(0), only, 10)} == {two}
+    assert {c.document_id for c, _ in await store.query_sparse("charge", only, 10)} == {two}
 
 
 async def test_the_index_survives_a_fresh_engine(tenants):
     a, _ = tenants
+    one = f"asset-1-{a}"
     await initialize_database()
-    await index(PgChunkIndex(get_async_session_local()), a, "asset-1")
+    await index(PgChunkIndex(get_async_session_local()), a, one)
     await reset_engine()
     await initialize_database()
     try:

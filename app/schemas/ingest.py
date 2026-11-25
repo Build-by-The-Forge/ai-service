@@ -2,7 +2,7 @@ import re
 from enum import Enum
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.rag.scope import KnowledgeScope
 
@@ -48,6 +48,21 @@ class IngestDispatchRequest(BaseModel):
     attempt_count: int = Field(default=1, ge=1, description="Execution attempt count")
     correlation_id: str = Field(..., min_length=1, description="Distributed tracing correlation ID")
     idempotency_key: str = Field(..., min_length=1, description="Unique idempotency token")
+    # M3-D PR 7: every dispatch states the document's scope, as the backend
+    # last decided it, and that decision's version. It's applied by the
+    # assignment rule (only a higher version changes anything), so a
+    # dispatch can't move scope out of order. Version 0 means the backend
+    # has never assigned one, and then the scope must be ``unknown``.
+    # Required: a dispatch without a scope is refused (422).
+    scope: KnowledgeScope = Field(..., description="The document's scope, decided by the backend")
+    # Strict: a boolean, a float or a string is refused, never coerced.
+    scope_version: int = Field(
+        ...,
+        strict=True,
+        ge=0,
+        le=2**63 - 1,
+        description="The version of that decision; 0 if none was made",
+    )
 
     @field_validator("content_sha256")
     @classmethod
@@ -55,6 +70,12 @@ class IngestDispatchRequest(BaseModel):
         if not re.match(r"^[a-fA-F0-9]{64}$", value):
             raise ValueError("content_sha256 must be a valid 64-character hex string")
         return value.lower()
+
+    @model_validator(mode="after")
+    def unassigned_is_unknown(self) -> "IngestDispatchRequest":
+        if self.scope_version == 0 and self.scope is not KnowledgeScope.UNKNOWN:
+            raise ValueError("a scope other than unknown needs a version of at least 1")
+        return self
 
 
 class IngestDispatchResponse(BaseModel):

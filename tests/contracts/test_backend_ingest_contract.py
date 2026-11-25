@@ -30,6 +30,9 @@ BACKEND_DISPATCH_BODY = {
     "file_size_bytes": 204800,
     "storage_uri": "s3://build-assets-prod/futa/cos102/2026/course_pack.pdf",
     "correlation_id": "corr_01j9a8b7c6d5e4f3a2b1c0d9ea",
+    # M3-D PR 7: the document's scope as the backend last decided it.
+    "scope": "personal",
+    "scope_version": 2,
 }
 
 
@@ -49,6 +52,43 @@ def test_a_backend_body_without_the_size_is_still_accepted():
     """file_size_bytes is optional until build-backend sends it (P3-1 PR 4)."""
     body = {k: v for k, v in BACKEND_DISPATCH_BODY.items() if k != "file_size_bytes"}
     assert IngestDispatchRequest(**body).file_size_bytes is None
+
+
+@pytest.mark.parametrize("field", ["scope", "scope_version"])
+def test_a_backend_body_without_a_scope_is_refused(field):
+    """M3-D PR 7: a dispatch with a missing scope is refused, not defaulted."""
+    body = {k: v for k, v in BACKEND_DISPATCH_BODY.items() if k != field}
+    with pytest.raises(ValidationError):
+        IngestDispatchRequest(**body)
+
+
+@pytest.mark.parametrize(
+    "scope, version",
+    [
+        ("public", 1),  # not one of the three values
+        ("Personal", 1),
+        ("", 1),
+        (None, 1),
+        ("personal", -1),
+        ("personal", 2**63),
+        ("personal", "1"),
+        ("personal", 1.5),
+        ("personal", True),
+        # Version 0 is "never assigned": only unknown can be stated with it.
+        ("personal", 0),
+        ("institutional", 0),
+    ],
+)
+def test_a_malformed_scope_is_refused(scope, version):
+    with pytest.raises(ValidationError):
+        IngestDispatchRequest(**{**BACKEND_DISPATCH_BODY, "scope": scope, "scope_version": version})
+
+
+def test_an_unassigned_document_is_stated_as_unknown_at_version_zero():
+    parsed = IngestDispatchRequest(
+        **{**BACKEND_DISPATCH_BODY, "scope": "unknown", "scope_version": 0}
+    )
+    assert (parsed.scope.value, parsed.scope_version) == ("unknown", 0)
 
 
 @pytest.mark.parametrize("field", ["tenant_id", "callback_url", "user_id", "metadata"])

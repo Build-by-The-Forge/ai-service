@@ -27,6 +27,10 @@ class InMemoryIndexFence:
     async def raise_fence(
         self, *, tenant_id: str, asset_id: str, run_number: int, attempt: int
     ) -> tuple[int, int]:
+        from app.services.rag.scopes import AssetHeldByAnotherTenantError
+
+        if any(a == asset_id and t != tenant_id for t, a in self.fences):
+            raise AssetHeldByAnotherTenantError(asset_id)
         key = (tenant_id, asset_id)
         self.fences[key] = max(self.fences.get(key, (run_number, attempt)), (run_number, attempt))
         return self.fences[key]
