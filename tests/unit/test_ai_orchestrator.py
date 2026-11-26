@@ -73,8 +73,9 @@ async def test_a_cited_answer_is_kept_with_its_citations_and_full_passages():
     ]
     # The model saw the whole passage, numbered, with its document and page.
     assert f"[1] (asset-bio101, p. 2) {OSMOSIS.text}" in llm.prompts[0]
-    assert result["context_used"][0]["text"] == OSMOSIS.text
-    assert "math" in result["memory_used"]
+    # Only citations carry passage text; memory shapes the prompt, not the result (G-18).
+    assert set(result) == {"answer", "grounded", "citations", "sources_used"}
+    assert "math" in llm.prompts[0]
 
 
 @pytest.mark.parametrize(
@@ -95,7 +96,7 @@ async def test_without_evidence_the_model_is_not_asked():
 
     result = await orchestrator(llm).chat("user-1", "Who won the World Cup?", frozenset())
 
-    assert (result["answer"], result["grounded"], result["context_used"]) == (
+    assert (result["answer"], result["grounded"], result["citations"]) == (
         NOT_COVERED,
         False,
         [],

@@ -218,7 +218,7 @@ async def test_chat_answers_without_memory_when_the_gate_is_closed(closed):
     result = await orchestrator.chat("u1", "What is osmosis?", frozenset())
 
     assert result["grounded"] is True
-    assert result["memory_used"] == ""
+    assert "memory_used" not in result
     assert "mastery=" not in llm.prompts[0]
 
 
